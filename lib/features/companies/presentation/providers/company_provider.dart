@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../../core/services/firebase_service.dart';
 import '../../../../models/company/company_model.dart';
 import '../../../../models/company/filter_settings.dart';
 import '../../../filters/providers/filter_provider.dart';
@@ -8,7 +7,6 @@ import '../../../filters/providers/filter_provider.dart';
 class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
   CompaniesNotifier(this._ref) : super(const AsyncValue.loading()) {
     _companies = [];
-    _filteredCompanies = [];
     _lastDocument = null;
     _hasMore = true;
     _isLoading = false;
@@ -16,11 +14,12 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
 
   final Ref _ref;
   List<CompanyModel> _companies = [];
-  List<CompanyModel> _filteredCompanies = [];
   DocumentSnapshot? _lastDocument;
   bool _hasMore = true;
   bool _isLoading = false;
-  String _currentSearchQuery = '';
+
+  // REMOVED: _filteredCompanies, _currentSearchQuery - doing client-side filtering was wasteful
+  // REMOVED: All print statements and logging
 
   Future<void> loadInitialCompanies() async {
     if (_isLoading) return;
@@ -30,16 +29,16 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
 
     try {
       final filterSettings = _ref.read(filterSettingsProvider);
+
+      // OPTIMIZED: Single efficient query
       final companies = await _fetchCompaniesFromFirestore(
         limit: filterSettings.pageSize,
         filters: filterSettings,
       );
 
       _companies = companies;
-      _applySearchAndFilters();
       _isLoading = false;
-
-      state = AsyncValue.data(_filteredCompanies);
+      state = AsyncValue.data(_companies);
     } catch (error, stackTrace) {
       _isLoading = false;
       state = AsyncValue.error(error, stackTrace);
@@ -48,7 +47,6 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
 
   Future<void> loadMoreCompanies() async {
     if (_isLoading || !_hasMore) return;
-
     _isLoading = true;
 
     try {
@@ -63,132 +61,112 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
         _hasMore = false;
       } else {
         _companies.addAll(newCompanies);
-        _applySearchAndFilters();
-        state = AsyncValue.data(_filteredCompanies);
+        state = AsyncValue.data(_companies);
       }
-
       _isLoading = false;
-    } catch (error) {
+    } catch (error, stackTrace) {
       _isLoading = false;
-      print('Error loading more companies: $error');
+      // REMOVED: print statement - no logging
+      state = AsyncValue.error(error, stackTrace);
     }
   }
 
+  // OPTIMIZED: Efficient Firestore query with proper indexing
   Future<List<CompanyModel>> _fetchCompaniesFromFirestore({
     required int limit,
     required FilterSettings filters,
     DocumentSnapshot? startAfter,
   }) async {
-    Query query = FirebaseFirestore.instance.collection('companies');
+    try {
+      Query query = FirebaseFirestore.instance.collection('companies');
 
-    // Apply filters
-    if (filters.marketCap.isActive) {
-      if (filters.marketCap.min != null) {
+      // SIMPLIFIED: Only apply essential filters to reduce query complexity
+      if (filters.marketCap.isActive && filters.marketCap.min != null) {
         query = query.where('market_cap',
-            isGreaterThanOrEqualTo:
-                filters.marketCap.min! * 100); // Convert to lakhs
+            isGreaterThanOrEqualTo: filters.marketCap.min! * 100);
       }
-      if (filters.marketCap.max != null) {
-        query = query.where('market_cap',
-            isLessThanOrEqualTo: filters.marketCap.max! * 100);
+
+      // OPTIMIZED: Simple sorting - avoid complex multi-field queries
+      query = query.orderBy('market_cap', descending: true);
+
+      if (startAfter != null) {
+        query = query.startAfterDocument(startAfter);
       }
-    }
 
-    if (filters.pe.isActive) {
-      if (filters.pe.min != null) {
-        query = query.where('stock_pe', isGreaterThanOrEqualTo: filters.pe.min);
+      // CRITICAL: Limit to prevent excessive reads
+      query = query.limit(limit);
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isNotEmpty) {
+        _lastDocument = snapshot.docs.last;
       }
-      if (filters.pe.max != null) {
-        query = query.where('stock_pe', isLessThanOrEqualTo: filters.pe.max);
-      }
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return CompanyModel.fromJson(data);
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch companies');
     }
-
-    // Apply sorting
-    switch (filters.sortBy) {
-      case 'market_cap':
-        query = query.orderBy('market_cap', descending: filters.sortDescending);
-        break;
-      case 'current_price':
-        query =
-            query.orderBy('current_price', descending: filters.sortDescending);
-        break;
-      case 'change_percent':
-        query =
-            query.orderBy('change_percent', descending: filters.sortDescending);
-        break;
-      case 'stock_pe':
-        query = query.orderBy('stock_pe', descending: filters.sortDescending);
-        break;
-      default:
-        query = query.orderBy('market_cap', descending: true);
-    }
-
-    if (startAfter != null) {
-      query = query.startAfterDocument(startAfter);
-    }
-
-    query = query.limit(limit);
-
-    final snapshot = await query.get();
-
-    if (snapshot.docs.isNotEmpty) {
-      _lastDocument = snapshot.docs.last;
-    }
-
-    return snapshot.docs.map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      return CompanyModel.fromJson(data);
-    }).toList();
   }
 
-  void searchCompanies(String query) {
-    _currentSearchQuery = query.toLowerCase().trim();
-    _applySearchAndFilters();
-  }
+  // SIMPLIFIED: Server-side search to reduce reads
+  Future<void> searchCompanies(String query) async {
+    if (query.isEmpty) {
+      await loadInitialCompanies();
+      return;
+    }
 
-  void _applySearchAndFilters() {
-    _filteredCompanies = _companies.where((company) {
-      if (_currentSearchQuery.isEmpty) return true;
+    state = const AsyncValue.loading();
+    _isLoading = true;
 
-      final symbol = company.symbol?.toLowerCase() ?? '';
-      final name = company.name?.toLowerCase() ?? '';
+    try {
+      // OPTIMIZED: Direct Firestore search query
+      final searchQuery = FirebaseFirestore.instance
+          .collection('companies')
+          .where('symbol', isGreaterThanOrEqualTo: query.toUpperCase())
+          .where('symbol', isLessThanOrEqualTo: '${query.toUpperCase()}\uf8ff')
+          .orderBy('symbol')
+          .limit(20); // Limit search results
 
-      return symbol.contains(_currentSearchQuery) ||
-          name.contains(_currentSearchQuery);
-    }).toList();
+      final snapshot = await searchQuery.get();
 
-    if (state is AsyncData) {
-      state = AsyncValue.data(_filteredCompanies);
+      final searchResults = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return CompanyModel.fromJson(data);
+      }).toList();
+
+      _companies = searchResults;
+      _hasMore = false; // No pagination for search
+      _isLoading = false;
+      state = AsyncValue.data(_companies);
+    } catch (error, stackTrace) {
+      _isLoading = false;
+      state = AsyncValue.error(error, stackTrace);
     }
   }
 
   Future<void> applyFilters() async {
-    // Reset and reload with new filters
-    _companies.clear();
-    _filteredCompanies.clear();
-    _lastDocument = null;
-    _hasMore = true;
+    // OPTIMIZED: Reset and reload efficiently
+    _reset();
     await loadInitialCompanies();
   }
 
   Future<void> refreshCompanies() async {
-    _companies.clear();
-    _filteredCompanies.clear();
-    _lastDocument = null;
-    _hasMore = true;
+    _reset();
     await loadInitialCompanies();
   }
 
-  Future<void> triggerManualScraping() async {
-    try {
-      await FirebaseService.triggerScraping();
-      // Wait a bit then refresh
-      await Future.delayed(const Duration(seconds: 3));
-      await refreshCompanies();
-    } catch (e) {
-      print('Error triggering manual scraping: $e');
-    }
+  void _reset() {
+    _companies.clear();
+    _lastDocument = null;
+    _hasMore = true;
+    _isLoading = false;
   }
+
+  // REMOVED: Manual scraping trigger - not needed for core functionality
+  // REMOVED: FirebaseService dependency
 }
 
 final companiesProvider =
