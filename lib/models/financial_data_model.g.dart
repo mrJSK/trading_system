@@ -29,7 +29,7 @@ Map<String, dynamic> _$$FinancialDataModelImplToJson(
 _$FinancialDataRowImpl _$$FinancialDataRowImplFromJson(
         Map<String, dynamic> json) =>
     _$FinancialDataRowImpl(
-      description: json['description'] as String,
+      description: json['description'] as String? ?? '',
       values: (json['values'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??

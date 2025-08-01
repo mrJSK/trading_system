@@ -107,7 +107,9 @@ class __$$FinancialDataModelImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$FinancialDataModelImpl implements _FinancialDataModel {
+class _$FinancialDataModelImpl
+    with DiagnosticableTreeMixin
+    implements _FinancialDataModel {
   const _$FinancialDataModelImpl(
       {final List<String> headers = const [],
       final List<FinancialDataRow> body = const []})
@@ -136,8 +138,17 @@ class _$FinancialDataModelImpl implements _FinancialDataModel {
   }
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'FinancialDataModel(headers: $headers, body: $body)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'FinancialDataModel'))
+      ..add(DiagnosticsProperty('headers', headers))
+      ..add(DiagnosticsProperty('body', body));
   }
 
   @override
@@ -195,7 +206,8 @@ FinancialDataRow _$FinancialDataRowFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$FinancialDataRow {
-  String get description => throw _privateConstructorUsedError;
+  String get description =>
+      throw _privateConstructorUsedError; // 🔥 FIXED: Uses default instead of required
   List<String> get values => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -282,17 +294,22 @@ class __$$FinancialDataRowImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$FinancialDataRowImpl implements _FinancialDataRow {
+class _$FinancialDataRowImpl
+    with DiagnosticableTreeMixin
+    implements _FinancialDataRow {
   const _$FinancialDataRowImpl(
-      {required this.description, final List<String> values = const []})
+      {this.description = '', final List<String> values = const []})
       : _values = values;
 
   factory _$FinancialDataRowImpl.fromJson(Map<String, dynamic> json) =>
       _$$FinancialDataRowImplFromJson(json);
 
   @override
+  @JsonKey()
   final String description;
+// 🔥 FIXED: Uses default instead of required
   final List<String> _values;
+// 🔥 FIXED: Uses default instead of required
   @override
   @JsonKey()
   List<String> get values {
@@ -302,8 +319,17 @@ class _$FinancialDataRowImpl implements _FinancialDataRow {
   }
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'FinancialDataRow(description: $description, values: $values)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'FinancialDataRow'))
+      ..add(DiagnosticsProperty('description', description))
+      ..add(DiagnosticsProperty('values', values));
   }
 
   @override
@@ -338,7 +364,7 @@ class _$FinancialDataRowImpl implements _FinancialDataRow {
 
 abstract class _FinancialDataRow implements FinancialDataRow {
   const factory _FinancialDataRow(
-      {required final String description,
+      {final String description,
       final List<String> values}) = _$FinancialDataRowImpl;
 
   factory _FinancialDataRow.fromJson(Map<String, dynamic> json) =
@@ -346,7 +372,7 @@ abstract class _FinancialDataRow implements FinancialDataRow {
 
   @override
   String get description;
-  @override
+  @override // 🔥 FIXED: Uses default instead of required
   List<String> get values;
   @override
   @JsonKey(ignore: true)
