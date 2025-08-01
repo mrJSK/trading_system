@@ -1,325 +1,378 @@
+// widgets/company_card.dart
 import 'package:flutter/material.dart';
 import '../models/company_model.dart';
+import '../screens/company_details_screen.dart';
+import '../theme/app_theme.dart';
 
 class CompanyCard extends StatelessWidget {
   final CompanyModel company;
-  final VoidCallback onTap;
 
-  const CompanyCard({
-    super.key,
-    required this.company,
-    required this.onTap,
-  });
+  const CompanyCard({Key? key, required this.company}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final isPositive = company.changePercent >= 0;
-    final changeColor = isPositive ? Colors.green : Colors.red;
-    final changeIcon = isPositive ? Icons.trending_up : Icons.trending_down;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          company.symbol,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CompanyDetailsScreen(company: company),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.08),
+              spreadRadius: 0,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        company.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          company.displayName,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey[700],
-                                  ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getMarketCapColor().withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _getMarketCapColor().withOpacity(0.3),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            company.symbol,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.textSecondary,
                             ),
                           ),
-                          child: Text(
-                            _getMarketCapCategory(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: _getMarketCapColor(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
+                          const SizedBox(width: 8),
+                          _buildMarketCapChip(),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      if (company.sector != null)
                         Text(
-                          company.formattedPrice,
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: changeColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                changeIcon,
-                                size: 12,
-                                color: changeColor,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                company.formattedChange,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: changeColor,
-                                ),
-                              ),
-                            ],
+                          company.sector!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                            fontStyle: FontStyle.italic,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _formatChangeAmount(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: changeColor,
-                          ),
-                        ),
-                      ],
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      company.formattedPrice,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildMetricItem(
-                      context,
-                      'Market Cap',
-                      _formatMarketCap(),
-                      Icons.pie_chart_outline,
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 30,
-                    color: Colors.grey[300],
-                  ),
-                  Expanded(
-                    child: _buildMetricItem(
-                      context,
-                      'P/E',
-                      company.stockPe?.toStringAsFixed(1) ?? 'N/A',
-                      Icons.trending_up,
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 30,
-                    color: Colors.grey[300],
-                  ),
-                  Expanded(
-                    child: _buildMetricItem(
-                      context,
-                      'ROE',
-                      company.roe != null
-                          ? '${company.roe!.toStringAsFixed(1)}%'
-                          : 'N/A',
-                      Icons.donut_large,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Updated: ${_formatLastUpdated()}',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 10,
-                    ),
-                  ),
-                  if (!_isDataFresh())
+                    const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 2,
-                      ),
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: company.isGainer
+                            ? AppTheme.profitGreen.withOpacity(0.1)
+                            : company.isLoser
+                                ? AppTheme.lossRed.withOpacity(0.1)
+                                : AppTheme.textSecondary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        'Stale',
+                        company.formattedChange,
                         style: TextStyle(
-                          color: Colors.orange[700],
-                          fontSize: 9,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
+                          color: company.isGainer
+                              ? AppTheme.profitGreen
+                              : company.isLoser
+                                  ? AppTheme.lossRed
+                                  : AppTheme.textSecondary,
                         ),
                       ),
                     ),
+                    const SizedBox(height: 2),
+                    Text(
+                      company.formattedLastUpdated,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Quality indicators row
+            Row(
+              children: [
+                _buildQualityIndicators(),
+                const Spacer(),
+                _buildRiskBadge(),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Financial metrics row
+            Row(
+              children: [
+                Expanded(
+                  child: _buildMetric(
+                    'Market Cap',
+                    company.formattedMarketCap,
+                  ),
+                ),
+                Expanded(
+                  child: _buildMetric(
+                    'P/E',
+                    company.stockPe?.toStringAsFixed(1) ?? 'N/A',
+                  ),
+                ),
+                Expanded(
+                  child: _buildMetric(
+                    'ROE',
+                    company.roe != null
+                        ? '${company.roe!.toStringAsFixed(1)}%'
+                        : 'N/A',
+                  ),
+                ),
+                Expanded(
+                  child: _buildMetric(
+                    'Debt/Eq',
+                    company.debtToEquity?.toStringAsFixed(2) ?? 'N/A',
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // Growth metrics row (if available)
+            if (company.salesGrowth3Y != null || company.profitGrowth3Y != null)
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildMetric(
+                      'Sales Growth',
+                      company.salesGrowth3Y != null
+                          ? '${company.salesGrowth3Y!.toStringAsFixed(1)}%'
+                          : 'N/A',
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildMetric(
+                      'Profit Growth',
+                      company.profitGrowth3Y != null
+                          ? '${company.profitGrowth3Y!.toStringAsFixed(1)}%'
+                          : 'N/A',
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildMetric(
+                      'Div Yield',
+                      company.dividendYield != null
+                          ? '${company.dividendYield!.toStringAsFixed(1)}%'
+                          : 'N/A',
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildMetric(
+                      'Quality',
+                      '${company.qualityScore}/5',
+                    ),
+                  ),
                 ],
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildMetricItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
+  Widget _buildMetric(String label, String value) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: Colors.grey[600],
-        ),
-        const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppTheme.textSecondary,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.textPrimary,
           ),
-          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  String _getMarketCapCategory() {
-    if (company.marketCap == null) return 'Unknown';
-    if (company.marketCap! >= 20000) return 'Large Cap';
-    if (company.marketCap! >= 5000) return 'Mid Cap';
-    return 'Small Cap';
+  Widget _buildMarketCapChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: _getMarketCapColor().withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _getMarketCapColor().withOpacity(0.3),
+          width: 0.5,
+        ),
+      ),
+      child: Text(
+        company.marketCapCategoryText,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+          color: _getMarketCapColor(),
+        ),
+      ),
+    );
   }
 
   Color _getMarketCapColor() {
-    final category = _getMarketCapCategory();
-    switch (category) {
-      case 'Large Cap':
-        return Colors.blue;
-      case 'Mid Cap':
-        return Colors.orange;
-      case 'Small Cap':
-        return Colors.purple;
+    if (company.marketCap == null) return AppTheme.textSecondary;
+    if (company.marketCap! >= 20000) return Colors.blue;
+    if (company.marketCap! >= 5000) return Colors.orange;
+    return Colors.purple;
+  }
+
+  Widget _buildQualityIndicators() {
+    final indicators = <Widget>[];
+
+    if (company.isDebtFree) {
+      indicators.add(_buildIndicatorChip('Debt Free', Colors.green));
+    }
+
+    if (company.paysDividends) {
+      indicators.add(_buildIndicatorChip('Dividend', Colors.blue));
+    }
+
+    if (company.isGrowthStock) {
+      indicators.add(_buildIndicatorChip('Growth', Colors.purple));
+    }
+
+    if (company.isQualityStock) {
+      indicators.add(_buildIndicatorChip('Quality', Colors.teal));
+    }
+
+    if (indicators.isEmpty) return const SizedBox.shrink();
+
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: indicators.take(2).toList(), // Show max 2 indicators
+    );
+  }
+
+  Widget _buildIndicatorChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 0.5,
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w500,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRiskBadge() {
+    final riskLevel = company.riskLevel;
+    Color riskColor;
+
+    switch (riskLevel.toLowerCase()) {
+      case 'high':
+        riskColor = AppTheme.lossRed;
+        break;
+      case 'medium':
+        riskColor = Colors.orange;
+        break;
+      case 'low':
+        riskColor = AppTheme.profitGreen;
+        break;
       default:
-        return Colors.grey;
+        riskColor = AppTheme.textSecondary;
     }
-  }
 
-  String _formatMarketCap() {
-    if (company.marketCap == null) return 'N/A';
-    if (company.marketCap! >= 100000) {
-      return '₹${(company.marketCap! / 100000).toStringAsFixed(0)}L Cr';
-    } else if (company.marketCap! >= 1000) {
-      return '₹${(company.marketCap! / 1000).toStringAsFixed(0)}K Cr';
-    } else {
-      return '₹${company.marketCap!.toStringAsFixed(0)} Cr';
-    }
-  }
-
-  String _formatChangeAmount() {
-    if (company.changeAmount == 0.0) return '₹0.00';
-    final sign = company.changeAmount > 0 ? '+' : '';
-    return '$sign₹${company.changeAmount.abs().toStringAsFixed(2)}';
-  }
-
-  String _formatLastUpdated() {
-    try {
-      final date = DateTime.parse(company.lastUpdated);
-      final now = DateTime.now();
-      final difference = now.difference(date);
-
-      if (difference.inDays > 0) {
-        return '${difference.inDays}d ago';
-      } else if (difference.inHours > 0) {
-        return '${difference.inHours}h ago';
-      } else if (difference.inMinutes > 0) {
-        return '${difference.inMinutes}m ago';
-      } else {
-        return 'Just now';
-      }
-    } catch (e) {
-      return 'Unknown';
-    }
-  }
-
-  bool _isDataFresh() {
-    try {
-      final date = DateTime.parse(company.lastUpdated);
-      final now = DateTime.now();
-      return now.difference(date).inHours < 24;
-    } catch (e) {
-      return false;
-    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: riskColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: riskColor.withOpacity(0.3),
+          width: 0.5,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            riskLevel.toLowerCase() == 'high'
+                ? Icons.trending_up
+                : riskLevel.toLowerCase() == 'low'
+                    ? Icons.shield
+                    : Icons.timeline,
+            size: 10,
+            color: riskColor,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            'Risk: $riskLevel',
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w500,
+              color: riskColor,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

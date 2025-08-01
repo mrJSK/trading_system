@@ -1,48 +1,54 @@
-// lib/main.dart
+// main.dart (Enhanced version)
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// Import your screens and theme
+import 'package:firebase_core/firebase_core.dart';
+import 'screens/dashboard_screen.dart';
 import 'theme/app_theme.dart';
-import 'services/firebase_messaging_service.dart'; // <- FCM service instead
-import 'screens/home_screen.dart';
-import 'screens/scraping_settings_screen.dart';
-import 'theme/theme_provider.dart';
+import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp();
+  // Optional: Set preferred orientations
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
-  // Initialize FCM notifications only
-  await FirebaseMessagingService.initialize();
-
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
+  // Optional: Set system UI overlay style
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
     ),
   );
+
+  await Firebase.initializeApp();
+
+  runApp(const ProviderScope(child: TradingApp()));
 }
 
-class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
+class TradingApp extends ConsumerWidget {
+  const TradingApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
+    final themeMode = ref.watch(themeProvider);
 
     return MaterialApp(
       title: 'Trading Dashboard',
-      debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      home: const HomeScreen(), // Direct to home - no complex initialization
-      routes: {
-        '/home': (context) => const HomeScreen(),
-        '/scraping_settings': (context) => const ScrapingSettingsScreen(),
+      home: const DashboardScreen(),
+      debugShowCheckedModeBanner: false,
+
+      // Optional enhancements:
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+          child: child!,
+        );
       },
     );
   }

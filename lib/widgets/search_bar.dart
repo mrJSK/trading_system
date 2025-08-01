@@ -1,54 +1,87 @@
+// widgets/search_bar.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/fundamental_provider.dart';
+import '../providers/company_provider.dart'; // Make sure this import is correct
+import '../theme/app_theme.dart';
 
-class SearchBarWidget extends StatelessWidget {
-  final TextEditingController controller;
-  final Function(String) onChanged;
-  final String hintText;
+class CustomSearchBar extends ConsumerStatefulWidget {
+  const CustomSearchBar({Key? key}) : super(key: key);
 
-  const SearchBarWidget({
-    super.key,
-    required this.controller,
-    required this.onChanged,
-    required this.hintText,
-  });
+  @override
+  ConsumerState<CustomSearchBar> createState() => _CustomSearchBarState();
+}
+
+class _CustomSearchBarState extends ConsumerState<CustomSearchBar> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.cardBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.borderColor),
         ),
-      ),
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-          prefixIcon: Icon(
-            Icons.search,
-            color: Colors.white.withOpacity(0.7),
-          ),
-          suffixIcon: controller.text.isNotEmpty
-              ? IconButton(
-                  icon: Icon(
-                    Icons.clear,
-                    color: Colors.white.withOpacity(0.7),
-                  ),
-                  onPressed: () {
-                    controller.clear();
-                    onChanged('');
-                  },
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
+        child: TextField(
+          controller: _controller,
+          onChanged: (value) {
+            // Update search query in the provider
+            ref.read(searchQueryProvider.notifier).state = value;
+
+            // Debounce the search to avoid too many queries
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (_controller.text == value) {
+                if (value.trim().isNotEmpty) {
+                  ref
+                      .read(companiesProvider.notifier)
+                      .searchCompanies(value.trim());
+                } else {
+                  // If search is cleared, reload initial companies
+                  ref.read(companiesProvider.notifier).loadInitialCompanies();
+                }
+              }
+            });
+          },
+          onSubmitted: (value) {
+            if (value.trim().isNotEmpty) {
+              ref
+                  .read(companiesProvider.notifier)
+                  .searchCompanies(value.trim());
+            } else {
+              ref.read(companiesProvider.notifier).loadInitialCompanies();
+            }
+          },
+          decoration: InputDecoration(
+            hintText:
+                'Search by symbol (RELIANCE) or name (Reliance Industries)...',
+            prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondary),
+            suffixIcon: _controller.text.isNotEmpty
+                ? IconButton(
+                    icon:
+                        const Icon(Icons.clear, color: AppTheme.textSecondary),
+                    onPressed: () {
+                      _controller.clear();
+                      ref.read(searchQueryProvider.notifier).state = '';
+                      ref
+                          .read(companiesProvider.notifier)
+                          .loadInitialCompanies();
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            hintStyle:
+                const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
           ),
         ),
       ),

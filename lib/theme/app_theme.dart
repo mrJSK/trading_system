@@ -1,117 +1,146 @@
+// theme/app_theme.dart
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Colors
-  static const Color primaryGreen = Color(0xFF00C853);
-  static const Color primaryRed = Color(0xFFFF1744);
-  static const Color primaryBlue = Color(0xFF2962FF);
-  static const Color primaryOrange = Color(0xFFFF6D00);
-
   // Light Theme Colors
-  static const Color lightBackground = Color(0xFFFAFAFA);
-  static const Color lightSurface = Colors.white;
-  static const Color lightPrimary = primaryBlue;
+  static const Color primaryGreen = Color(0xFF00D09C);
+  static const Color primaryDark = Color(0xFF1F2937);
+  static const Color cardBackground = Color(0xFFF8FAFC);
+  static const Color textPrimary = Color(0xFF1F2937);
+  static const Color textSecondary = Color(0xFF6B7280);
+  static const Color borderColor = Color(0xFFE5E7EB);
+  static const Color profitGreen = Color(0xFF10B981);
+  static const Color lossRed = Color(0xFFEF4444);
 
   // Dark Theme Colors
-  static const Color darkBackground = Color(0xFF121212);
-  static const Color darkSurface = Color(0xFF1E1E1E);
-  static const Color darkPrimary = primaryBlue;
+  static const Color darkBackground = Color(0xFF111827);
+  static const Color darkCardBackground = Color(0xFF1F2937);
+  static const Color darkTextPrimary = Color(0xFFF9FAFB);
+  static const Color darkTextSecondary = Color(0xFF9CA3AF);
+  static const Color darkBorderColor = Color(0xFF374151);
 
-  static ThemeData get lightTheme {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      primaryColor: lightPrimary,
-      scaffoldBackgroundColor: lightBackground,
-      cardColor: lightSurface,
-
-      colorScheme: const ColorScheme.light(
-        primary: lightPrimary,
-        secondary: primaryGreen,
-        surface: lightSurface,
-        error: primaryRed,
+  static ThemeData lightTheme = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    primarySwatch: Colors.green,
+    primaryColor: primaryGreen,
+    scaffoldBackgroundColor: Colors.white,
+    fontFamily: 'Inter',
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.white,
+      foregroundColor: textPrimary,
+      elevation: 0,
+      centerTitle: false,
+      titleTextStyle: TextStyle(
+        color: textPrimary,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
       ),
-
-      textTheme: GoogleFonts.interTextTheme().copyWith(
-        headlineLarge:
-            const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-        headlineMedium:
-            const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
-        bodyLarge: const TextStyle(color: Colors.black87),
-        bodyMedium: const TextStyle(color: Colors.black54),
-        bodySmall: const TextStyle(color: Colors.black45),
+    ),
+    cardTheme: const CardThemeData(
+      color: cardBackground,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        side: BorderSide(color: borderColor, width: 1),
       ),
-
-      appBarTheme: AppBarTheme(
-        backgroundColor: lightSurface,
-        foregroundColor: Colors.black87,
-        elevation: 0,
-        centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
-          color: Colors.black87,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
+    ),
+    textTheme: const TextTheme(
+      headlineLarge: TextStyle(
+        color: textPrimary,
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
       ),
-
-      // FIXED: Use CardThemeData instead of CardTheme
-      cardTheme: const CardThemeData(
-        color: lightSurface,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-        ),
+      headlineMedium: TextStyle(
+        color: textPrimary,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
       ),
-    );
+      bodyLarge: TextStyle(
+        color: textPrimary,
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+      ),
+      bodyMedium: TextStyle(
+        color: textSecondary,
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+      ),
+    ),
+  );
+
+  static ThemeData darkTheme = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    primarySwatch: Colors.green,
+    primaryColor: primaryGreen,
+    scaffoldBackgroundColor: darkBackground,
+    fontFamily: 'Inter',
+    appBarTheme: const AppBarTheme(
+      backgroundColor: darkBackground,
+      foregroundColor: darkTextPrimary,
+      elevation: 0,
+      centerTitle: false,
+      titleTextStyle: TextStyle(
+        color: darkTextPrimary,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+    cardTheme: const CardThemeData(
+      color: darkCardBackground,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        side: BorderSide(color: darkBorderColor, width: 1),
+      ),
+    ),
+    textTheme: const TextTheme(
+      headlineLarge: TextStyle(
+        color: darkTextPrimary,
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+      ),
+      headlineMedium: TextStyle(
+        color: darkTextPrimary,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+      bodyLarge: TextStyle(
+        color: darkTextPrimary,
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+      ),
+      bodyMedium: TextStyle(
+        color: darkTextSecondary,
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+      ),
+    ),
+  );
+
+  // Helper methods to get colors based on current theme
+  static Color getTextPrimary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? darkTextPrimary
+        : textPrimary;
   }
 
-  static ThemeData get darkTheme {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      primaryColor: darkPrimary,
-      scaffoldBackgroundColor: darkBackground,
-      cardColor: darkSurface,
+  static Color getTextSecondary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? darkTextSecondary
+        : textSecondary;
+  }
 
-      colorScheme: const ColorScheme.dark(
-        primary: darkPrimary,
-        secondary: primaryGreen,
-        surface: darkSurface,
-        error: primaryRed,
-      ),
+  static Color getCardBackground(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? darkCardBackground
+        : cardBackground;
+  }
 
-      textTheme:
-          GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
-        headlineLarge:
-            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        headlineMedium:
-            const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        bodyLarge: const TextStyle(color: Colors.white),
-        bodyMedium: const TextStyle(color: Colors.white70),
-        bodySmall: const TextStyle(color: Colors.white54),
-      ),
-
-      appBarTheme: AppBarTheme(
-        backgroundColor: darkSurface,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
-          color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-
-      // FIXED: Use CardThemeData instead of CardTheme
-      cardTheme: const CardThemeData(
-        color: darkSurface,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-        ),
-      ),
-    );
+  static Color getBorderColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? darkBorderColor
+        : borderColor;
   }
 }
