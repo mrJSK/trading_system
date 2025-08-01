@@ -1,6 +1,7 @@
 // screens/dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/company_provider.dart';
 import '../widgets/fundamental_tabs.dart';
 import '../widgets/search_bar.dart';
@@ -9,8 +10,7 @@ import '../widgets/scraping_status_bar.dart';
 import '../theme/app_theme.dart';
 import '../providers/theme_provider.dart';
 import '../providers/fundamental_provider.dart';
-import '../models/fundamental_filter.dart'
-    as fundamental; // Changed alias to 'fundamental'
+import '../models/fundamental_filter.dart' as fundamental;
 
 // String extension for capitalization
 extension StringExtensions on String {
@@ -283,6 +283,10 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  // ============================================================================
+  // ENHANCED QUICK ACTIONS WITH DEBUG FUNCTIONALITY
+  // ============================================================================
+
   void _showQuickActionsBottomSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
@@ -308,7 +312,7 @@ class DashboardScreen extends ConsumerWidget {
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 20),
 
-            // Grid of quick actions
+            // Grid of quick actions (including debug)
             GridView.count(
               shrinkWrap: true,
               crossAxisCount: 3,
@@ -345,7 +349,6 @@ class DashboardScreen extends ConsumerWidget {
                   Colors.purple,
                   () {
                     Navigator.pop(context);
-                    // Fixed: Use 'fundamental' alias instead of 'filter'
                     final selectedFilter = fundamental
                         .FundamentalFilter.defaultFilters
                         .firstWhere((f) =>
@@ -362,7 +365,6 @@ class DashboardScreen extends ConsumerWidget {
                   Colors.orange,
                   () {
                     Navigator.pop(context);
-                    // Fixed: Use 'fundamental' alias instead of 'filter'
                     final selectedFilter = fundamental
                         .FundamentalFilter.defaultFilters
                         .firstWhere((f) =>
@@ -379,7 +381,6 @@ class DashboardScreen extends ConsumerWidget {
                   Colors.teal,
                   () {
                     Navigator.pop(context);
-                    // Fixed: Use 'fundamental' alias instead of 'filter'
                     final selectedFilter = fundamental
                         .FundamentalFilter.defaultFilters
                         .firstWhere((f) =>
@@ -400,10 +401,274 @@ class DashboardScreen extends ConsumerWidget {
                     _showWatchlistBottomSheet(context, ref);
                   },
                 ),
+                // ============================================
+                // DEBUG ACTIONS (Added for troubleshooting)
+                // ============================================
+                _buildQuickActionCard(
+                  context,
+                  ref,
+                  'Debug Raw',
+                  Icons.bug_report,
+                  Colors.deepOrange,
+                  () {
+                    Navigator.pop(context);
+                    _debugFetchRawData(ref);
+                  },
+                ),
+                _buildQuickActionCard(
+                  context,
+                  ref,
+                  'Test Firebase',
+                  Icons.cloud,
+                  Colors.indigo,
+                  () {
+                    Navigator.pop(context);
+                    _testFirebaseConnection(ref);
+                  },
+                ),
+                _buildQuickActionCard(
+                  context,
+                  ref,
+                  'Show Stats',
+                  Icons.analytics,
+                  Colors.amber,
+                  () {
+                    Navigator.pop(context);
+                    _showDebugStats(context, ref);
+                  },
+                ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ============================================================================
+  // DEBUG METHODS FOR TROUBLESHOOTING
+  // ============================================================================
+
+  /// Debug method to fetch first 10 companies directly from Firestore
+  Future<void> _debugFetchRawData(WidgetRef ref) async {
+    print('=== 🐛 DEBUG: Starting raw companies fetch ===');
+
+    try {
+      // Simple query to fetch first 10 documents
+      final snapshot = await FirebaseFirestore.instance
+          .collection('companies')
+          .limit(10)
+          .get();
+
+      print('🐛 DEBUG: Query executed successfully');
+      print('🐛 DEBUG: Found ${snapshot.docs.length} documents');
+      print('🐛 DEBUG: Collection exists: ${snapshot.docs.isNotEmpty}');
+
+      if (snapshot.docs.isEmpty) {
+        print('🐛 DEBUG: ❌ No documents found in companies collection');
+        print('🐛 DEBUG: Check if collection name is correct and has data');
+        return;
+      }
+
+      // Print raw data for each document
+      for (int i = 0; i < snapshot.docs.length; i++) {
+        final doc = snapshot.docs[i];
+        print('--- Document ${i + 1} ---');
+        print('📄 Document ID: ${doc.id}');
+        print('📄 Document exists: ${doc.exists}');
+
+        try {
+          final rawData = doc.data();
+          print('📊 Raw data keys: ${rawData.keys.toList()}');
+
+          // Check essential fields
+          print('🔍 Fields check:');
+          print(
+              '  - name: ${rawData['name']} (${rawData['name'].runtimeType})');
+          print(
+              '  - symbol: ${rawData['symbol']} (${rawData['symbol'].runtimeType})');
+          print(
+              '  - marketCap: ${rawData['marketCap']} (${rawData['marketCap'].runtimeType})');
+          print(
+              '  - currentPrice: ${rawData['currentPrice']} (${rawData['currentPrice'].runtimeType})');
+          print(
+              '  - lastUpdated: ${rawData['lastUpdated']} (${rawData['lastUpdated'].runtimeType})');
+          print(
+              '  - changePercent: ${rawData['changePercent']} (${rawData['changePercent'].runtimeType})');
+
+          // Check boolean fields
+          print('🔍 Boolean fields:');
+          print(
+              '  - isDebtFree: ${rawData['isDebtFree']} (${rawData['isDebtFree'].runtimeType})');
+          print(
+              '  - isProfitable: ${rawData['isProfitable']} (${rawData['isProfitable'].runtimeType})');
+          print(
+              '  - paysDividends: ${rawData['paysDividends']} (${rawData['paysDividends'].runtimeType})');
+        } catch (e) {
+          print('❌ Error reading document data: $e');
+        }
+        print('');
+      }
+
+      print('=== ✅ DEBUG: Raw fetch completed successfully ===');
+
+      // Show success snackbar
+      if (ref.context.mounted) {
+        ScaffoldMessenger.of(ref.context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '✅ Debug: Found ${snapshot.docs.length} companies. Check console for details.'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (error) {
+      print('🐛 DEBUG: ❌ Error fetching raw companies: $error');
+      print('🐛 DEBUG: Error type: ${error.runtimeType}');
+
+      if (error.toString().contains('permission')) {
+        print('🐛 DEBUG: ⚠️  This looks like a permissions issue');
+        print('🐛 DEBUG: Check your Firestore security rules');
+      }
+
+      if (error.toString().contains('network')) {
+        print('🐛 DEBUG: ⚠️  This looks like a network issue');
+        print('🐛 DEBUG: Check your internet connection and Firebase config');
+      }
+
+      // Show error snackbar
+      if (ref.context.mounted) {
+        ScaffoldMessenger.of(ref.context).showSnackBar(
+          SnackBar(
+            content:
+                Text('❌ Debug failed: ${error.toString().substring(0, 50)}...'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Test basic Firebase connection
+  Future<void> _testFirebaseConnection(WidgetRef ref) async {
+    print('=== 🔥 DEBUG: Testing Firebase Connection ===');
+
+    try {
+      // Test basic Firestore connection
+      final testQuery =
+          FirebaseFirestore.instance.collection('companies').limit(1);
+
+      final snapshot = await testQuery.get();
+
+      print('🔥 DEBUG: ✅ Firebase connection working');
+      print('🔥 DEBUG: Can access Firestore instance');
+      print('🔥 DEBUG: Test query returned ${snapshot.docs.length} docs');
+
+      // Test collection metadata
+      print('🔥 DEBUG: Snapshot metadata:');
+      print('  - fromCache: ${snapshot.metadata.isFromCache}');
+      print('  - hasPendingWrites: ${snapshot.metadata.hasPendingWrites}');
+
+      // Show success message
+      if (ref.context.mounted) {
+        ScaffoldMessenger.of(ref.context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Firebase connection successful!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (error) {
+      print('🔥 DEBUG: ❌ Firebase connection failed: $error');
+
+      // Show error message
+      if (ref.context.mounted) {
+        ScaffoldMessenger.of(ref.context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '❌ Firebase error: ${error.toString().substring(0, 50)}...'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Show debug statistics in a dialog
+  void _showDebugStats(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('🔍 Debug Statistics'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Provider States
+              Text('📊 Provider States:',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Consumer(
+                builder: (context, ref, child) {
+                  final companiesState = ref.watch(companiesProvider);
+                  final selectedFilter = ref.watch(selectedFundamentalProvider);
+                  final searchQuery = ref.watch(searchQueryProvider);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                          '• Companies Provider: ${companiesState.when(data: (d) => '${d.length} companies', loading: () => 'Loading...', error: (e, s) => 'Error')}'),
+                      Text(
+                          '• Selected Filter: ${selectedFilter?.type.name ?? 'None'}'),
+                      Text(
+                          '• Search Query: "${searchQuery.isEmpty ? 'Empty' : searchQuery}"'),
+                    ],
+                  );
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              // Action Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _debugFetchRawData(ref);
+                    },
+                    icon: const Icon(Icons.download, size: 16),
+                    label: const Text('Fetch Raw'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      ref
+                          .read(companiesProvider.notifier)
+                          .loadInitialCompanies();
+                    },
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Reload'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }

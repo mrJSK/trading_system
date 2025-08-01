@@ -48,16 +48,21 @@ mixin _$CompanyModel {
   double get changePercent => throw _privateConstructorUsedError;
   double get changeAmount => throw _privateConstructorUsedError;
   double get previousClose =>
-      throw _privateConstructorUsedError; // Enhanced Financial statements with time-series data
+      throw _privateConstructorUsedError; // 🔥 CRITICAL FIX: Enhanced Financial statements with JsonConverter annotations
+  @FinancialDataModelConverter()
   FinancialDataModel? get quarterlyResults =>
       throw _privateConstructorUsedError;
+  @FinancialDataModelConverter()
   FinancialDataModel? get profitLossStatement =>
       throw _privateConstructorUsedError;
+  @FinancialDataModelConverter()
   FinancialDataModel? get balanceSheet => throw _privateConstructorUsedError;
+  @FinancialDataModelConverter()
   FinancialDataModel? get cashFlowStatement =>
       throw _privateConstructorUsedError;
+  @FinancialDataModelConverter()
   FinancialDataModel? get ratios =>
-      throw _privateConstructorUsedError; // Additional financial metrics for comprehensive analysis
+      throw _privateConstructorUsedError; // Additional financial metrics
   double? get debtToEquity => throw _privateConstructorUsedError;
   double? get currentRatio => throw _privateConstructorUsedError;
   double? get quickRatio => throw _privateConstructorUsedError;
@@ -91,15 +96,16 @@ mixin _$CompanyModel {
   String? get sector => throw _privateConstructorUsedError;
   String? get industry => throw _privateConstructorUsedError;
   List<String> get industryClassification => throw _privateConstructorUsedError;
+  @ShareholdingPatternConverter()
   ShareholdingPattern? get shareholdingPattern =>
       throw _privateConstructorUsedError;
   Map<String, dynamic> get ratiosData => throw _privateConstructorUsedError;
   Map<String, Map<String, String>> get growthTables =>
-      throw _privateConstructorUsedError; // Historical quarterly data for time-series analysis
+      throw _privateConstructorUsedError; // Historical data
   List<QuarterlyData> get quarterlyDataHistory =>
       throw _privateConstructorUsedError;
   List<AnnualData> get annualDataHistory =>
-      throw _privateConstructorUsedError; // Peer comparison data
+      throw _privateConstructorUsedError; // Peer comparison
   List<String> get peerCompanies => throw _privateConstructorUsedError;
   double? get sectorPE => throw _privateConstructorUsedError;
   double? get sectorROE => throw _privateConstructorUsedError;
@@ -118,8 +124,7 @@ mixin _$CompanyModel {
   double? get volatility1Y => throw _privateConstructorUsedError;
   double? get maxDrawdown => throw _privateConstructorUsedError;
   double? get sharpeRatio => throw _privateConstructorUsedError; // Market data
-  double? get marketCapCategory =>
-      throw _privateConstructorUsedError; // 1=Small, 2=Mid, 3=Large
+  double? get marketCapCategory => throw _privateConstructorUsedError;
   bool? get isIndexConstituent => throw _privateConstructorUsedError;
   List<String> get indices =>
       throw _privateConstructorUsedError; // Technical indicators
@@ -127,8 +132,7 @@ mixin _$CompanyModel {
   double? get sma50 => throw _privateConstructorUsedError;
   double? get sma200 => throw _privateConstructorUsedError;
   double? get ema12 => throw _privateConstructorUsedError;
-  double? get ema26 =>
-      throw _privateConstructorUsedError; // Fundamental flags for screening
+  double? get ema26 => throw _privateConstructorUsedError; // Fundamental flags
   bool get isDebtFree => throw _privateConstructorUsedError;
   bool get isProfitable => throw _privateConstructorUsedError;
   bool get hasConsistentProfits => throw _privateConstructorUsedError;
@@ -174,11 +178,11 @@ abstract class $CompanyModelCopyWith<$Res> {
       double changePercent,
       double changeAmount,
       double previousClose,
-      FinancialDataModel? quarterlyResults,
-      FinancialDataModel? profitLossStatement,
-      FinancialDataModel? balanceSheet,
-      FinancialDataModel? cashFlowStatement,
-      FinancialDataModel? ratios,
+      @FinancialDataModelConverter() FinancialDataModel? quarterlyResults,
+      @FinancialDataModelConverter() FinancialDataModel? profitLossStatement,
+      @FinancialDataModelConverter() FinancialDataModel? balanceSheet,
+      @FinancialDataModelConverter() FinancialDataModel? cashFlowStatement,
+      @FinancialDataModelConverter() FinancialDataModel? ratios,
       double? debtToEquity,
       double? currentRatio,
       double? quickRatio,
@@ -210,7 +214,7 @@ abstract class $CompanyModelCopyWith<$Res> {
       String? sector,
       String? industry,
       List<String> industryClassification,
-      ShareholdingPattern? shareholdingPattern,
+      @ShareholdingPatternConverter() ShareholdingPattern? shareholdingPattern,
       Map<String, dynamic> ratiosData,
       Map<String, Map<String, String>> growthTables,
       List<QuarterlyData> quarterlyDataHistory,
@@ -856,11 +860,11 @@ abstract class _$$CompanyModelImplCopyWith<$Res>
       double changePercent,
       double changeAmount,
       double previousClose,
-      FinancialDataModel? quarterlyResults,
-      FinancialDataModel? profitLossStatement,
-      FinancialDataModel? balanceSheet,
-      FinancialDataModel? cashFlowStatement,
-      FinancialDataModel? ratios,
+      @FinancialDataModelConverter() FinancialDataModel? quarterlyResults,
+      @FinancialDataModelConverter() FinancialDataModel? profitLossStatement,
+      @FinancialDataModelConverter() FinancialDataModel? balanceSheet,
+      @FinancialDataModelConverter() FinancialDataModel? cashFlowStatement,
+      @FinancialDataModelConverter() FinancialDataModel? ratios,
       double? debtToEquity,
       double? currentRatio,
       double? quickRatio,
@@ -892,7 +896,7 @@ abstract class _$$CompanyModelImplCopyWith<$Res>
       String? sector,
       String? industry,
       List<String> industryClassification,
-      ShareholdingPattern? shareholdingPattern,
+      @ShareholdingPatternConverter() ShareholdingPattern? shareholdingPattern,
       Map<String, dynamic> ratiosData,
       Map<String, Map<String, String>> growthTables,
       List<QuarterlyData> quarterlyDataHistory,
@@ -1462,11 +1466,11 @@ class _$CompanyModelImpl extends _CompanyModel {
       this.changePercent = 0.0,
       this.changeAmount = 0.0,
       this.previousClose = 0.0,
-      this.quarterlyResults,
-      this.profitLossStatement,
-      this.balanceSheet,
-      this.cashFlowStatement,
-      this.ratios,
+      @FinancialDataModelConverter() this.quarterlyResults,
+      @FinancialDataModelConverter() this.profitLossStatement,
+      @FinancialDataModelConverter() this.balanceSheet,
+      @FinancialDataModelConverter() this.cashFlowStatement,
+      @FinancialDataModelConverter() this.ratios,
       this.debtToEquity,
       this.currentRatio,
       this.quickRatio,
@@ -1498,7 +1502,7 @@ class _$CompanyModelImpl extends _CompanyModel {
       this.sector,
       this.industry,
       final List<String> industryClassification = const [],
-      this.shareholdingPattern,
+      @ShareholdingPatternConverter() this.shareholdingPattern,
       final Map<String, dynamic> ratiosData = const {},
       final Map<String, Map<String, String>> growthTables = const {},
       final List<QuarterlyData> quarterlyDataHistory = const [],
@@ -1618,18 +1622,23 @@ class _$CompanyModelImpl extends _CompanyModel {
   @override
   @JsonKey()
   final double previousClose;
-// Enhanced Financial statements with time-series data
+// 🔥 CRITICAL FIX: Enhanced Financial statements with JsonConverter annotations
   @override
+  @FinancialDataModelConverter()
   final FinancialDataModel? quarterlyResults;
   @override
+  @FinancialDataModelConverter()
   final FinancialDataModel? profitLossStatement;
   @override
+  @FinancialDataModelConverter()
   final FinancialDataModel? balanceSheet;
   @override
+  @FinancialDataModelConverter()
   final FinancialDataModel? cashFlowStatement;
   @override
+  @FinancialDataModelConverter()
   final FinancialDataModel? ratios;
-// Additional financial metrics for comprehensive analysis
+// Additional financial metrics
   @override
   final double? debtToEquity;
   @override
@@ -1704,6 +1713,7 @@ class _$CompanyModelImpl extends _CompanyModel {
   }
 
   @override
+  @ShareholdingPatternConverter()
   final ShareholdingPattern? shareholdingPattern;
   final Map<String, dynamic> _ratiosData;
   @override
@@ -1723,9 +1733,9 @@ class _$CompanyModelImpl extends _CompanyModel {
     return EqualUnmodifiableMapView(_growthTables);
   }
 
-// Historical quarterly data for time-series analysis
+// Historical data
   final List<QuarterlyData> _quarterlyDataHistory;
-// Historical quarterly data for time-series analysis
+// Historical data
   @override
   @JsonKey()
   List<QuarterlyData> get quarterlyDataHistory {
@@ -1745,9 +1755,9 @@ class _$CompanyModelImpl extends _CompanyModel {
     return EqualUnmodifiableListView(_annualDataHistory);
   }
 
-// Peer comparison data
+// Peer comparison
   final List<String> _peerCompanies;
-// Peer comparison data
+// Peer comparison
   @override
   @JsonKey()
   List<String> get peerCompanies {
@@ -1805,7 +1815,6 @@ class _$CompanyModelImpl extends _CompanyModel {
 // Market data
   @override
   final double? marketCapCategory;
-// 1=Small, 2=Mid, 3=Large
   @override
   final bool? isIndexConstituent;
   final List<String> _indices;
@@ -1828,7 +1837,7 @@ class _$CompanyModelImpl extends _CompanyModel {
   final double? ema12;
   @override
   final double? ema26;
-// Fundamental flags for screening
+// Fundamental flags
   @override
   @JsonKey()
   final bool isDebtFree;
@@ -2142,11 +2151,13 @@ abstract class _CompanyModel extends CompanyModel {
       final double changePercent,
       final double changeAmount,
       final double previousClose,
-      final FinancialDataModel? quarterlyResults,
+      @FinancialDataModelConverter() final FinancialDataModel? quarterlyResults,
+      @FinancialDataModelConverter()
       final FinancialDataModel? profitLossStatement,
-      final FinancialDataModel? balanceSheet,
+      @FinancialDataModelConverter() final FinancialDataModel? balanceSheet,
+      @FinancialDataModelConverter()
       final FinancialDataModel? cashFlowStatement,
-      final FinancialDataModel? ratios,
+      @FinancialDataModelConverter() final FinancialDataModel? ratios,
       final double? debtToEquity,
       final double? currentRatio,
       final double? quickRatio,
@@ -2178,6 +2189,7 @@ abstract class _CompanyModel extends CompanyModel {
       final String? sector,
       final String? industry,
       final List<String> industryClassification,
+      @ShareholdingPatternConverter()
       final ShareholdingPattern? shareholdingPattern,
       final Map<String, dynamic> ratiosData,
       final Map<String, Map<String, String>> growthTables,
@@ -2268,17 +2280,22 @@ abstract class _CompanyModel extends CompanyModel {
   double get changeAmount;
   @override
   double get previousClose;
-  @override // Enhanced Financial statements with time-series data
+  @override // 🔥 CRITICAL FIX: Enhanced Financial statements with JsonConverter annotations
+  @FinancialDataModelConverter()
   FinancialDataModel? get quarterlyResults;
   @override
+  @FinancialDataModelConverter()
   FinancialDataModel? get profitLossStatement;
   @override
+  @FinancialDataModelConverter()
   FinancialDataModel? get balanceSheet;
   @override
+  @FinancialDataModelConverter()
   FinancialDataModel? get cashFlowStatement;
   @override
+  @FinancialDataModelConverter()
   FinancialDataModel? get ratios;
-  @override // Additional financial metrics for comprehensive analysis
+  @override // Additional financial metrics
   double? get debtToEquity;
   @override
   double? get currentRatio;
@@ -2341,16 +2358,17 @@ abstract class _CompanyModel extends CompanyModel {
   @override
   List<String> get industryClassification;
   @override
+  @ShareholdingPatternConverter()
   ShareholdingPattern? get shareholdingPattern;
   @override
   Map<String, dynamic> get ratiosData;
   @override
   Map<String, Map<String, String>> get growthTables;
-  @override // Historical quarterly data for time-series analysis
+  @override // Historical data
   List<QuarterlyData> get quarterlyDataHistory;
   @override
   List<AnnualData> get annualDataHistory;
-  @override // Peer comparison data
+  @override // Peer comparison
   List<String> get peerCompanies;
   @override
   double? get sectorPE;
@@ -2382,7 +2400,7 @@ abstract class _CompanyModel extends CompanyModel {
   double? get sharpeRatio;
   @override // Market data
   double? get marketCapCategory;
-  @override // 1=Small, 2=Mid, 3=Large
+  @override
   bool? get isIndexConstituent;
   @override
   List<String> get indices;
@@ -2396,7 +2414,7 @@ abstract class _CompanyModel extends CompanyModel {
   double? get ema12;
   @override
   double? get ema26;
-  @override // Fundamental flags for screening
+  @override // Fundamental flags
   bool get isDebtFree;
   @override
   bool get isProfitable;
@@ -3364,8 +3382,7 @@ DividendHistory _$DividendHistoryFromJson(Map<String, dynamic> json) {
 mixin _$DividendHistory {
   String get year => throw _privateConstructorUsedError;
   double? get dividendPerShare => throw _privateConstructorUsedError;
-  String? get dividendType =>
-      throw _privateConstructorUsedError; // Interim, Final, Special
+  String? get dividendType => throw _privateConstructorUsedError;
   @TimestampConverter()
   DateTime? get exDividendDate => throw _privateConstructorUsedError;
   @TimestampConverter()
@@ -3527,7 +3544,6 @@ class _$DividendHistoryImpl implements _DividendHistory {
   final double? dividendPerShare;
   @override
   final String? dividendType;
-// Interim, Final, Special
   @override
   @TimestampConverter()
   final DateTime? exDividendDate;
@@ -3600,7 +3616,7 @@ abstract class _DividendHistory implements DividendHistory {
   double? get dividendPerShare;
   @override
   String? get dividendType;
-  @override // Interim, Final, Special
+  @override
   @TimestampConverter()
   DateTime? get exDividendDate;
   @override
@@ -3794,14 +3810,16 @@ class __$$ShareholdingPatternImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ShareholdingPatternImpl implements _ShareholdingPattern {
   const _$ShareholdingPatternImpl(
-      {final Map<String, Map<String, String>> quarterly = const {},
+      {final Map<String, Map<String, String>> quarterly =
+          const <String, Map<String, String>>{},
       this.promoterHolding,
       this.publicHolding,
       this.institutionalHolding,
       this.foreignInstitutional,
       this.domesticInstitutional,
       this.governmentHolding,
-      final List<MajorShareholder> majorShareholders = const []})
+      final List<MajorShareholder> majorShareholders =
+          const <MajorShareholder>[]})
       : _quarterly = quarterly,
         _majorShareholders = majorShareholders;
 

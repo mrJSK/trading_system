@@ -36,25 +36,15 @@ _$CompanyModelImpl _$$CompanyModelImplFromJson(Map<String, dynamic> json) =>
       changePercent: (json['changePercent'] as num?)?.toDouble() ?? 0.0,
       changeAmount: (json['changeAmount'] as num?)?.toDouble() ?? 0.0,
       previousClose: (json['previousClose'] as num?)?.toDouble() ?? 0.0,
-      quarterlyResults: json['quarterlyResults'] == null
-          ? null
-          : FinancialDataModel.fromJson(
-              json['quarterlyResults'] as Map<String, dynamic>),
-      profitLossStatement: json['profitLossStatement'] == null
-          ? null
-          : FinancialDataModel.fromJson(
-              json['profitLossStatement'] as Map<String, dynamic>),
-      balanceSheet: json['balanceSheet'] == null
-          ? null
-          : FinancialDataModel.fromJson(
-              json['balanceSheet'] as Map<String, dynamic>),
-      cashFlowStatement: json['cashFlowStatement'] == null
-          ? null
-          : FinancialDataModel.fromJson(
-              json['cashFlowStatement'] as Map<String, dynamic>),
-      ratios: json['ratios'] == null
-          ? null
-          : FinancialDataModel.fromJson(json['ratios'] as Map<String, dynamic>),
+      quarterlyResults: const FinancialDataModelConverter()
+          .fromJson(json['quarterlyResults']),
+      profitLossStatement: const FinancialDataModelConverter()
+          .fromJson(json['profitLossStatement']),
+      balanceSheet:
+          const FinancialDataModelConverter().fromJson(json['balanceSheet']),
+      cashFlowStatement: const FinancialDataModelConverter()
+          .fromJson(json['cashFlowStatement']),
+      ratios: const FinancialDataModelConverter().fromJson(json['ratios']),
       debtToEquity: (json['debtToEquity'] as num?)?.toDouble(),
       currentRatio: (json['currentRatio'] as num?)?.toDouble(),
       quickRatio: (json['quickRatio'] as num?)?.toDouble(),
@@ -89,10 +79,8 @@ _$CompanyModelImpl _$$CompanyModelImplFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as String)
               .toList() ??
           const [],
-      shareholdingPattern: json['shareholdingPattern'] == null
-          ? null
-          : ShareholdingPattern.fromJson(
-              json['shareholdingPattern'] as Map<String, dynamic>),
+      shareholdingPattern: const ShareholdingPatternConverter()
+          .fromJson(json['shareholdingPattern']),
       ratiosData: json['ratiosData'] as Map<String, dynamic>? ?? const {},
       growthTables: (json['growthTables'] as Map<String, dynamic>?)?.map(
             (k, e) => MapEntry(k, Map<String, String>.from(e as Map)),
@@ -176,11 +164,15 @@ Map<String, dynamic> _$$CompanyModelImplToJson(_$CompanyModelImpl instance) =>
       'changePercent': instance.changePercent,
       'changeAmount': instance.changeAmount,
       'previousClose': instance.previousClose,
-      'quarterlyResults': instance.quarterlyResults,
-      'profitLossStatement': instance.profitLossStatement,
-      'balanceSheet': instance.balanceSheet,
-      'cashFlowStatement': instance.cashFlowStatement,
-      'ratios': instance.ratios,
+      'quarterlyResults':
+          const FinancialDataModelConverter().toJson(instance.quarterlyResults),
+      'profitLossStatement': const FinancialDataModelConverter()
+          .toJson(instance.profitLossStatement),
+      'balanceSheet':
+          const FinancialDataModelConverter().toJson(instance.balanceSheet),
+      'cashFlowStatement': const FinancialDataModelConverter()
+          .toJson(instance.cashFlowStatement),
+      'ratios': const FinancialDataModelConverter().toJson(instance.ratios),
       'debtToEquity': instance.debtToEquity,
       'currentRatio': instance.currentRatio,
       'quickRatio': instance.quickRatio,
@@ -212,7 +204,8 @@ Map<String, dynamic> _$$CompanyModelImplToJson(_$CompanyModelImpl instance) =>
       'sector': instance.sector,
       'industry': instance.industry,
       'industryClassification': instance.industryClassification,
-      'shareholdingPattern': instance.shareholdingPattern,
+      'shareholdingPattern': const ShareholdingPatternConverter()
+          .toJson(instance.shareholdingPattern),
       'ratiosData': instance.ratiosData,
       'growthTables': instance.growthTables,
       'quarterlyDataHistory': instance.quarterlyDataHistory,
@@ -360,7 +353,7 @@ _$ShareholdingPatternImpl _$$ShareholdingPatternImplFromJson(
       quarterly: (json['quarterly'] as Map<String, dynamic>?)?.map(
             (k, e) => MapEntry(k, Map<String, String>.from(e as Map)),
           ) ??
-          const {},
+          const <String, Map<String, String>>{},
       promoterHolding: (json['promoterHolding'] as num?)?.toDouble(),
       publicHolding: (json['publicHolding'] as num?)?.toDouble(),
       institutionalHolding: (json['institutionalHolding'] as num?)?.toDouble(),
@@ -371,7 +364,7 @@ _$ShareholdingPatternImpl _$$ShareholdingPatternImplFromJson(
       majorShareholders: (json['majorShareholders'] as List<dynamic>?)
               ?.map((e) => MajorShareholder.fromJson(e as Map<String, dynamic>))
               .toList() ??
-          const [],
+          const <MajorShareholder>[],
     );
 
 Map<String, dynamic> _$$ShareholdingPatternImplToJson(
