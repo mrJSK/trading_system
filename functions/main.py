@@ -2140,6 +2140,7 @@
 #         )
 from firebase_functions import https_fn, scheduler_fn
 from firebase_admin import initialize_app, firestore, messaging
+from google.cloud.firestore_v1.base_query import FieldFilter
 import requests
 import re
 import time
@@ -2148,12 +2149,8 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import json
 
-
-# Initialize Firebase Admin SDK
 initialize_app()
 
-
-# Configuration - keep all your user agents
 USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
@@ -2161,15 +2158,10 @@ USER_AGENTS = [
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 ]
 
-
 def get_db():
-    """Get Firestore client"""
     return firestore.client()
 
-
-# --- FCM NOTIFICATION FUNCTIONS ---
 def send_job_notification(title, body, data=None):
-    """Send FCM push notification to all subscribed devices"""
     try:
         message = messaging.Message(
             notification=messaging.Notification(title=title, body=body),
@@ -2190,9 +2182,7 @@ def send_job_notification(title, body, data=None):
     except Exception:
         return None
 
-
 def notify_job_complete(companies_processed, failed_count=0):
-    """Send FCM notification when job completes"""
     if failed_count == 0:
         send_job_notification(
             title="🎉 Job Completed!",
@@ -2206,19 +2196,14 @@ def notify_job_complete(companies_processed, failed_count=0):
             data={'type': 'job_completed_with_errors', 'companies_processed': str(companies_processed)}
         )
 
-
 def notify_job_failed(error_message):
-    """Send FCM notification when job fails"""
     send_job_notification(
         title="❌ Job Failed",
         body=f"Job failed: {error_message}",
         data={'type': 'job_failed', 'error': str(error_message)}
     )
 
-
-# --- NETWORKING FUNCTIONS ---
 def fetch_page(session, url, retries=3, backoff_factor=0.8, referer=None):
-    """Fetches a URL using session with retry mechanism"""
     headers = {
         'User-Agent': random.choice(USER_AGENTS),
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -2241,11 +2226,7 @@ def fetch_page(session, url, retries=3, backoff_factor=0.8, referer=None):
                 time.sleep(wait_time)
     return None
 
-
-# --- SYMBOL EXTRACTION ---
 def extract_symbol_from_page(soup, url):
-    """Extract the actual stock symbol from the company page"""
-    # Method 1: Try to get from NSE link
     nse_link = soup.select_one('a[href*="nseindia.com"]')
     if nse_link:
         nse_text = nse_link.get_text(strip=True)
@@ -2254,14 +2235,12 @@ def extract_symbol_from_page(soup, url):
             if symbol:
                 return symbol
     
-    # Method 2: Try to get from the URL structure
     url_parts = url.strip('/').split('/')
     if len(url_parts) >= 2:
         potential_symbol = url_parts[-2] if url_parts[-1] == 'consolidated' else url_parts[-1]
         if potential_symbol and potential_symbol != 'company':
             return potential_symbol
     
-    # Method 3: Try to extract from page structure
     breadcrumb = soup.select_one('.breadcrumb')
     if breadcrumb:
         breadcrumb_text = breadcrumb.get_text(strip=True)
@@ -2269,7 +2248,6 @@ def extract_symbol_from_page(soup, url):
         if symbol_match:
             return symbol_match.group(1)
     
-    # Method 4: Extract from company nav or title
     company_nav = soup.select_one('.company-nav h1') or soup.select_one('h1.margin-0')
     if company_nav:
         nav_text = company_nav.get_text(strip=True)
@@ -2279,10 +2257,7 @@ def extract_symbol_from_page(soup, url):
     
     return None
 
-
-# --- PARSING UTILITY FUNCTIONS ---
 def clean_text(text, field_name=""):
-    """Clean and format text data"""
     if not text:
         return None
     
@@ -2291,9 +2266,7 @@ def clean_text(text, field_name=""):
     
     return text.strip().replace('₹', '').replace(',', '').replace('%', '').replace('Cr.', '').strip()
 
-
 def parse_number(text):
-    """Parse numeric values from text"""
     if not text:
         return None
         
@@ -2309,9 +2282,7 @@ def parse_number(text):
             return None
     return None
 
-
 def get_calendar_sort_key(header_string):
-    """Sort calendar headers"""
     MONTH_MAP = {
         'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
         'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
@@ -2326,9 +2297,7 @@ def get_calendar_sort_key(header_string):
         except (ValueError, TypeError):
             return (0, 0)
 
-
 def parse_website_link(soup):
-    """Parse company website"""
     company_links_div = soup.select_one('div.company-links')
     if not company_links_div:
         return None
@@ -2340,10 +2309,7 @@ def parse_website_link(soup):
             return href
     return None
 
-
-# --- FIXED FINANCIAL TABLE PARSING ---
 def parse_financial_table(soup, table_id):
-    """Parse financial tables - FIXED VERSION with correct field names"""
     section = soup.select_one(f'section#{table_id}')
     if not section:
         return {'headers': [], 'body': []}
@@ -2372,9 +2338,8 @@ def parse_financial_table(soup, table_id):
         value_map = dict(zip(original_headers, original_values))
         sorted_values = [value_map.get(h, '') for h in sorted_headers]
         
-        # 🔥 FIXED: Use lowercase 'description' to match Dart FinancialDataRow model
         body_data.append({
-            'description': row_name,  # lowercase 'd' to match Dart model
+            'description': row_name,
             'values': sorted_values
         })
     
@@ -2383,10 +2348,7 @@ def parse_financial_table(soup, table_id):
         'body': body_data
     }
 
-
-# --- FIXED SHAREHOLDING PATTERN PARSING ---
 def parse_shareholding_table(soup, table_id):
-    """Parse shareholding tables"""
     table = soup.select_one(f'div#{table_id} table.data-table')
     if not table:
         return {}
@@ -2411,12 +2373,9 @@ def parse_shareholding_table(soup, table_id):
     
     return data
 
-
 def parse_shareholding_pattern_complete(soup):
-    """Parse complete shareholding pattern to match Dart ShareholdingPattern model"""
     quarterly_data = parse_shareholding_table(soup, 'quarterly-shp')
     
-    # Extract specific values for individual fields
     promoter_holding = None
     public_holding = None
     institutional_holding = None
@@ -2424,7 +2383,6 @@ def parse_shareholding_pattern_complete(soup):
     domestic_institutional = None
     government_holding = None
     
-    # Try to extract from the quarterly data
     if quarterly_data:
         for key, values in quarterly_data.items():
             key_lower = key.lower()
@@ -2456,10 +2414,7 @@ def parse_shareholding_pattern_complete(soup):
         'major_shareholders': []
     }
 
-
-# --- GROWTH TABLES PARSING ---
 def parse_growth_tables(soup):
-    """Parse growth tables"""
     data = {}
     pl_section = soup.select_one('section#profit-loss')
     if not pl_section:
@@ -2483,10 +2438,7 @@ def parse_growth_tables(soup):
     
     return data
 
-
-# --- INDUSTRY CLASSIFICATION ---
 def process_industry_path(soup):
-    """Process industry classification"""
     peers_section = soup.select_one('section#peers')
     if not peers_section:
         return []
@@ -2502,10 +2454,7 @@ def process_industry_path(soup):
     path_names = [link.get_text(strip=True).replace('&amp;', 'and') for link in path_links]
     return path_names
 
-
-# --- PEER COMPANIES PARSING ---
 def parse_peer_companies(soup):
-    """Parse peer companies list"""
     peers_section = soup.select_one('section#peers')
     if not peers_section:
         return []
@@ -2521,19 +2470,13 @@ def parse_peer_companies(soup):
     
     return peers
 
-
-# --- MAIN COMPANY DATA PARSING - FIXED VERSION ---
 def parse_company_data(soup, symbol):
-    """COMPLETE company data parsing - FIXED VERSION matching Dart models"""
     try:
-        # Basic company info
         company_name_elem = soup.select_one('h1.margin-0') or soup.select_one('.company-nav h1')
         company_name = company_name_elem.get_text(strip=True) if company_name_elem else f"Company {symbol}"
         
-        # Clean up company name for display
         display_name = re.sub(r'\s+(Ltd|Limited|Corporation|Corp|Inc)\.?$', '', company_name, flags=re.IGNORECASE).strip()
         
-        # Ratios data
         ratios_data = {}
         for li in soup.select('#top-ratios li'):
             name_elem = li.select_one('.name')
@@ -2541,15 +2484,12 @@ def parse_company_data(soup, symbol):
             if name_elem and value_elem:
                 ratios_data[name_elem.get_text(strip=True)] = value_elem.get_text(strip=True)
         
-        # About section
         about_elem = soup.select_one('.company-profile .about p')
         about = about_elem.get_text(strip=True) if about_elem else None
         
-        # Stock codes - improved extraction
         bse_link = soup.select_one('a[href*="bseindia.com"]')
         nse_link = soup.select_one('a[href*="nseindia.com"]')
         
-        # Extract BSE code
         bse_code = None
         if bse_link:
             bse_text = bse_link.get_text(strip=True)
@@ -2557,7 +2497,6 @@ def parse_company_data(soup, symbol):
             if bse_match:
                 bse_code = bse_match.group(1)
         
-        # Extract NSE code
         nse_code = None
         if nse_link:
             nse_text = nse_link.get_text(strip=True)
@@ -2565,22 +2504,15 @@ def parse_company_data(soup, symbol):
             if nse_match:
                 nse_code = nse_match.group(1)
         
-        # Use NSE code as symbol if available
         final_symbol = nse_code if nse_code else symbol
         
-        # Pros and cons
         pros = [li.get_text(strip=True) for li in soup.select('.pros ul li')]
         cons = [li.get_text(strip=True) for li in soup.select('.cons ul li')]
         
-        # Parse growth tables data
         growth_tables_data = parse_growth_tables(soup)
-        
-        # Parse peer companies
         peer_companies = parse_peer_companies(soup)
         
-        # 🔥 FIXED: Return COMPLETE data structure matching Dart Company model
         return {
-            # Basic info
             'symbol': final_symbol,
             'name': company_name,
             'display_name': display_name,
@@ -2588,8 +2520,6 @@ def parse_company_data(soup, symbol):
             'website': parse_website_link(soup),
             'bse_code': bse_code,
             'nse_code': final_symbol,
-            
-            # Financial metrics
             'market_cap': parse_number(ratios_data.get('Market Cap')),
             'current_price': parse_number(ratios_data.get('Current Price')),
             'high_low': clean_text(ratios_data.get('High / Low')),
@@ -2599,44 +2529,26 @@ def parse_company_data(soup, symbol):
             'roce': parse_number(ratios_data.get('ROCE')),
             'roe': parse_number(ratios_data.get('ROE')),
             'face_value': parse_number(ratios_data.get('Face Value')),
-            
-            # Price data
             'change_percent': 0.0,
             'change_amount': 0.0,
             'previous_close': parse_number(ratios_data.get('Current Price', '0.0')) or 0.0,
-            
-            # Lists
             'pros': pros,
             'cons': cons,
             'peer_companies': peer_companies,
-            'key_management': [],  # Empty for now, can be populated later
-            'indices': [],  # Empty for now, can be populated later
-            
-            # Timestamps
+            'key_management': [],
+            'indices': [],
             'last_updated': datetime.now().isoformat(),
-            
-            # 🔥 FIXED: Financial statements with correct structure
             'quarterly_results': parse_financial_table(soup, 'quarters'),
             'profit_loss_statement': parse_financial_table(soup, 'profit-loss'),
             'balance_sheet': parse_financial_table(soup, 'balance-sheet'),
             'cash_flow_statement': parse_financial_table(soup, 'cash-flow'),
             'ratios': parse_financial_table(soup, 'ratios'),
-            
-            # 🔥 FIXED: Industry classification as array
             'industry_classification': process_industry_path(soup),
-            
-            # 🔥 FIXED: Complete shareholding pattern structure
             'shareholding_pattern': parse_shareholding_pattern_complete(soup),
-            
-            # 🔥 FIXED: Growth tables as nested object (not spread)
             'growth_tables': growth_tables_data,
-            
-            # 🔥 FIXED: Historical data arrays (empty for now, can be populated)
             'quarterly_data_history': [],
             'annual_data_history': [],
             'dividend_history': [],
-            
-            # 🔥 FIXED: Raw ratios data
             'ratios_data': ratios_data
         }
         
@@ -2644,15 +2556,23 @@ def parse_company_data(soup, symbol):
         print(f"Error parsing company data for {symbol}: {e}")
         return None
 
-
-# --- QUEUE STATUS FUNCTIONS ---
 def get_queue_status(db):
-    """Get current queue status"""
     try:
-        pending_count = len(list(db.collection('scraping_queue').where('status', '==', 'pending').limit(1000).stream()))
-        processing_count = len(list(db.collection('scraping_queue').where('status', '==', 'processing').limit(1000).stream()))
-        completed_count = len(list(db.collection('scraping_queue').where('status', '==', 'completed').limit(1000).stream()))
-        failed_count = len(list(db.collection('scraping_queue').where('status', '==', 'failed').limit(1000).stream()))
+        pending_count = len(list(db.collection('scraping_queue')
+                                .where(filter=FieldFilter('status', '==', 'pending'))
+                                .limit(1000).stream()))
+        
+        processing_count = len(list(db.collection('scraping_queue')
+                                   .where(filter=FieldFilter('status', '==', 'processing'))
+                                   .limit(1000).stream()))
+        
+        completed_count = len(list(db.collection('scraping_queue')
+                                  .where(filter=FieldFilter('status', '==', 'completed'))
+                                  .limit(1000).stream()))
+        
+        failed_count = len(list(db.collection('scraping_queue')
+                               .where(filter=FieldFilter('status', '==', 'failed'))
+                               .limit(1000).stream()))
         
         return {
             'pending': pending_count,
@@ -2669,17 +2589,14 @@ def get_queue_status(db):
     except Exception as e:
         return {'error': str(e)}
 
-
 def cleanup_old_queue_items(db):
-    """Clean up old completed and failed queue items"""
     try:
         cutoff_date = datetime.now() - timedelta(days=7)
         cutoff_iso = cutoff_date.isoformat()
         
-        # Delete old completed items
         completed_docs = db.collection('scraping_queue')\
-                          .where('status', '==', 'completed')\
-                          .where('completed_at', '<', cutoff_iso)\
+                          .where(filter=FieldFilter('status', '==', 'completed'))\
+                          .where(filter=FieldFilter('completed_at', '<', cutoff_iso))\
                           .limit(100)\
                           .stream()
         
@@ -2692,10 +2609,9 @@ def cleanup_old_queue_items(db):
         if count > 0:
             batch.commit()
         
-        # Delete old failed items
         failed_docs = db.collection('scraping_queue')\
-                     .where('status', '==', 'failed')\
-                     .where('failed_at', '<', cutoff_iso)\
+                     .where(filter=FieldFilter('status', '==', 'failed'))\
+                     .where(filter=FieldFilter('failed_at', '<', cutoff_iso))\
                      .limit(100)\
                      .stream()
         
@@ -2711,16 +2627,14 @@ def cleanup_old_queue_items(db):
     except Exception:
         pass
 
-
 def reset_stale_processing_items(db):
-    """Reset items that have been processing for too long"""
     try:
         cutoff_time = datetime.now() - timedelta(minutes=30)
         cutoff_iso = cutoff_time.isoformat()
         
         stale_docs = db.collection('scraping_queue')\
-                      .where('status', '==', 'processing')\
-                      .where('started_at', '<', cutoff_iso)\
+                      .where(filter=FieldFilter('status', '==', 'processing'))\
+                      .where(filter=FieldFilter('started_at', '<', cutoff_iso))\
                       .limit(50)\
                       .stream()
         
@@ -2741,11 +2655,8 @@ def reset_stale_processing_items(db):
     except Exception:
         pass
 
-
-# --- HTTP FUNCTIONS ---
 @https_fn.on_request()
 def queue_scraping_jobs(req: https_fn.Request) -> https_fn.Response:
-    """Queue individual scraping jobs for processing"""
     try:
         headers = {
             'Access-Control-Allow-Origin': '*',
@@ -2768,12 +2679,13 @@ def queue_scraping_jobs(req: https_fn.Request) -> https_fn.Response:
             request_json = {}
         
         clear_queue = request_json.get('clear_existing', False)
-        max_pages = request_json.get('max_pages', 50)
+        max_pages = request_json.get('max_pages', 100)
         
         if clear_queue:
-            # Clear existing pending and failed items
             for status in ['pending', 'failed']:
-                docs = db.collection('scraping_queue').where('status', '==', status).limit(500).stream()
+                docs = db.collection('scraping_queue')\
+                        .where(filter=FieldFilter('status', '==', status))\
+                        .limit(500).stream()
                 batch = db.batch()
                 count = 0
                 for doc in docs:
@@ -2786,7 +2698,6 @@ def queue_scraping_jobs(req: https_fn.Request) -> https_fn.Response:
                 if count > 0:
                     batch.commit()
         
-        # Collect URLs
         company_urls = []
         
         with requests.Session() as session:
@@ -2818,7 +2729,6 @@ def queue_scraping_jobs(req: https_fn.Request) -> https_fn.Response:
                 status=400, headers=headers
             )
         
-        # Add URLs to Firestore queue in batches
         batch_size = 500
         total_queued = 0
         
@@ -2858,13 +2768,11 @@ def queue_scraping_jobs(req: https_fn.Request) -> https_fn.Response:
             status=500, headers=headers
         )
 
-
 @scheduler_fn.on_schedule(
     schedule="*/3 * * * *",
     timezone=scheduler_fn.Timezone("Asia/Kolkata")
 )
 def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
-    """Process items from scraping queue with COMPLETE data parsing"""
     try:
         db = get_db()
         
@@ -2872,7 +2780,7 @@ def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
         reset_stale_processing_items(db)
         
         queue_items = db.collection('scraping_queue')\
-                       .where('status', '==', 'pending')\
+                       .where(filter=FieldFilter('status', '==', 'pending'))\
                        .order_by('created_at')\
                        .limit(5)\
                        .stream()
@@ -2893,7 +2801,6 @@ def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
                     retry_count = data.get('retry_count', 0)
                     max_retries = data.get('max_retries', 3)
                     
-                    # Update status to processing
                     doc.reference.update({
                         'status': 'processing',
                         'started_at': datetime.now().isoformat(),
@@ -2907,7 +2814,6 @@ def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
                         symbol = extract_symbol_from_page(soup, url)
                         
                         if symbol:
-                            # Check if company should be updated
                             existing_doc = db.collection('companies').document(symbol).get()
                             should_update = True
                             
@@ -2923,7 +2829,6 @@ def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
                                         pass
                             
                             if should_update:
-                                # Parse COMPLETE company data with ALL tables
                                 company_data = parse_company_data(soup, symbol)
                                 if company_data:
                                     db.collection('companies').document(symbol).set(company_data)
@@ -2935,7 +2840,6 @@ def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
                                     })
                                     processed_count += 1
                                 else:
-                                    # Parsing failed, retry if possible
                                     if retry_count < max_retries:
                                         doc.reference.update({
                                             'status': 'pending',
@@ -2950,7 +2854,6 @@ def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
                                         })
                                         failed_count += 1
                             else:
-                                # Mark as completed (skipped due to recent update)
                                 doc.reference.update({
                                     'status': 'completed',
                                     'completed_at': datetime.now().isoformat(),
@@ -2958,7 +2861,6 @@ def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
                                     'skipped_reason': 'Recently updated'
                                 })
                         else:
-                            # Symbol extraction failed, retry if possible
                             if retry_count < max_retries:
                                 doc.reference.update({
                                     'status': 'pending',
@@ -2973,7 +2875,6 @@ def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
                                 })
                                 failed_count += 1
                     else:
-                        # Page fetch failed, retry if possible
                         if retry_count < max_retries:
                             doc.reference.update({
                                 'status': 'pending',
@@ -3001,18 +2902,14 @@ def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
                     except:
                         pass
         
-        # Send FCM notification for batch completion
         if processed_count > 0 or failed_count > 0:
             notify_job_complete(processed_count, failed_count)
         
     except Exception as e:
         notify_job_failed(str(e))
 
-
-# --- QUEUE STATUS API ---
 @https_fn.on_request()
 def get_queue_status_api(req: https_fn.Request) -> https_fn.Response:
-    """HTTP function to get queue status"""
     try:
         headers = {
             'Access-Control-Allow-Origin': '*',
@@ -3030,11 +2927,10 @@ def get_queue_status_api(req: https_fn.Request) -> https_fn.Response:
         db = get_db()
         status = get_queue_status(db)
         
-        # Get recent completed items
         recent_completed = []
         try:
             completed_docs = db.collection('scraping_queue')\
-                             .where('status', '==', 'completed')\
+                             .where(filter=FieldFilter('status', '==', 'completed'))\
                              .order_by('completed_at', direction=firestore.Query.DESCENDING)\
                              .limit(10)\
                              .stream()
@@ -3067,11 +2963,8 @@ def get_queue_status_api(req: https_fn.Request) -> https_fn.Response:
             status=500, headers=headers
         )
 
-
-# --- QUEUE MANAGEMENT ---
 @https_fn.on_request()
 def manage_queue(req: https_fn.Request) -> https_fn.Response:
-    """HTTP function to manage queue (clear, retry)"""
     try:
         headers = {
             'Access-Control-Allow-Origin': '*',
@@ -3101,7 +2994,9 @@ def manage_queue(req: https_fn.Request) -> https_fn.Response:
         db = get_db()
         
         if action == 'clear_failed':
-            docs = db.collection('scraping_queue').where('status', '==', 'failed').limit(1000).stream()
+            docs = db.collection('scraping_queue')\
+                    .where(filter=FieldFilter('status', '==', 'failed'))\
+                    .limit(1000).stream()
             batch = db.batch()
             count = 0
             for doc in docs:
@@ -3120,7 +3015,9 @@ def manage_queue(req: https_fn.Request) -> https_fn.Response:
             )
         
         elif action == 'retry_failed':
-            docs = db.collection('scraping_queue').where('status', '==', 'failed').limit(100).stream()
+            docs = db.collection('scraping_queue')\
+                    .where(filter=FieldFilter('status', '==', 'failed'))\
+                    .limit(100).stream()
             batch = db.batch()
             count = 0
             for doc in docs:
@@ -3152,11 +3049,8 @@ def manage_queue(req: https_fn.Request) -> https_fn.Response:
             status=500, headers=headers
         )
 
-
-# --- LEGACY COMPATIBILITY ---
 @https_fn.on_request()
 def manual_scrape_trigger(req: https_fn.Request) -> https_fn.Response:
-    """HTTP function for backward compatibility"""
     try:
         headers = {
             'Access-Control-Allow-Origin': '*',
