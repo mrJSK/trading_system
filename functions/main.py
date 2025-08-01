@@ -1483,7 +1483,7 @@ def process_industry_path(soup):
     if not path_links:
         return None
     
-    path_names = [link.get_text(strip=True).replace('&', 'and') for link in path_links]
+    path_names = [link.get_text(strip=True).replace('&amp;', 'and') for link in path_links]
     return path_names
 
 def parse_company_data(soup, symbol):
@@ -2075,75 +2075,6 @@ def manage_queue(req: https_fn.Request) -> https_fn.Response:
             return https_fn.Response(
                 json.dumps({'status': 'error', 'message': 'Invalid action'}),
                 status=400, headers=headers
-            )
-        
-    except Exception as e:
-        return https_fn.Response(
-            json.dumps({'status': 'error', 'message': str(e)}),
-            status=500, headers=headers
-        )
-
-# --- COMPANIES DATA API (RESTORED) ---
-@https_fn.on_request()
-def get_companies_data(req: https_fn.Request) -> https_fn.Response:
-    """HTTP function to retrieve complete companies data with ALL tables"""
-    try:
-        headers = {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json'
-        }
-        
-        if req.method == 'OPTIONS':
-            headers.update({
-                'Access-Control-Allow-Methods': 'GET',
-                'Access-Control-Allow-Headers': 'Content-Type',
-                'Access-Control-Max-Age': '3600'
-            })
-            return https_fn.Response('', status=204, headers=headers)
-        
-        db = get_db()
-        
-        limit = int(req.args.get('limit', '50'))
-        symbol = req.args.get('symbol', None)
-        
-        companies_ref = db.collection('companies')
-        
-        if symbol:
-            doc = companies_ref.document(symbol).get()
-            if doc.exists:
-                data = doc.to_dict()
-                response = {
-                    'status': 'success',
-                    'data': data,  # Complete data with ALL tables
-                    'timestamp': datetime.now().isoformat()
-                }
-                return https_fn.Response(
-                    json.dumps(response, default=str),
-                    status=200, headers=headers
-                )
-            else:
-                return https_fn.Response(
-                    json.dumps({'status': 'error', 'message': 'Company not found'}),
-                    status=404, headers=headers
-                )
-        else:
-            docs = companies_ref.limit(limit).stream()
-            companies = []
-            for doc in docs:
-                data = doc.to_dict()  # Complete data with ALL tables
-                data['id'] = doc.id
-                companies.append(data)
-            
-            response = {
-                'status': 'success',
-                'data': companies,  # Complete data array
-                'count': len(companies),
-                'timestamp': datetime.now().isoformat()
-            }
-            
-            return https_fn.Response(
-                json.dumps(response, default=str),
-                status=200, headers=headers
             )
         
     except Exception as e:

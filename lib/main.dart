@@ -4,11 +4,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Import your screens and theme
-import 'core/theme/app_theme.dart';
-import 'core/services/firebase_messaging_service.dart'; // <- FCM service instead
-import 'features/home/presentation/screens/home_screen.dart';
-import 'features/home/presentation/screens/scraping_settings_screen.dart';
-import 'features/theme/presentation/providers/theme_provider.dart';
+import 'theme/app_theme.dart';
+import 'services/firebase_messaging_service.dart'; // <- FCM service instead
+import 'screens/home_screen.dart';
+import 'screens/scraping_settings_screen.dart';
+import 'theme/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
