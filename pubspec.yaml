@@ -17,6 +17,7 @@ dependencies:
   cloud_firestore: ^5.6.12
   cloud_functions: ^5.0.4
   firebase_messaging: ^15.1.6
+  logging: ^1.2.0
 
   # 2. State Management (Your working versions)
   flutter_riverpod: ^2.6.1

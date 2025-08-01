@@ -4,7 +4,7 @@ import requests
 import re
 import time
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import logging
 import json
@@ -16,7 +16,7 @@ initialize_app()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configuration - Same as your Python code
+# Configuration
 USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
@@ -28,10 +28,10 @@ def get_db():
     """Get Firestore client - called inside functions only"""
     return firestore.client()
 
-# --- NETWORKING FUNCTIONS (From your Python code) ---
+# --- NETWORKING FUNCTIONS ---
 
 def fetch_page(session, url, retries=3, backoff_factor=0.8, referer=None):
-    """Fetches a URL using session with retry mechanism - matches your Python code"""
+    """Fetches a URL using session with retry mechanism"""
     headers = {
         'User-Agent': random.choice(USER_AGENTS),
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -57,10 +57,52 @@ def fetch_page(session, url, retries=3, backoff_factor=0.8, referer=None):
                 logger.error(f"Final attempt to fetch {url} failed.")
     return None
 
-# --- PARSING FUNCTIONS (From your Python code) ---
+# --- SYMBOL EXTRACTION FUNCTION ---
+
+def extract_symbol_from_page(soup, url):
+    """Extract the actual stock symbol from the company page"""
+    # Method 1: Try to get from NSE link
+    nse_link = soup.select_one('a[href*="nseindia.com"]')
+    if nse_link:
+        nse_text = nse_link.get_text(strip=True)
+        # Extract symbol from "NSE: SYMBOL" format
+        if 'NSE:' in nse_text:
+            symbol = nse_text.replace('NSE:', '').strip()
+            if symbol:
+                return symbol
+    
+    # Method 2: Try to get from the URL structure
+    url_parts = url.strip('/').split('/')
+    if len(url_parts) >= 2:
+        potential_symbol = url_parts[-2] if url_parts[-1] == 'consolidated' else url_parts[-1]
+        if potential_symbol and potential_symbol != 'company':
+            return potential_symbol
+    
+    # Method 3: Try to extract from page structure
+    breadcrumb = soup.select_one('.breadcrumb')
+    if breadcrumb:
+        breadcrumb_text = breadcrumb.get_text(strip=True)
+        # Look for stock symbol pattern in breadcrumb
+        symbol_match = re.search(r'\b([A-Z]{2,10})\b', breadcrumb_text)
+        if symbol_match:
+            return symbol_match.group(1)
+    
+    # Method 4: Extract from company nav or title
+    company_nav = soup.select_one('.company-nav h1') or soup.select_one('h1.margin-0')
+    if company_nav:
+        nav_text = company_nav.get_text(strip=True)
+        # Try to extract symbol pattern from title like "NTPC Ltd"
+        symbol_match = re.search(r'^([A-Z]{2,10})', nav_text)
+        if symbol_match:
+            return symbol_match.group(1)
+    
+    # Fallback: return None if no symbol found
+    return None
+
+# --- PARSING FUNCTIONS ---
 
 def clean_text(text, field_name=""):
-    """Clean and format text data - matches your Python implementation"""
+    """Clean and format text data"""
     if not text:
         return None
     
@@ -70,7 +112,7 @@ def clean_text(text, field_name=""):
     return text.strip().replace('₹', '').replace(',', '').replace('%', '').replace('Cr.', '').strip()
 
 def parse_number(text):
-    """Parse numeric values from text - matches your Python implementation"""
+    """Parse numeric values from text"""
     cleaned = clean_text(text)
     if cleaned in [None, '']:
         return None
@@ -84,7 +126,7 @@ def parse_number(text):
     return None
 
 def get_calendar_sort_key(header_string):
-    """Sort calendar headers - from your Python code"""
+    """Sort calendar headers"""
     MONTH_MAP = {
         'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
         'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12
@@ -100,7 +142,7 @@ def get_calendar_sort_key(header_string):
             return (0, 0)
 
 def parse_website_link(soup):
-    """Parse company website - from your Python code"""
+    """Parse company website"""
     company_links_div = soup.select_one('div.company-links')
     if not company_links_div:
         return None
@@ -113,7 +155,7 @@ def parse_website_link(soup):
     return None
 
 def parse_financial_table(soup, table_id):
-    """Parse financial tables - from your Python code"""
+    """Parse financial tables"""
     section = soup.select_one(f'section#{table_id}')
     if not section:
         return {}
@@ -153,7 +195,7 @@ def parse_financial_table(soup, table_id):
     }
 
 def parse_shareholding_table(soup, table_id):
-    """Parse shareholding tables - from your Python code"""
+    """Parse shareholding tables"""
     table = soup.select_one(f'div#{table_id} table.data-table')
     if not table:
         return {}
@@ -179,7 +221,7 @@ def parse_shareholding_table(soup, table_id):
     return data
 
 def parse_growth_tables(soup):
-    """Parse growth tables - from your Python code"""
+    """Parse growth tables"""
     data = {}
     pl_section = soup.select_one('section#profit-loss')
     if not pl_section:
@@ -204,7 +246,7 @@ def parse_growth_tables(soup):
     return data
 
 def process_industry_path(soup):
-    """Process industry classification - simplified for Firestore"""
+    """Process industry classification"""
     peers_section = soup.select_one('section#peers')
     if not peers_section:
         return None
@@ -218,16 +260,19 @@ def process_industry_path(soup):
         return None
     
     path_names = [link.get_text(strip=True).replace('&', 'and') for link in path_links]
-    return path_names  # Return as array for Firestore
+    return path_names
 
 def parse_company_data(soup, symbol):
-    """Complete company data parsing - matches your Python implementation"""
+    """Complete company data parsing with proper symbol handling"""
     try:
         # Basic company info
-        company_name_elem = soup.select_one('h1.margin-0')
-        company_name = company_name_elem.get_text(strip=True) if company_name_elem else symbol
+        company_name_elem = soup.select_one('h1.margin-0') or soup.select_one('.company-nav h1')
+        company_name = company_name_elem.get_text(strip=True) if company_name_elem else f"Company {symbol}"
         
-        # Ratios data - same as your Python code
+        # Clean up company name (remove "Ltd", "Limited", etc. if needed for display)
+        display_name = re.sub(r'\s+(Ltd|Limited|Corporation|Corp|Inc)\.?$', '', company_name, flags=re.IGNORECASE).strip()
+        
+        # Ratios data
         ratios_data = {}
         for li in soup.select('#top-ratios li'):
             name_elem = li.select_one('.name')
@@ -239,25 +284,42 @@ def parse_company_data(soup, symbol):
         about_elem = soup.select_one('.company-profile .about p')
         about = about_elem.get_text(strip=True) if about_elem else None
         
-        # Stock codes
+        # Stock codes - improved extraction
         bse_link = soup.select_one('a[href*="bseindia.com"]')
         nse_link = soup.select_one('a[href*="nseindia.com"]')
         
-        bse_code = clean_text(bse_link.get_text(strip=True) if bse_link else None, "bse_code")
-        nse_code = clean_text(nse_link.get_text(strip=True) if nse_link else None, "nse_code")
+        # Extract BSE code from BSE link text
+        bse_code = None
+        if bse_link:
+            bse_text = bse_link.get_text(strip=True)
+            bse_match = re.search(r'BSE:\s*(\d+)', bse_text)
+            if bse_match:
+                bse_code = bse_match.group(1)
+        
+        # Extract NSE code from NSE link text (should match our symbol)
+        nse_code = None
+        if nse_link:
+            nse_text = nse_link.get_text(strip=True)
+            nse_match = re.search(r'NSE:\s*([A-Z0-9]+)', nse_text)
+            if nse_match:
+                nse_code = nse_match.group(1)
+        
+        # Use NSE code as symbol if available, otherwise use the provided symbol
+        final_symbol = nse_code if nse_code else symbol
         
         # Pros and cons
         pros = [li.get_text(strip=True) for li in soup.select('.pros ul li')]
         cons = [li.get_text(strip=True) for li in soup.select('.cons ul li')]
         
-        # Complete financial data - same as your Python code
+        # Return complete data with proper symbol
         return {
-            'symbol': symbol,
-            'name': company_name,
+            'symbol': final_symbol,  # Use the actual trading symbol
+            'name': company_name,    # Full company name
+            'display_name': display_name,  # Clean display name
             'about': about,
             'website': parse_website_link(soup),
             'bse_code': bse_code,
-            'nse_code': nse_code,
+            'nse_code': final_symbol,  # NSE symbol
             'market_cap': parse_number(ratios_data.get('Market Cap')),
             'current_price': parse_number(ratios_data.get('Current Price')),
             'high_low': clean_text(ratios_data.get('High / Low')),
@@ -274,7 +336,7 @@ def parse_company_data(soup, symbol):
             'change_amount': 0.0,
             'previous_close': parse_number(ratios_data.get('Current Price', '0.0')) or 0.0,
             
-            # Financial statements - same as your Python code
+            # Financial statements
             'quarterly_results': parse_financial_table(soup, 'quarters'),
             'profit_loss_statement': parse_financial_table(soup, 'profit-loss'),
             'balance_sheet': parse_financial_table(soup, 'balance-sheet'),
@@ -288,7 +350,7 @@ def parse_company_data(soup, symbol):
             },
             
             # Growth tables
-            **parse_growth_tables(soup),  # Merge growth data directly
+            **parse_growth_tables(soup),
             
             # Raw ratios data for reference
             'ratios_data': ratios_data
@@ -298,91 +360,625 @@ def parse_company_data(soup, symbol):
         logger.error(f"Error parsing company data for {symbol}: {e}")
         return None
 
-def perform_comprehensive_scraping():
-    """Complete scraping logic matching your Python implementation"""
-    logger.info("Starting comprehensive company fundamentals scraping...")
-    
-    db = get_db()
-    company_urls_to_scrape = []
-    
+# --- QUEUE MANAGEMENT FUNCTIONS ---
+
+def get_queue_status(db):
+    """Get current queue status"""
     try:
-        # Phase 1: Collect all company URLs - same logic as your Python code
+        # Get queue counts
+        pending_count = len(list(db.collection('scraping_queue').where('status', '==', 'pending').limit(1000).stream()))
+        processing_count = len(list(db.collection('scraping_queue').where('status', '==', 'processing').limit(1000).stream()))
+        completed_count = len(list(db.collection('scraping_queue').where('status', '==', 'completed').limit(1000).stream()))
+        failed_count = len(list(db.collection('scraping_queue').where('status', '==', 'failed').limit(1000).stream()))
+        
+        return {
+            'pending': pending_count,
+            'processing': processing_count,
+            'completed': completed_count,
+            'failed': failed_count,
+            'total': pending_count + processing_count + completed_count + failed_count
+        }
+    except Exception as e:
+        logger.error(f"Error getting queue status: {e}")
+        return {'error': str(e)}
+
+def cleanup_old_queue_items(db):
+    """Clean up old completed and failed queue items"""
+    try:
+        cutoff_date = datetime.now() - timedelta(days=7)  # Keep items for 7 days
+        cutoff_iso = cutoff_date.isoformat()
+        
+        # Delete old completed items
+        completed_docs = db.collection('scraping_queue')\
+                          .where('status', '==', 'completed')\
+                          .where('completed_at', '<', cutoff_iso)\
+                          .limit(100)\
+                          .stream()
+        
+        batch = db.batch()
+        count = 0
+        for doc in completed_docs:
+            batch.delete(doc.reference)
+            count += 1
+        
+        if count > 0:
+            batch.commit()
+            logger.info(f"Cleaned up {count} old completed queue items")
+        
+        # Delete old failed items
+        failed_docs = db.collection('scraping_queue')\
+                     .where('status', '==', 'failed')\
+                     .where('failed_at', '<', cutoff_iso)\
+                     .limit(100)\
+                     .stream()
+        
+        batch = db.batch()
+        count = 0
+        for doc in failed_docs:
+            batch.delete(doc.reference)
+            count += 1
+        
+        if count > 0:
+            batch.commit()
+            logger.info(f"Cleaned up {count} old failed queue items")
+            
+    except Exception as e:
+        logger.error(f"Error cleaning up old queue items: {e}")
+
+def reset_stale_processing_items(db):
+    """Reset items that have been processing for too long"""
+    try:
+        cutoff_time = datetime.now() - timedelta(minutes=30)  # 30 minutes timeout
+        cutoff_iso = cutoff_time.isoformat()
+        
+        stale_docs = db.collection('scraping_queue')\
+                      .where('status', '==', 'processing')\
+                      .where('started_at', '<', cutoff_iso)\
+                      .limit(50)\
+                      .stream()
+        
+        batch = db.batch()
+        count = 0
+        for doc in stale_docs:
+            batch.update(doc.reference, {
+                'status': 'pending',
+                'started_at': firestore.DELETE_FIELD,
+                'reset_count': firestore.Increment(1),
+                'reset_at': datetime.now().isoformat()
+            })
+            count += 1
+        
+        if count > 0:
+            batch.commit()
+            logger.info(f"Reset {count} stale processing items")
+            
+    except Exception as e:
+        logger.error(f"Error resetting stale processing items: {e}")
+
+# --- QUEUE-BASED SCRAPING FUNCTIONS ---
+
+@https_fn.on_request()
+def queue_scraping_jobs(req: https_fn.Request) -> https_fn.Response:
+    """Queue individual scraping jobs for processing"""
+    try:
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json'
+        }
+        
+        if req.method == 'OPTIONS':
+            headers.update({
+                'Access-Control-Allow-Methods': 'POST',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Max-Age': '3600'
+            })
+            return https_fn.Response('', status=204, headers=headers)
+        
+        logger.info("Queuing scraping jobs triggered")
+        db = get_db()
+        
+        try:
+            request_json = req.get_json() or {}
+        except Exception:
+            request_json = {}
+        
+        # Check if we should clear existing queue
+        clear_queue = request_json.get('clear_existing', False)
+        max_pages = request_json.get('max_pages', 50)  # Default to 50 pages
+        
+        if clear_queue:
+            logger.info("Clearing existing queue items...")
+            # Clear existing pending and failed items
+            for status in ['pending', 'failed']:
+                docs = db.collection('scraping_queue').where('status', '==', status).limit(500).stream()
+                batch = db.batch()
+                count = 0
+                for doc in docs:
+                    batch.delete(doc.reference)
+                    count += 1
+                    if count >= 500:
+                        batch.commit()
+                        batch = db.batch()
+                        count = 0
+                if count > 0:
+                    batch.commit()
+            
+            logger.info("Existing queue cleared")
+        
+        # Collect URLs and add to queue
+        company_urls = []
+        
         with requests.Session() as session:
-            for page in range(1, 100):  # Comprehensive page range
+            for page in range(1, max_pages + 1):
+                logger.info(f"Collecting URLs from page {page}")
                 list_url = f"https://www.screener.in/screens/515361/largecaptop-100midcap101-250smallcap251/?page={page}"
-                logger.info(f"Fetching company list from page {page}")
-                
                 response = fetch_page(session, list_url)
+                
                 if not response:
-                    logger.warning(f"Could not fetch list page {page}. Stopping URL collection.")
+                    logger.warning(f"Failed to fetch page {page}")
                     break
                 
                 list_soup = BeautifulSoup(response.content, 'lxml')
                 rows = list_soup.select('table.data-table tr[data-row-company-id]')
                 
                 if not rows:
-                    logger.info("No more companies found. Moving to scraping phase.")
+                    logger.info(f"No more companies found on page {page}")
                     break
                 
+                page_urls = []
                 for row in rows:
                     link_tag = row.select_one('a')
                     if link_tag and link_tag.get('href'):
-                        company_urls_to_scrape.append(f"https://www.screener.in{link_tag['href']}")
+                        company_url = f"https://www.screener.in{link_tag['href']}"
+                        page_urls.append(company_url)
+                        company_urls.append(company_url)
                 
-                time.sleep(random.uniform(2, 4))  # Same delay as your Python code
+                logger.info(f"Found {len(page_urls)} companies on page {page}")
+                time.sleep(random.uniform(1, 3))  # Rate limiting
+        
+        if not company_urls:
+            return https_fn.Response(
+                json.dumps({
+                    'status': 'error',
+                    'message': 'No company URLs found to queue'
+                }),
+                status=400,
+                headers=headers
+            )
+        
+        logger.info(f"Collected {len(company_urls)} total company URLs")
+        
+        # Add URLs to Firestore queue in batches
+        batch_size = 500  # Firestore batch limit
+        total_queued = 0
+        
+        for i in range(0, len(company_urls), batch_size):
+            batch = db.batch()
+            batch_urls = company_urls[i:i + batch_size]
             
-            logger.info(f"Found {len(company_urls_to_scrape)} companies to scrape")
+            for url in batch_urls:
+                doc_ref = db.collection('scraping_queue').document()
+                batch.set(doc_ref, {
+                    'url': url,
+                    'status': 'pending',
+                    'created_at': datetime.now().isoformat(),
+                    'priority': 'normal',
+                    'retry_count': 0,
+                    'max_retries': 3
+                })
             
-            # Phase 2: Scrape each company - comprehensive processing
-            total_processed = 0
-            batch_size = 10
-            
-            for i in range(0, len(company_urls_to_scrape), batch_size):
-                batch = company_urls_to_scrape[i:i + batch_size]
-                
-                for url in batch:
-                    try:
-                        symbol = url.strip('/').split('/')[-1]
-                        logger.info(f"Processing {symbol} ({total_processed + 1}/{len(company_urls_to_scrape)})")
-                        
-                        response = fetch_page(
-                            session, 
-                            url, 
-                            referer="https://www.screener.in/screens/"
-                        )
-                        
-                        if not response:
-                            logger.warning(f"Failed to fetch data for {symbol}")
-                            continue
-                        
-                        soup = BeautifulSoup(response.content, 'lxml')
-                        company_data = parse_company_data(soup, symbol)
-                        
-                        if company_data:
-                            # Store in Firestore with complete data
-                            doc_ref = db.collection('companies').document(symbol)
-                            doc_ref.set(company_data)
-                            
-                            logger.info(f"Successfully processed {symbol} with complete financial data")
-                            total_processed += 1
-                            
-                            # Send notification for significant changes
-                            send_company_update_notification(company_data, db)
-                        
-                        time.sleep(random.uniform(1.5, 3.5))  # Same timing as your Python code
-                        
-                    except Exception as e:
-                        logger.error(f"Error processing {url}: {e}")
-                
-                # Batch delay
-                time.sleep(random.uniform(5, 10))
-            
-            logger.info(f"Comprehensive scraping completed. Processed {total_processed} companies")
-            return {'companies_processed': total_processed, 'status': 'success'}
-    
+            batch.commit()
+            total_queued += len(batch_urls)
+            logger.info(f"Queued batch {i//batch_size + 1}: {len(batch_urls)} items (Total: {total_queued})")
+        
+        # Update queue statistics
+        queue_stats_ref = db.collection('system').document('queue_stats')
+        queue_stats_ref.set({
+            'last_queue_creation': datetime.now().isoformat(),
+            'total_queued': total_queued,
+            'pages_scraped': max_pages,
+            'queue_status': 'active'
+        })
+        
+        return https_fn.Response(
+            json.dumps({
+                'status': 'success',
+                'message': f'Successfully queued {total_queued} companies for scraping',
+                'queued_count': total_queued,
+                'pages_processed': max_pages,
+                'timestamp': datetime.now().isoformat()
+            }),
+            status=200,
+            headers=headers
+        )
+        
     except Exception as e:
-        logger.error(f"Error in comprehensive scraping: {e}")
-        raise e
+        logger.error(f"Error queuing scraping jobs: {e}")
+        return https_fn.Response(
+            json.dumps({
+                'status': 'error',
+                'message': str(e),
+                'timestamp': datetime.now().isoformat()
+            }),
+            status=500,
+            headers={'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}
+        )
+
+@scheduler_fn.on_schedule(
+    schedule="*/3 * * * *",  # Every 3 minutes
+    timezone=scheduler_fn.Timezone("Asia/Kolkata")
+)
+def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
+    """Process items from scraping queue"""
+    logger.info("Processing scraping queue...")
+    
+    try:
+        db = get_db()
+        
+        # Clean up old items and reset stale processing items
+        cleanup_old_queue_items(db)
+        reset_stale_processing_items(db)
+        
+        # Get pending items from queue (prioritized)
+        queue_items = db.collection('scraping_queue')\
+                       .where('status', '==', 'pending')\
+                       .order_by('created_at')\
+                       .limit(5)\
+                       .stream()  # Process 5 items per execution
+        
+        items_to_process = list(queue_items)
+        
+        if not items_to_process:
+            logger.info("No pending items in queue")
+            return
+        
+        logger.info(f"Processing {len(items_to_process)} items from queue")
+        
+        with requests.Session() as session:
+            for doc in items_to_process:
+                try:
+                    data = doc.to_dict()
+                    url = data['url']
+                    retry_count = data.get('retry_count', 0)
+                    max_retries = data.get('max_retries', 3)
+                    
+                    logger.info(f"Processing: {url}")
+                    
+                    # Update status to processing
+                    doc.reference.update({
+                        'status': 'processing',
+                        'started_at': datetime.now().isoformat(),
+                        'processor_id': 'scheduler_worker'
+                    })
+                    
+                    response = fetch_page(session, url, retries=2)
+                    
+                    if response:
+                        soup = BeautifulSoup(response.content, 'lxml')
+                        symbol = extract_symbol_from_page(soup, url)
+                        
+                        if symbol:
+                            # Check if company already exists and is recent
+                            existing_doc = db.collection('companies').document(symbol).get()
+                            should_update = True
+                            
+                            if existing_doc.exists:
+                                existing_data = existing_doc.to_dict()
+                                last_updated = existing_data.get('last_updated')
+                                if last_updated:
+                                    try:
+                                        last_update_time = datetime.fromisoformat(last_updated.replace('Z', '+00:00'))
+                                        if datetime.now() - last_update_time < timedelta(hours=6):
+                                            should_update = False
+                                            logger.info(f"Skipping {symbol} - recently updated")
+                                    except:
+                                        pass
+                            
+                            if should_update:
+                                company_data = parse_company_data(soup, symbol)
+                                if company_data:
+                                    db.collection('companies').document(symbol).set(company_data)
+                                    doc.reference.update({
+                                        'status': 'completed',
+                                        'completed_at': datetime.now().isoformat(),
+                                        'symbol': symbol,
+                                        'company_name': company_data.get('name', 'Unknown')
+                                    })
+                                    logger.info(f"Successfully processed: {symbol}")
+                                    
+                                    # Send notification for new/updated company
+                                    send_company_update_notification(company_data, db)
+                                else:
+                                    # Parsing failed, retry if possible
+                                    if retry_count < max_retries:
+                                        doc.reference.update({
+                                            'status': 'pending',
+                                            'retry_count': retry_count + 1,
+                                            'last_error': 'Failed to parse company data',
+                                            'last_retry': datetime.now().isoformat()
+                                        })
+                                        logger.warning(f"Parsing failed for {url}, will retry ({retry_count + 1}/{max_retries})")
+                                    else:
+                                        doc.reference.update({
+                                            'status': 'failed',
+                                            'failed_at': datetime.now().isoformat(),
+                                            'error': 'Failed to parse company data after max retries'
+                                        })
+                                        logger.error(f"Max retries reached for parsing {url}")
+                            else:
+                                # Mark as completed (skipped due to recent update)
+                                doc.reference.update({
+                                    'status': 'completed',
+                                    'completed_at': datetime.now().isoformat(),
+                                    'symbol': symbol,
+                                    'skipped_reason': 'Recently updated'
+                                })
+                        else:
+                            # Symbol extraction failed, retry if possible
+                            if retry_count < max_retries:
+                                doc.reference.update({
+                                    'status': 'pending',
+                                    'retry_count': retry_count + 1,
+                                    'last_error': 'Could not extract symbol',
+                                    'last_retry': datetime.now().isoformat()
+                                })
+                                logger.warning(f"Symbol extraction failed for {url}, will retry ({retry_count + 1}/{max_retries})")
+                            else:
+                                doc.reference.update({
+                                    'status': 'failed',
+                                    'failed_at': datetime.now().isoformat(),
+                                    'error': 'Could not extract symbol after max retries'
+                                })
+                                logger.error(f"Max retries reached for symbol extraction {url}")
+                    else:
+                        # Page fetch failed, retry if possible
+                        if retry_count < max_retries:
+                            doc.reference.update({
+                                'status': 'pending',
+                                'retry_count': retry_count + 1,
+                                'last_error': 'Failed to fetch page',
+                                'last_retry': datetime.now().isoformat()
+                            })
+                            logger.warning(f"Page fetch failed for {url}, will retry ({retry_count + 1}/{max_retries})")
+                        else:
+                            doc.reference.update({
+                                'status': 'failed',
+                                'failed_at': datetime.now().isoformat(),
+                                'error': 'Failed to fetch page after max retries'
+                            })
+                            logger.error(f"Max retries reached for fetching {url}")
+                    
+                    # Rate limiting between items
+                    time.sleep(random.uniform(2, 5))
+                    
+                except Exception as e:
+                    logger.error(f"Error processing queue item {url}: {e}")
+                    try:
+                        doc.reference.update({
+                            'status': 'failed',
+                            'failed_at': datetime.now().isoformat(),
+                            'error': str(e)
+                        })
+                    except:
+                        pass  # If we can't update the doc, just continue
+        
+        logger.info("Queue processing completed")
+        
+    except Exception as e:
+        logger.error(f"Error in queue processing: {e}")
+
+@https_fn.on_request()
+def get_queue_status_api(req: https_fn.Request) -> https_fn.Response:
+    """HTTP function to get queue status"""
+    try:
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json'
+        }
+        
+        if req.method == 'OPTIONS':
+            headers.update({
+                'Access-Control-Allow-Methods': 'GET',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Max-Age': '3600'
+            })
+            return https_fn.Response('', status=204, headers=headers)
+        
+        db = get_db()
+        status = get_queue_status(db)
+        
+        # Get recent completed items for preview
+        recent_completed = []
+        try:
+            completed_docs = db.collection('scraping_queue')\
+                             .where('status', '==', 'completed')\
+                             .order_by('completed_at', direction=firestore.Query.DESCENDING)\
+                             .limit(10)\
+                             .stream()
+            
+            for doc in completed_docs:
+                data = doc.to_dict()
+                recent_completed.append({
+                    'symbol': data.get('symbol', 'Unknown'),
+                    'company_name': data.get('company_name', 'Unknown'),
+                    'completed_at': data.get('completed_at', '')
+                })
+        except Exception as e:
+            logger.error(f"Error getting recent completed items: {e}")
+        
+        # Get queue statistics
+        queue_stats = {}
+        try:
+            stats_doc = db.collection('system').document('queue_stats').get()
+            if stats_doc.exists:
+                queue_stats = stats_doc.to_dict()
+        except Exception as e:
+            logger.error(f"Error getting queue stats: {e}")
+        
+        response_data = {
+            'status': 'success',
+            'queue_status': status,
+            'queue_stats': queue_stats,
+            'recent_completed': recent_completed,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        return https_fn.Response(
+            json.dumps(response_data),
+            status=200,
+            headers=headers
+        )
+        
+    except Exception as e:
+        logger.error(f"Error getting queue status: {e}")
+        return https_fn.Response(
+            json.dumps({
+                'status': 'error',
+                'message': str(e),
+                'timestamp': datetime.now().isoformat()
+            }),
+            status=500,
+            headers={'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}
+        )
+
+@https_fn.on_request()
+def manage_queue(req: https_fn.Request) -> https_fn.Response:
+    """HTTP function to manage queue (pause, resume, clear)"""
+    try:
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json'
+        }
+        
+        if req.method == 'OPTIONS':
+            headers.update({
+                'Access-Control-Allow-Methods': 'POST',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Max-Age': '3600'
+            })
+            return https_fn.Response('', status=204, headers=headers)
+        
+        try:
+            request_json = req.get_json() or {}
+        except Exception:
+            request_json = {}
+        
+        action = request_json.get('action')
+        if not action:
+            return https_fn.Response(
+                json.dumps({'status': 'error', 'message': 'Action is required'}),
+                status=400,
+                headers=headers
+            )
+        
+        db = get_db()
+        
+        if action == 'clear_failed':
+            # Clear all failed items
+            docs = db.collection('scraping_queue').where('status', '==', 'failed').limit(1000).stream()
+            batch = db.batch()
+            count = 0
+            for doc in docs:
+                batch.delete(doc.reference)
+                count += 1
+                if count >= 500:
+                    batch.commit()
+                    batch = db.batch()
+                    count = 0
+            if count > 0:
+                batch.commit()
+                
+            return https_fn.Response(
+                json.dumps({
+                    'status': 'success',
+                    'message': f'Cleared {count} failed items',
+                    'items_cleared': count
+                }),
+                status=200,
+                headers=headers
+            )
+        
+        elif action == 'retry_failed':
+            # Reset failed items to pending
+            docs = db.collection('scraping_queue').where('status', '==', 'failed').limit(100).stream()
+            batch = db.batch()
+            count = 0
+            for doc in docs:
+                batch.update(doc.reference, {
+                    'status': 'pending',
+                    'retry_count': 0,
+                    'failed_at': firestore.DELETE_FIELD,
+                    'error': firestore.DELETE_FIELD,
+                    'retried_at': datetime.now().isoformat()
+                })
+                count += 1
+            if count > 0:
+                batch.commit()
+                
+            return https_fn.Response(
+                json.dumps({
+                    'status': 'success',
+                    'message': f'Reset {count} failed items to pending',
+                    'items_reset': count
+                }),
+                status=200,
+                headers=headers
+            )
+        
+        elif action == 'clear_completed':
+            # Clear completed items older than 1 day
+            cutoff_date = datetime.now() - timedelta(days=1)
+            cutoff_iso = cutoff_date.isoformat()
+            
+            docs = db.collection('scraping_queue')\
+                     .where('status', '==', 'completed')\
+                     .where('completed_at', '<', cutoff_iso)\
+                     .limit(1000)\
+                     .stream()
+            
+            batch = db.batch()
+            count = 0
+            for doc in docs:
+                batch.delete(doc.reference)
+                count += 1
+                if count >= 500:
+                    batch.commit()
+                    batch = db.batch()
+                    count = 0
+            if count > 0:
+                batch.commit()
+                
+            return https_fn.Response(
+                json.dumps({
+                    'status': 'success',
+                    'message': f'Cleared {count} old completed items',
+                    'items_cleared': count
+                }),
+                status=200,
+                headers=headers
+            )
+        
+        else:
+            return https_fn.Response(
+                json.dumps({
+                    'status': 'error',
+                    'message': 'Invalid action. Supported: clear_failed, retry_failed, clear_completed'
+                }),
+                status=400,
+                headers=headers
+            )
+        
+    except Exception as e:
+        logger.error(f"Error managing queue: {e}")
+        return https_fn.Response(
+            json.dumps({
+                'status': 'error',
+                'message': str(e),
+                'timestamp': datetime.now().isoformat()
+            }),
+            status=500,
+            headers={'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}
+        )
 
 def send_company_update_notification(company_data, db):
     """Send notification for company updates"""
@@ -428,85 +1024,6 @@ def send_company_update_notification(company_data, db):
     except Exception as e:
         logger.error(f"Error sending notification: {e}")
 
-@scheduler_fn.on_schedule(
-    schedule="0 */6 * * *",  # Every 6 hours
-    timezone=scheduler_fn.Timezone("Asia/Kolkata")
-)
-def scrape_company_fundamentals(event: scheduler_fn.ScheduledEvent) -> None:
-    """Scheduled function for comprehensive scraping"""
-    try:
-        result = perform_comprehensive_scraping()
-        logger.info(f"Scheduled comprehensive scraping completed: {result}")
-    except Exception as e:
-        logger.error(f"Scheduled scraping failed: {e}")
-
-@https_fn.on_request()
-def manual_scrape_trigger(req: https_fn.Request) -> https_fn.Response:
-    """HTTP function to manually trigger comprehensive scraping"""
-    try:
-        headers = {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json'
-        }
-        
-        if req.method == 'OPTIONS':
-            headers.update({
-                'Access-Control-Allow-Methods': 'POST',
-                'Access-Control-Allow-Headers': 'Content-Type',
-                'Access-Control-Max-Age': '3600'
-            })
-            return https_fn.Response('', status=204, headers=headers)
-        
-        logger.info("Manual comprehensive scraping triggered via HTTP")
-        
-        try:
-            request_json = req.get_json() or {}
-        except Exception:
-            request_json = {}
-        
-        if request_json.get('test', False):
-            logger.info("Test request received")
-            response_data = {
-                'status': 'success',
-                'message': 'Comprehensive scraping function is ready',
-                'timestamp': datetime.now().isoformat(),
-                'test_mode': True
-            }
-            return https_fn.Response(
-                json.dumps(response_data),
-                status=200,
-                headers=headers
-            )
-        
-        # Trigger comprehensive scraping
-        result = perform_comprehensive_scraping()
-        
-        response_data = {
-            'status': 'success',
-            'message': 'Comprehensive fundamentals scraping completed successfully',
-            'timestamp': datetime.now().isoformat(),
-            'result': result
-        }
-        
-        return https_fn.Response(
-            json.dumps(response_data),
-            status=200,
-            headers=headers
-        )
-        
-    except Exception as e:
-        logger.error(f"Error in manual trigger: {e}")
-        error_response = {
-            'status': 'error',
-            'message': str(e),
-            'timestamp': datetime.now().isoformat()
-        }
-        return https_fn.Response(
-            json.dumps(error_response),
-            status=500,
-            headers={'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}
-        )
-
 @https_fn.on_request()
 def get_companies_data(req: https_fn.Request) -> https_fn.Response:
     """HTTP function to retrieve complete companies data"""
@@ -541,7 +1058,7 @@ def get_companies_data(req: https_fn.Request) -> https_fn.Response:
                     'timestamp': datetime.now().isoformat()
                 }
                 return https_fn.Response(
-                    json.dumps(response, default=str),  # Handle datetime serialization
+                    json.dumps(response, default=str),
                     status=200,
                     headers=headers
                 )
@@ -572,13 +1089,97 @@ def get_companies_data(req: https_fn.Request) -> https_fn.Response:
             }
             
             return https_fn.Response(
-                json.dumps(response, default=str),  # Handle datetime serialization
+                json.dumps(response, default=str),
                 status=200,
                 headers=headers
             )
         
     except Exception as e:
         logger.error(f"Error retrieving companies data: {e}")
+        error_response = {
+            'status': 'error',
+            'message': str(e),
+            'timestamp': datetime.now().isoformat()
+        }
+        return https_fn.Response(
+            json.dumps(error_response),
+            status=500,
+            headers={'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'}
+        )
+
+# Legacy function for backward compatibility (now just queues jobs)
+@https_fn.on_request()
+def manual_scrape_trigger(req: https_fn.Request) -> https_fn.Response:
+    """HTTP function to trigger queue-based scraping (backward compatible)"""
+    try:
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json'
+        }
+        
+        if req.method == 'OPTIONS':
+            headers.update({
+                'Access-Control-Allow-Methods': 'POST',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Max-Age': '3600'
+            })
+            return https_fn.Response('', status=204, headers=headers)
+        
+        logger.info("Manual scraping trigger called - redirecting to queue-based approach")
+        
+        try:
+            request_json = req.get_json() or {}
+        except Exception:
+            request_json = {}
+        
+        if request_json.get('test', False):
+            logger.info("Test request received")
+            response_data = {
+                'status': 'success',
+                'message': 'Queue-based scraping system is ready',
+                'timestamp': datetime.now().isoformat(),
+                'test_mode': True
+            }
+            return https_fn.Response(
+                json.dumps(response_data),
+                status=200,
+                headers=headers
+            )
+        
+        # Redirect to queue creation
+        db = get_db()
+        
+        # Check current queue status
+        status = get_queue_status(db)
+        
+        if status.get('pending', 0) > 100:
+            return https_fn.Response(
+                json.dumps({
+                    'status': 'info',
+                    'message': f'Queue already has {status["pending"]} pending items. Use /queue_scraping_jobs to add more or wait for processing.',
+                    'queue_status': status,
+                    'timestamp': datetime.now().isoformat()
+                }),
+                status=200,
+                headers=headers
+            )
+        
+        response_data = {
+            'status': 'success',
+            'message': 'This endpoint now uses queue-based processing. Call /queue_scraping_jobs to add items to queue.',
+            'recommendation': 'Use /queue_scraping_jobs to queue new scraping jobs',
+            'current_queue_status': status,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        return https_fn.Response(
+            json.dumps(response_data),
+            status=200,
+            headers=headers
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in manual trigger: {e}")
         error_response = {
             'status': 'error',
             'message': str(e),

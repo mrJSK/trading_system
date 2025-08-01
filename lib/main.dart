@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,12 +11,19 @@ import 'dart:convert';
 import 'core/services/firebase_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/connectivity_service.dart';
+import 'core/services/logger_service.dart'; // <- ADD THIS IMPORT
 import 'core/theme/app_theme.dart';
 import 'features/home/presentation/screens/home_screen.dart';
+import 'features/home/presentation/screens/scraping_settings_screen.dart';
+import 'features/home/presentation/screens/logs_screen.dart'; // <- ADD THIS IMPORT
 import 'features/theme/presentation/providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize logging service first
+  LoggerService.initialize(); // <- ADD THIS
+  LoggerService.info('🚀 Starting Trading Dashboard initialization...');
 
   print('🔥 Starting Trading Dashboard initialization...');
 
@@ -40,6 +48,12 @@ class MyApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       home: const AppInitializationScreen(),
+      // Add routes for navigation
+      routes: {
+        '/home': (context) => const HomeScreen(),
+        '/scraping_settings': (context) => const ScrapingSettingsScreen(),
+        '/logs': (context) => const LogsScreen(), // <- ADD THIS ROUTE
+      },
     );
   }
 }
@@ -63,20 +77,25 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
   @override
   void initState() {
     super.initState();
+    LoggerService.info('AppInitializationScreen initialized');
     _initializeApp();
   }
 
   Future<void> _initializeApp() async {
     try {
+      LoggerService.info('Starting comprehensive app initialization');
+
       // Step 1: Initialize Firebase
       setState(() {
         status = 'Connecting to Firebase...';
         progress = 0.15;
       });
+      LoggerService.info('Step 1: Initializing Firebase');
       print('🔥 Initializing Firebase...');
 
       await Firebase.initializeApp();
       await Future.delayed(const Duration(milliseconds: 500));
+      LoggerService.info('Firebase initialized successfully');
       print('✅ Firebase initialized successfully');
 
       // Step 2: Test Firebase Connection with better error handling
@@ -84,6 +103,7 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
         status = 'Testing Firebase connection...';
         progress = 0.3;
       });
+      LoggerService.info('Step 2: Testing Firebase connection');
       print('🔍 Testing Firestore connection...');
 
       try {
@@ -92,8 +112,11 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
             .limit(1)
             .get()
             .timeout(const Duration(seconds: 10));
+        LoggerService.info('Firestore connection successful');
         print('📊 Firestore connection successful');
       } catch (firestoreError) {
+        LoggerService.warning(
+            'Firestore connection issue (continuing), $firestoreError');
         print('⚠️ Firestore connection issue (continuing): $firestoreError');
         // Continue anyway - app can work without immediate Firestore access
       }
@@ -105,12 +128,16 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
         status = 'Setting up Firebase services...';
         progress = 0.5;
       });
+      LoggerService.info('Step 3: Initializing Firebase services');
       print('⚙️ Initializing Firebase services...');
 
       try {
         await FirebaseService.initialize();
+        LoggerService.info('Firebase services initialized successfully');
         print('✅ Firebase services initialized');
       } catch (serviceError) {
+        LoggerService.warning(
+            'Firebase services partial initialization, $serviceError');
         print('⚠️ Firebase services partial initialization: $serviceError');
         // Continue with reduced functionality
       }
@@ -122,12 +149,16 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
         status = 'Setting up notifications...';
         progress = 0.7;
       });
+      LoggerService.info('Step 4: Initializing notification services');
       print('🔔 Initializing notification services...');
 
       try {
         await NotificationService.initialize();
+        LoggerService.info('Notification services initialized successfully');
         print('✅ Notification services initialized');
       } catch (notificationError) {
+        LoggerService.warning(
+            'Notification services failed (continuing), $notificationError');
         print(
             '⚠️ Notification services failed (continuing): $notificationError');
         // Continue without notifications
@@ -140,15 +171,18 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
         status = 'Verifying cloud functions...';
         progress = 0.85;
       });
+      LoggerService.info('Step 5: Testing cloud functions connectivity');
       print('🚀 Testing cloud functions connectivity...');
 
       try {
         await _testCloudFunctionConnectivity();
         cloudFunctionsWorking = true;
+        LoggerService.info('Cloud functions are accessible and working');
         print('✅ Cloud functions are accessible and working');
       } catch (functionError) {
         this.functionError = functionError.toString();
         cloudFunctionsWorking = false;
+        LoggerService.error('Cloud functions test failed', functionError);
         print('⚠️ Cloud functions test failed: $functionError');
         // Continue - app can still work with cached data
       }
@@ -163,6 +197,9 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
         progress = 1.0;
         isLoading = false;
       });
+      LoggerService.info(cloudFunctionsWorking
+          ? 'App initialization completed successfully - all systems operational'
+          : 'App initialization completed with limited functionality');
       print('🚀 App initialization completed successfully');
 
       // Auto-navigate after a brief delay
@@ -171,6 +208,7 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
         _navigateToHome();
       }
     } catch (e) {
+      LoggerService.error('Critical initialization failed', e);
       print('❌ Critical initialization failed: $e');
       setState(() {
         error = _getErrorMessage(e);
@@ -182,10 +220,12 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
 
   Future<void> _testCloudFunctionConnectivity() async {
     try {
+      LoggerService.info('Testing cloud function with multiple methods');
       print('🧪 Testing cloud function with multiple methods...');
 
       // Method 1: Try HTTP request first (more reliable)
       try {
+        LoggerService.debug('Attempting HTTP request to cloud function');
         final response = await http
             .post(
               Uri.parse(
@@ -202,12 +242,15 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
             )
             .timeout(const Duration(seconds: 15));
 
+        LoggerService.debug('HTTP Response Status: ${response.statusCode}');
+        LoggerService.debug('HTTP Response Body: ${response.body}');
         print('📡 HTTP Response Status: ${response.statusCode}');
         print('📡 HTTP Response Body: ${response.body}');
 
         if (response.statusCode == 200) {
           final responseData = jsonDecode(response.body);
           if (responseData['status'] == 'success') {
+            LoggerService.info('Cloud function HTTP test successful');
             print('✅ Cloud function HTTP test successful');
             return;
           } else {
@@ -221,10 +264,13 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
           throw Exception('HTTP ${response.statusCode}: ${response.body}');
         }
       } catch (httpError) {
+        LoggerService.warning(
+            'HTTP test failed, trying Firebase callable, $httpError');
         print('⚠️ HTTP test failed: $httpError');
 
         // Method 2: Try Firebase Functions callable as fallback
         try {
+          LoggerService.debug('Attempting Firebase callable as fallback');
           final callable = FirebaseFunctions.instance.httpsCallable(
             'manual_scrape_trigger',
             options: HttpsCallableOptions(
@@ -237,15 +283,19 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
             'source': 'app_initialization_fallback',
           });
 
+          LoggerService.info(
+              'Firebase callable test successful: ${result.data}');
           print('✅ Firebase callable test successful: ${result.data}');
           return;
         } catch (callableError) {
+          LoggerService.error('Firebase callable test failed', callableError);
           print('⚠️ Firebase callable test failed: $callableError');
           throw Exception(
               'All connection methods failed. HTTP: $httpError, Callable: $callableError');
         }
       }
     } catch (e) {
+      LoggerService.error('Cloud function connectivity test failed', e);
       print('❌ Cloud function connectivity test failed: $e');
       throw e;
     }
@@ -276,6 +326,7 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
   }
 
   void _navigateToHome() {
+    LoggerService.info('Navigating to home screen');
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
@@ -290,6 +341,7 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
   }
 
   void _showDetailedError() {
+    LoggerService.info('Showing detailed error dialog');
     if (error == null) return;
 
     showDialog(
@@ -340,6 +392,22 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
                   '• Make sure Firebase Functions are deployed correctly\n'
                   '• Check Firebase Functions logs for errors\n'
                   '• Wait a few minutes and try again'),
+              const SizedBox(height: 16),
+              // Add button to view logs
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LogsScreen()),
+                  );
+                },
+                icon: const Icon(Icons.article),
+                label: const Text('View System Logs'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).primaryColor,
+                ),
+              ),
             ],
           ),
         ),
@@ -350,6 +418,7 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
           ),
           ElevatedButton(
             onPressed: () {
+              LoggerService.info('Retrying app initialization');
               Navigator.pop(context);
               setState(() {
                 isLoading = true;
@@ -367,6 +436,7 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
   }
 
   void _showFunctionStatus() {
+    LoggerService.info('Showing cloud functions status dialog');
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -398,10 +468,12 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
               const Text('✅ Manual scraping available'),
               const Text('✅ Data fetching functional'),
               const Text('✅ Scheduled scraping active'),
+              const Text('✅ Real-time updates working'),
             ] else ...[
               const Text('⚠️ Manual scraping may fail'),
               const Text('📱 App will use cached data'),
               const Text('🔄 Automatic retry in background'),
+              const Text('📊 Limited functionality available'),
               if (functionError != null) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -410,12 +482,26 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
                 ),
               ],
             ],
+            const SizedBox(height: 12),
+            // Add button to view detailed logs
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LogsScreen()),
+                );
+              },
+              icon: const Icon(Icons.article),
+              label: const Text('View System Logs'),
+            ),
           ],
         ),
         actions: [
           if (!cloudFunctionsWorking)
             TextButton(
               onPressed: () async {
+                LoggerService.info('Retesting cloud functions');
                 Navigator.pop(context);
                 setState(() {
                   status = 'Retesting cloud functions...';
@@ -432,6 +518,7 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
                     isLoading = false;
                     progress = 1.0;
                   });
+                  LoggerService.info('Cloud functions retest successful');
                 } catch (e) {
                   setState(() {
                     functionError = e.toString();
@@ -440,6 +527,7 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
                     isLoading = false;
                     progress = 1.0;
                   });
+                  LoggerService.error('Cloud functions retest failed', e);
                 }
               },
               child: const Text('Retry'),
@@ -594,6 +682,7 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
                   children: [
                     ElevatedButton.icon(
                       onPressed: () {
+                        LoggerService.info('Manual retry triggered');
                         setState(() {
                           isLoading = true;
                           error = null;
@@ -609,6 +698,18 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
                       onPressed: _navigateToHome,
                       icon: const Icon(Icons.skip_next),
                       label: const Text('Skip'),
+                    ),
+                    // Add logs button
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const LogsScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.article),
+                      label: const Text('Logs'),
                     ),
                   ],
                 ),
@@ -701,16 +802,35 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: _navigateToHome,
-                  icon: const Icon(Icons.dashboard),
-                  label: const Text('Open Dashboard'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 16,
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _navigateToHome,
+                      icon: const Icon(Icons.dashboard),
+                      label: const Text('Open Dashboard'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                      ),
                     ),
-                  ),
+                    // Add logs button for easy access
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const LogsScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.article),
+                      label: const Text('View Logs'),
+                    ),
+                  ],
                 ),
               ],
             ],
@@ -718,5 +838,11 @@ class _AppInitializationScreenState extends State<AppInitializationScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    LoggerService.info('AppInitializationScreen disposed');
+    super.dispose();
   }
 }
