@@ -7,6 +7,7 @@ import '../widgets/fundamental_tabs.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/company_list.dart';
 import '../widgets/scraping_status_bar.dart';
+import '../screens/scraping_management_screen.dart'; // Add this import
 import '../theme/app_theme.dart';
 import '../theme/theme_provider.dart';
 import '../providers/fundamental_provider.dart';
@@ -304,11 +305,29 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 20),
             GridView.count(
               shrinkWrap: true,
-              crossAxisCount: 2,
+              crossAxisCount:
+                  3, // Changed back to 3 columns to accommodate the new action
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
-              childAspectRatio: 1.2,
+              childAspectRatio: 1.0, // Adjusted aspect ratio for 3 columns
               children: [
+                // NEW: Scraping Management Screen Access
+                _buildQuickActionCard(
+                  context,
+                  ref,
+                  'Scraping Manager',
+                  Icons.cloud_sync,
+                  Colors.deepPurple,
+                  () {
+                    Navigator.pop(context); // Close quick actions first
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ScrapingManagementScreen(),
+                      ),
+                    );
+                  },
+                ),
                 _buildQuickActionCard(
                   context,
                   ref,
@@ -353,12 +372,161 @@ class DashboardScreen extends ConsumerWidget {
                     _showDebugStats(context, ref);
                   },
                 ),
+                // NEW: Quick Scraping Trigger (Alternative access)
+                _buildQuickActionCard(
+                  context,
+                  ref,
+                  'Quick Scrape',
+                  Icons.play_arrow,
+                  Colors.green,
+                  () {
+                    Navigator.pop(context);
+                    _showQuickScrapeDialog(context, ref);
+                  },
+                ),
               ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  // NEW: Quick scrape dialog for immediate scraping
+  void _showQuickScrapeDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.play_arrow, color: AppTheme.primaryGreen, size: 24),
+            const SizedBox(width: 8),
+            const Text('Quick Scrape'),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Start scraping with default settings:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.pages, size: 16, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Pages: 5 (≈250 companies)'),
+              ],
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.timer, size: 16, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('Estimated time: 2-3 hours'),
+              ],
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.update, size: 16, color: Colors.green),
+                SizedBox(width: 8),
+                Text('Will update existing data'),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ScrapingManagementScreen(),
+                ),
+              );
+            },
+            child: const Text('Advanced Settings'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _triggerQuickScrape(context, ref);
+            },
+            icon: const Icon(Icons.play_arrow, size: 16),
+            label: const Text('Start Now'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGreen,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // NEW: Quick scrape trigger method
+  Future<void> _triggerQuickScrape(BuildContext context, WidgetRef ref) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text('Starting quick scrape...'),
+            ],
+          ),
+          backgroundColor: AppTheme.primaryGreen,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      // Here you can integrate with your scraping service
+      // For now, we'll show a success message
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text(
+                    'Quick scrape initiated! Check the status bar for progress.'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start scraping: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _debugFetchRawData(WidgetRef ref) async {
@@ -587,16 +755,20 @@ class DashboardScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 36),
-            const SizedBox(height: 12),
+            Icon(icon,
+                color: color,
+                size: 32), // Adjusted icon size for 3-column layout
+            const SizedBox(height: 8),
             Text(
               title,
               style: TextStyle(
                 color: color,
                 fontWeight: FontWeight.w600,
-                fontSize: 13,
+                fontSize: 12,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

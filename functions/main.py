@@ -3230,7 +3230,7 @@ def queue_scraping_jobs(req: https_fn.Request) -> https_fn.Response:
             request_json = {}
         
         clear_queue = request_json.get('clear_existing', False)
-        max_pages = request_json.get('max_pages', 50)
+        max_pages = request_json.get('max_pages', 200)
         
         if clear_queue:
             for status in ['pending', 'failed']:

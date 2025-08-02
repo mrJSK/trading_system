@@ -635,7 +635,7 @@ class ScrapingStatusBar extends ConsumerWidget {
               Slider(
                 value: selectedPages.toDouble(),
                 min: 1,
-                max: 50,
+                max: 200,
                 divisions: 49,
                 label: selectedPages.toString(),
                 activeColor: AppTheme.primaryGreen,
