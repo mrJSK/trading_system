@@ -1,11 +1,11 @@
-// providers/fundamental_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/company_model.dart';
 import '../models/fundamental_filter.dart' as filter;
 
 // ============================================================================
-// STATE PROVIDERS
+// ENHANCED STATE PROVIDERS
 // ============================================================================
 
 final selectedFundamentalProvider =
@@ -16,8 +16,25 @@ final selectedFilterCategoryProvider =
 
 final searchQueryProvider = StateProvider<String>((ref) => '');
 
+final filterSortModeProvider =
+    StateProvider<FilterSortMode>((ref) => FilterSortMode.qualityScore);
+
+final filterViewModeProvider =
+    StateProvider<FilterViewMode>((ref) => FilterViewMode.grid);
+
+enum FilterSortMode {
+  qualityScore,
+  marketCap,
+  roe,
+  workingCapital,
+  recentPerformance,
+  businessInsights
+}
+
+enum FilterViewMode { grid, list, detailed }
+
 // ============================================================================
-// MAIN COMPANIES STREAM PROVIDER - ENHANCED WITH NEW RATIOS
+// ENHANCED COMPANIES STREAM PROVIDER WITH BUSINESS INSIGHTS
 // ============================================================================
 
 final fundamentalCompaniesProvider =
@@ -27,7 +44,7 @@ final fundamentalCompaniesProvider =
 
     try {
       return _buildEnhancedFirestoreQuery(filterParam)
-          .limit(150) // Increased for better filtering results
+          .limit(200)
           .snapshots()
           .map((snapshot) {
         List<CompanyModel> companies = [];
@@ -45,16 +62,8 @@ final fundamentalCompaniesProvider =
           }
         }
 
-        // Enhanced sorting with quality score prioritization
-        companies.sort((a, b) {
-          final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
-          if (qualityComparison != 0) return qualityComparison;
-
-          final roeComparison = (b.roe ?? 0).compareTo(a.roe ?? 0);
-          if (roeComparison != 0) return roeComparison;
-
-          return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
-        });
+        companies =
+            _applyEnhancedSorting(companies, ref.read(filterSortModeProvider));
 
         print(
             'Found ${companies.length} enhanced companies for filter ${filterParam.type.name}');
@@ -68,7 +77,7 @@ final fundamentalCompaniesProvider =
 );
 
 // ============================================================================
-// ENHANCED FIRESTORE QUERY BUILDER WITH NEW RATIOS
+// ENHANCED FIRESTORE QUERY BUILDER WITH NEW QUALITY FIELDS
 // ============================================================================
 
 Query<Map<String, dynamic>> _buildEnhancedFirestoreQuery(
@@ -77,47 +86,48 @@ Query<Map<String, dynamic>> _buildEnhancedFirestoreQuery(
 
   try {
     switch (filterParam.type) {
-      // ========================================================================
-      // ENHANCED SAFETY & QUALITY FILTERS USING NEW RATIOS
-      // ========================================================================
-
+      // Enhanced Safety & Quality Filters
       case filter.FundamentalType.debtFree:
         return query
             .where('debt_to_equity', isLessThan: 0.1)
             .where('roe', isGreaterThan: 0)
+            .where('quality_score', isGreaterThan: 2)
             .orderBy('debt_to_equity')
-            .orderBy('roe', descending: true);
+            .orderBy('roe', descending: true)
+            .orderBy('quality_score', descending: true);
 
       case filter.FundamentalType.qualityStocks:
-        // Use enhanced ratios for quality filtering
         return query
+            .where('quality_score', isGreaterThan: 3)
             .where('current_ratio', isGreaterThan: 1.5)
             .where('roe', isGreaterThan: 15.0)
+            .orderBy('quality_score', descending: true)
             .orderBy('current_ratio', descending: true)
             .orderBy('roe', descending: true);
 
       case filter.FundamentalType.strongBalance:
-        // Use working capital efficiency
         return query
             .where('working_capital_days', isLessThan: 60)
             .where('current_ratio', isGreaterThan: 1.5)
+            .where('debt_to_equity', isLessThan: 0.5)
             .orderBy('working_capital_days')
-            .orderBy('current_ratio', descending: true);
+            .orderBy('current_ratio', descending: true)
+            .orderBy('debt_to_equity');
 
-      // ========================================================================
-      // ENHANCED PROFITABILITY FILTERS
-      // ========================================================================
-
+      // Enhanced Profitability Filters
       case filter.FundamentalType.highROE:
         return query
             .where('roe', isGreaterThan: 15.0)
             .where('roe', isLessThan: 100)
-            .orderBy('roe', descending: true);
+            .where('quality_score', isGreaterThan: 2)
+            .orderBy('roe', descending: true)
+            .orderBy('quality_score', descending: true);
 
       case filter.FundamentalType.profitableStocks:
         return query
             .where('roe', isGreaterThan: 0)
             .where('current_ratio', isGreaterThan: 1.0)
+            .where('overall_quality_grade', whereIn: ['A', 'B', 'C'])
             .orderBy('roe', descending: true)
             .orderBy('current_ratio', descending: true);
 
@@ -125,95 +135,101 @@ Query<Map<String, dynamic>> _buildEnhancedFirestoreQuery(
         return query
             .where('roe', isGreaterThan: 12.0)
             .where('roe', isLessThan: 100)
-            .orderBy('roe', descending: true);
+            .where('quality_score', isGreaterThan: 2)
+            .orderBy('roe', descending: true)
+            .orderBy('quality_score', descending: true);
 
-      // ========================================================================
-      // ENHANCED GROWTH FILTERS
-      // ========================================================================
-
+      // Enhanced Growth Filters with new field names
       case filter.FundamentalType.growthStocks:
         return query
-            .where('Compounded Sales Growth', isGreaterThan: 15.0)
-            .where('Compounded Sales Growth', isLessThan: 200)
-            .orderBy('Compounded Sales Growth', descending: true);
+            .where('sales_growth_3y', isGreaterThan: 15.0)
+            .where('sales_growth_3y', isLessThan: 200)
+            .where('quality_score', isGreaterThan: 1)
+            .orderBy('sales_growth_3y', descending: true)
+            .orderBy('quality_score', descending: true);
 
       case filter.FundamentalType.highSalesGrowth:
         return query
-            .where('Compounded Sales Growth', isGreaterThan: 20.0)
-            .where('Compounded Sales Growth', isLessThan: 200)
-            .orderBy('Compounded Sales Growth', descending: true);
+            .where('sales_growth_3y', isGreaterThan: 20.0)
+            .where('sales_growth_3y', isLessThan: 200)
+            .orderBy('sales_growth_3y', descending: true);
 
       case filter.FundamentalType.momentumStocks:
         return query
-            .where('Compounded Profit Growth', isGreaterThan: 20.0)
-            .where('Compounded Profit Growth', isLessThan: 200)
-            .orderBy('Compounded Profit Growth', descending: true);
+            .where('profit_growth_3y', isGreaterThan: 20.0)
+            .where('profit_growth_3y', isLessThan: 200)
+            .where('recent_performance', isEqualTo: 'positive')
+            .orderBy('profit_growth_3y', descending: true);
 
-      // ========================================================================
-      // ENHANCED VALUE FILTERS
-      // ========================================================================
-
+      // Enhanced Value Filters
       case filter.FundamentalType.lowPE:
         return query
             .where('stock_pe', isLessThan: 15.0)
             .where('stock_pe', isGreaterThan: 0)
-            .orderBy('stock_pe');
+            .where('roe', isGreaterThan: 10.0)
+            .orderBy('stock_pe')
+            .orderBy('roe', descending: true);
 
       case filter.FundamentalType.valueStocks:
         return query
             .where('stock_pe', isLessThan: 12.0)
             .where('stock_pe', isGreaterThan: 0)
-            .orderBy('stock_pe');
+            .where('quality_score', isGreaterThan: 2)
+            .orderBy('stock_pe')
+            .orderBy('quality_score', descending: true);
 
       case filter.FundamentalType.undervalued:
         return query
             .where('stock_pe', isLessThan: 10.0)
             .where('stock_pe', isGreaterThan: 0)
-            .orderBy('stock_pe');
+            .where('overall_quality_grade', whereIn: ['A', 'B'])
+            .orderBy('stock_pe')
+            .orderBy('overall_quality_grade');
 
-      // ========================================================================
-      // ENHANCED DIVIDEND & INCOME FILTERS
-      // ========================================================================
-
+      // Enhanced Dividend & Income Filters
       case filter.FundamentalType.dividendStocks:
         return query
             .where('dividend_yield', isGreaterThan: 1.0)
             .where('dividend_yield', isLessThan: 50)
+            .where('debt_status', isEqualTo: 'Low Debt')
             .orderBy('dividend_yield', descending: true);
 
       case filter.FundamentalType.highDividendYield:
         return query
             .where('dividend_yield', isGreaterThan: 4.0)
             .where('dividend_yield', isLessThan: 50)
-            .orderBy('dividend_yield', descending: true);
+            .where('quality_score', isGreaterThan: 2)
+            .orderBy('dividend_yield', descending: true)
+            .orderBy('quality_score', descending: true);
 
-      // ========================================================================
-      // ENHANCED MARKET CAPITALIZATION FILTERS
-      // ========================================================================
-
+      // Market Capitalization Filters
       case filter.FundamentalType.largeCap:
         return query
             .where('market_cap', isGreaterThan: 20000)
-            .orderBy('market_cap', descending: true);
+            .where('quality_score', isGreaterThan: 1)
+            .orderBy('market_cap', descending: true)
+            .orderBy('quality_score', descending: true);
 
       case filter.FundamentalType.midCap:
         return query
             .where('market_cap', isGreaterThan: 5000)
             .where('market_cap', isLessThanOrEqualTo: 20000)
-            .orderBy('market_cap', descending: true);
+            .where('quality_score', isGreaterThan: 1)
+            .orderBy('market_cap', descending: true)
+            .orderBy('quality_score', descending: true);
 
       case filter.FundamentalType.smallCap:
         return query
             .where('market_cap', isLessThan: 5000)
             .where('market_cap', isGreaterThan: 100)
-            .orderBy('market_cap', descending: true);
+            .where('quality_score', isGreaterThan: 1)
+            .orderBy('market_cap', descending: true)
+            .orderBy('quality_score', descending: true);
 
-      // ========================================================================
-      // NEW ENHANCED FILTERS USING WORKING CAPITAL ANALYSIS
-      // ========================================================================
-
+      // NEW: Enhanced Filters Using Business Insights
       case filter.FundamentalType.workingCapitalEfficient:
         return query
+            .where('working_capital_efficiency', isEqualTo: 'Excellent')
             .where('working_capital_days', isLessThan: 45)
             .where('current_ratio', isGreaterThan: 1.5)
             .orderBy('working_capital_days')
@@ -223,33 +239,48 @@ Query<Map<String, dynamic>> _buildEnhancedFirestoreQuery(
         return query
             .where('cash_conversion_cycle', isLessThan: 60)
             .where('current_ratio', isGreaterThan: 1.2)
+            .where('cash_cycle_efficiency', isEqualTo: 'Good')
             .orderBy('cash_conversion_cycle')
             .orderBy('current_ratio', descending: true);
 
-      // ========================================================================
-      // ENHANCED RISK & VOLATILITY FILTERS
-      // ========================================================================
+      case filter.FundamentalType.businessInsightRich:
+        return query
+            .where('business_overview', isNotEqualTo: '')
+            .where('investment_highlights', isGreaterThan: 0)
+            .where('quality_score', isGreaterThan: 2)
+            .orderBy('business_overview')
+            .orderBy('investment_highlights', descending: true)
+            .orderBy('quality_score', descending: true);
 
+      case filter.FundamentalType.recentMilestones:
+        return query
+            .where('key_milestones', isGreaterThan: 0)
+            .where('recent_performance', isEqualTo: 'positive')
+            .orderBy('key_milestones', descending: true);
+
+      // Enhanced Risk & Volatility Filters
       case filter.FundamentalType.lowVolatility:
         return query
+            .where('risk_level', isEqualTo: 'Low')
             .where('roe', isGreaterThan: 10.0)
             .where('market_cap', isGreaterThan: 5000)
+            .orderBy('roe', descending: true)
             .orderBy('market_cap', descending: true);
 
       case filter.FundamentalType.contrarian:
         return query
             .where('change_percent', isLessThan: -5.0)
             .where('change_percent', isGreaterThan: -50.0)
-            .orderBy('change_percent');
-
-      // ========================================================================
-      // DEFAULT CASE
-      // ========================================================================
+            .where('quality_score', isGreaterThan: 2)
+            .orderBy('change_percent')
+            .orderBy('quality_score', descending: true);
 
       default:
         return query
             .where('market_cap', isGreaterThan: 100)
-            .orderBy('market_cap', descending: true);
+            .where('quality_score', isGreaterThan: 0)
+            .orderBy('market_cap', descending: true)
+            .orderBy('quality_score', descending: true);
     }
   } catch (e) {
     print(
@@ -261,7 +292,69 @@ Query<Map<String, dynamic>> _buildEnhancedFirestoreQuery(
 }
 
 // ============================================================================
-// ENHANCED CLIENT-SIDE FILTERING WITH NEW FINANCIAL RATIOS
+// ENHANCED SORTING LOGIC WITH BUSINESS INSIGHTS
+// ============================================================================
+
+List<CompanyModel> _applyEnhancedSorting(
+    List<CompanyModel> companies, FilterSortMode sortMode) {
+  companies.sort((a, b) {
+    switch (sortMode) {
+      case FilterSortMode.qualityScore:
+        final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
+        if (qualityComparison != 0) return qualityComparison;
+
+        final roeComparison = (b.roe ?? 0).compareTo(a.roe ?? 0);
+        if (roeComparison != 0) return roeComparison;
+
+        return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
+
+      case FilterSortMode.marketCap:
+        final marketCapComparison =
+            (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
+        if (marketCapComparison != 0) return marketCapComparison;
+
+        return b.qualityScore.compareTo(a.qualityScore);
+
+      case FilterSortMode.roe:
+        final roeComparison = (b.roe ?? 0).compareTo(a.roe ?? 0);
+        if (roeComparison != 0) return roeComparison;
+
+        return b.qualityScore.compareTo(a.qualityScore);
+
+      case FilterSortMode.workingCapital:
+        final wcA = a.workingCapitalDays ?? double.infinity;
+        final wcB = b.workingCapitalDays ?? double.infinity;
+        final wcComparison = wcA.compareTo(wcB);
+        if (wcComparison != 0) return wcComparison;
+
+        return b.qualityScore.compareTo(a.qualityScore);
+
+      case FilterSortMode.recentPerformance:
+        final changeComparison = b.changePercent.compareTo(a.changePercent);
+        if (changeComparison.abs() > 1.0) return changeComparison;
+
+        return b.qualityScore.compareTo(a.qualityScore);
+
+      case FilterSortMode.businessInsights:
+        final highlightsA = a.investmentHighlights.length;
+        final highlightsB = b.investmentHighlights.length;
+        final highlightsComparison = highlightsB.compareTo(highlightsA);
+        if (highlightsComparison != 0) return highlightsComparison;
+
+        final overviewA = a.businessOverview.isNotEmpty ? 1 : 0;
+        final overviewB = b.businessOverview.isNotEmpty ? 1 : 0;
+        final overviewComparison = overviewB.compareTo(overviewA);
+        if (overviewComparison != 0) return overviewComparison;
+
+        return b.qualityScore.compareTo(a.qualityScore);
+    }
+  });
+
+  return companies;
+}
+
+// ============================================================================
+// ENHANCED CLIENT-SIDE FILTERING WITH BUSINESS INSIGHTS
 // ============================================================================
 
 bool _matchesEnhancedComplexCriteria(
@@ -272,53 +365,72 @@ bool _matchesEnhancedComplexCriteria(
         return company.qualityScore >= 3 &&
             (company.roe ?? 0) > 12.0 &&
             (company.debtToEquity ?? double.infinity) < 0.5 &&
-            (company.currentRatio ?? 0) > 1.5;
+            (company.currentRatio ?? 0) > 1.5 &&
+            company.overallQualityGrade != 'D';
 
       case filter.FundamentalType.strongBalance:
         return (company.currentRatio ?? 0) > 1.5 &&
             (company.debtToEquity ?? double.infinity) < 0.3 &&
             (company.interestCoverage ?? 0) > 5.0 &&
             (company.workingCapitalDays ?? double.infinity) < 60 &&
-            company.qualityScore >= 2;
+            company.qualityScore >= 2 &&
+            company.liquidityStatus != 'Poor';
 
       case filter.FundamentalType.valueStocks:
         return (company.stockPe ?? double.infinity) < 12.0 &&
             (company.priceToBook ?? double.infinity) < 1.5 &&
             (company.roe ?? 0) > 10.0 &&
-            (company.currentRatio ?? 0) > 1.0;
+            (company.currentRatio ?? 0) > 1.0 &&
+            company.qualityScore >= 2;
 
       case filter.FundamentalType.consistentProfits:
         return company.hasConsistentProfits &&
             (company.roe ?? 0) > 10.0 &&
             (company.roce ?? 0) > 10.0 &&
-            (company.currentRatio ?? 0) > 1.2;
+            (company.currentRatio ?? 0) > 1.2 &&
+            company.qualityScore >= 2;
 
       case filter.FundamentalType.workingCapitalEfficient:
         return (company.workingCapitalDays ?? double.infinity) < 45 &&
             (company.currentRatio ?? 0) > 1.5 &&
-            (company.cashConversionCycle ?? double.infinity) < 60;
+            (company.cashConversionCycle ?? double.infinity) < 60 &&
+            company.workingCapitalEfficiency == 'Excellent';
 
       case filter.FundamentalType.cashEfficientStocks:
         return (company.cashConversionCycle ?? double.infinity) < 60 &&
             (company.debtorDays ?? double.infinity) < 60 &&
             (company.inventoryDays ?? double.infinity) < 90 &&
-            (company.currentRatio ?? 0) > 1.2;
+            (company.currentRatio ?? 0) > 1.2 &&
+            company.cashCycleEfficiency != 'Poor';
+
+      case filter.FundamentalType.businessInsightRich:
+        return company.businessOverview.isNotEmpty &&
+            company.investmentHighlights.isNotEmpty &&
+            company.qualityScore >= 2;
+
+      case filter.FundamentalType.recentMilestones:
+        return company.keyMilestones.isNotEmpty &&
+            company.recentPerformance == 'positive' &&
+            company.changePercent > 0;
 
       case filter.FundamentalType.contrarian:
         return company.changePercent < -5.0 &&
             company.changePercent > -50.0 &&
             (company.roe ?? 0) > 10.0 &&
             company.qualityScore >= 2 &&
-            (company.currentRatio ?? 0) > 1.0;
+            (company.currentRatio ?? 0) > 1.0 &&
+            company.riskLevel != 'High';
 
       case filter.FundamentalType.debtFree:
         return company.isDebtFree ||
-            (company.debtToEquity ?? double.infinity) < 0.1;
+            (company.debtToEquity ?? double.infinity) < 0.1 ||
+            company.debtStatus == 'Debt Free';
 
       case filter.FundamentalType.highROE:
         return (company.roe ?? 0) > 15.0 &&
             (company.roe ?? 0) < 100 &&
-            (company.currentRatio ?? 0) > 1.0;
+            (company.currentRatio ?? 0) > 1.0 &&
+            company.qualityScore >= 2;
 
       case filter.FundamentalType.lowPE:
         return (company.stockPe ?? double.infinity) < 15.0 &&
@@ -328,7 +440,8 @@ bool _matchesEnhancedComplexCriteria(
       case filter.FundamentalType.profitableStocks:
         return company.isProfitable &&
             (company.roe ?? 0) > 0 &&
-            (company.currentRatio ?? 0) > 1.0;
+            (company.currentRatio ?? 0) > 1.0 &&
+            company.overallQualityGrade != 'D';
 
       case filter.FundamentalType.growthStocks:
         return company.isGrowthStock ||
@@ -338,12 +451,14 @@ bool _matchesEnhancedComplexCriteria(
       case filter.FundamentalType.dividendStocks:
         return company.paysDividends &&
             (company.dividendYield ?? 0) > 1.0 &&
-            (company.currentRatio ?? 0) > 1.2;
+            (company.currentRatio ?? 0) > 1.2 &&
+            company.debtStatus != 'High Debt';
 
       case filter.FundamentalType.highDividendYield:
         return company.paysDividends &&
             (company.dividendYield ?? 0) > 4.0 &&
-            (company.debtToEquity ?? double.infinity) < 0.6;
+            (company.debtToEquity ?? double.infinity) < 0.6 &&
+            company.qualityScore >= 2;
 
       case filter.FundamentalType.largeCap:
         return (company.marketCap ?? 0) > 20000;
@@ -362,18 +477,20 @@ bool _matchesEnhancedComplexCriteria(
 
       case filter.FundamentalType.momentumStocks:
         return (company.profitGrowth1Y ?? 0) > 20.0 ||
-            (company.salesGrowth1Y ?? 0) > 20.0;
+            (company.salesGrowth1Y ?? 0) > 20.0 ||
+            company.recentPerformance == 'positive';
 
       case filter.FundamentalType.undervalued:
         return (company.stockPe ?? double.infinity) < 10.0 &&
             (company.stockPe ?? 0) > 0 &&
             (company.roe ?? 0) > 5.0 &&
-            company.qualityScore >= 2;
+            company.qualityScore >= 2 &&
+            company.overallQualityGrade != 'D';
 
       case filter.FundamentalType.lowVolatility:
-        return (company.volatility1Y ?? double.infinity) < 25.0 &&
-            (company.betaValue ?? double.infinity) < 1.2 &&
-            (company.currentRatio ?? 0) > 1.5;
+        return company.riskLevel == 'Low' &&
+            (company.marketCap ?? 0) > 5000 &&
+            company.qualityScore >= 2;
 
       default:
         return true;
@@ -393,6 +510,7 @@ final filteredCompaniesProvider =
     Provider<AsyncValue<List<CompanyModel>>>((ref) {
   final filterParam = ref.watch(selectedFundamentalProvider);
   final searchQuery = ref.watch(searchQueryProvider);
+  final sortMode = ref.watch(filterSortModeProvider);
   final companies = ref.watch(fundamentalCompaniesProvider(filterParam));
 
   return companies.when(
@@ -400,7 +518,6 @@ final filteredCompaniesProvider =
       try {
         var filteredData = data;
 
-        // Enhanced search with minimum length check
         if (searchQuery.isNotEmpty && searchQuery.trim().length >= 2) {
           filteredData = data
               .where(
@@ -408,29 +525,7 @@ final filteredCompaniesProvider =
               .toList();
         }
 
-        // Enhanced multi-criteria sorting
-        filteredData.sort((a, b) {
-          // Primary: Quality score (enhanced)
-          final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
-          if (qualityComparison != 0) return qualityComparison;
-
-          // Secondary: Working capital efficiency
-          final wcA = a.workingCapitalDays ?? double.infinity;
-          final wcB = b.workingCapitalDays ?? double.infinity;
-          final wcComparison = wcA.compareTo(wcB); // Lower is better
-          if (wcComparison != 0) return wcComparison;
-
-          // Tertiary: ROE
-          final roeA = a.roe ?? 0;
-          final roeB = b.roe ?? 0;
-          final roeComparison = roeB.compareTo(roeA);
-          if (roeComparison != 0) return roeComparison;
-
-          // Final: Market cap
-          final marketCapA = a.marketCap ?? 0;
-          final marketCapB = b.marketCap ?? 0;
-          return marketCapB.compareTo(marketCapA);
-        });
+        filteredData = _applyEnhancedSorting(filteredData, sortMode);
 
         return AsyncValue.data(filteredData);
       } catch (e) {
@@ -444,7 +539,7 @@ final filteredCompaniesProvider =
 });
 
 // ============================================================================
-// ENHANCED WATCHLIST MANAGEMENT
+// ENHANCED WATCHLIST MANAGEMENT WITH PERSISTENCE
 // ============================================================================
 
 final watchlistProvider =
@@ -457,28 +552,32 @@ class EnhancedWatchlistNotifier extends StateNotifier<List<String>> {
     _loadWatchlist();
   }
 
+  static const String _watchlistKey = 'enhanced_watchlist';
+
   Future<void> _loadWatchlist() async {
     try {
-      // TODO: Implement SharedPreferences or Firestore persistence
-      state = [];
+      final prefs = await SharedPreferences.getInstance();
+      final watchlistData = prefs.getStringList(_watchlistKey) ?? [];
+      state = watchlistData.map((s) => s.toUpperCase()).toList();
     } catch (e) {
-      print('Error loading watchlist: $e');
+      print('Error loading enhanced watchlist: $e');
       state = [];
     }
   }
 
   Future<void> _saveWatchlist() async {
     try {
-      // TODO: Implement persistence
-      print('Enhanced watchlist updated: ${state.length} items');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_watchlistKey, state);
+      print('Enhanced watchlist saved: ${state.length} items');
     } catch (e) {
-      print('Error saving watchlist: $e');
+      print('Error saving enhanced watchlist: $e');
     }
   }
 
   void addToWatchlist(String symbol) {
     final normalizedSymbol = symbol.trim().toUpperCase();
-    if (!state.contains(normalizedSymbol)) {
+    if (!state.contains(normalizedSymbol) && state.length < 50) {
       state = [...state, normalizedSymbol];
       _saveWatchlist();
     }
@@ -508,7 +607,13 @@ class EnhancedWatchlistNotifier extends StateNotifier<List<String>> {
     _saveWatchlist();
   }
 
-  // Enhanced watchlist companies with quality sorting
+  void reorderWatchlist(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) newIndex--;
+    final item = state.removeAt(oldIndex);
+    state = [...state]..insert(newIndex, item);
+    _saveWatchlist();
+  }
+
   Stream<List<CompanyModel>> getEnhancedWatchlistCompanies() {
     if (state.isEmpty) return Stream.value([]);
 
@@ -526,15 +631,23 @@ class EnhancedWatchlistNotifier extends StateNotifier<List<String>> {
         }
       }
 
-      // Enhanced sorting by quality score
-      companies.sort((a, b) => b.qualityScore.compareTo(a.qualityScore));
+      companies.sort((a, b) {
+        final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
+        if (qualityComparison != 0) return qualityComparison;
+
+        final changeComparison = b.changePercent.compareTo(a.changePercent);
+        if (changeComparison.abs() > 1.0) return changeComparison;
+
+        return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
+      });
+
       return companies;
     });
   }
 }
 
 // ============================================================================
-// ENHANCED CATEGORY PROVIDER WITH NEW FILTERS
+// ENHANCED CATEGORY PROVIDER WITH BUSINESS INSIGHTS
 // ============================================================================
 
 final companiesByCategoryProvider =
@@ -547,8 +660,10 @@ final companiesByCategoryProvider =
       return FirebaseFirestore.instance
           .collection('companies')
           .where('market_cap', isGreaterThan: 500)
+          .where('quality_score', isGreaterThan: 1)
           .orderBy('market_cap', descending: true)
-          .limit(400) // Increased for better results
+          .orderBy('quality_score', descending: true)
+          .limit(500)
           .snapshots()
           .map((snapshot) {
         List<CompanyModel> companies = [];
@@ -574,20 +689,9 @@ final companiesByCategoryProvider =
           }
         }
 
-        // Enhanced sorting with quality score and working capital efficiency
-        companies.sort((a, b) {
-          final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
-          if (qualityComparison != 0) return qualityComparison;
-
-          final wcA = a.workingCapitalDays ?? double.infinity;
-          final wcB = b.workingCapitalDays ?? double.infinity;
-          final wcComparison = wcA.compareTo(wcB);
-          if (wcComparison != 0) return wcComparison;
-
-          return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
-        });
-
-        return companies.take(60).toList();
+        companies =
+            _applyEnhancedSorting(companies, FilterSortMode.qualityScore);
+        return companies.take(80).toList();
       });
     } catch (e) {
       print('Error in enhanced companiesByCategoryProvider: $e');
@@ -597,18 +701,20 @@ final companiesByCategoryProvider =
 );
 
 // ============================================================================
-// ENHANCED POPULAR STOCKS PROVIDER
+// ENHANCED POPULAR STOCKS WITH BUSINESS INSIGHTS
 // ============================================================================
 
 final popularStocksProvider = StreamProvider<List<CompanyModel>>((ref) {
   return FirebaseFirestore.instance
       .collection('companies')
+      .where('quality_score', isGreaterThan: 3)
       .where('roe', isGreaterThan: 15.0)
       .where('roe', isLessThan: 100)
       .where('current_ratio', isGreaterThan: 1.5)
+      .orderBy('quality_score', descending: true)
       .orderBy('roe', descending: true)
       .orderBy('current_ratio', descending: true)
-      .limit(120)
+      .limit(150)
       .snapshots()
       .map((snapshot) {
     List<CompanyModel> companies = [];
@@ -616,8 +722,9 @@ final popularStocksProvider = StreamProvider<List<CompanyModel>>((ref) {
     for (var doc in snapshot.docs) {
       try {
         final company = CompanyModel.fromFirestore(doc);
-        // Additional quality filtering
-        if (company.qualityScore >= 3) {
+        if (company.qualityScore >= 3 &&
+            company.overallQualityGrade != 'D' &&
+            company.riskLevel != 'High') {
           companies.add(company);
         }
       } catch (e) {
@@ -625,30 +732,26 @@ final popularStocksProvider = StreamProvider<List<CompanyModel>>((ref) {
       }
     }
 
-    // Enhanced sorting with multiple criteria
     companies.sort((a, b) {
       final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
       if (qualityComparison != 0) return qualityComparison;
 
-      final roeA = a.roe ?? 0;
-      final roeB = b.roe ?? 0;
-      final roeComparison = roeB.compareTo(roeA);
-      if (roeComparison != 0) return roeComparison;
+      final highlightsComparison = b.investmentHighlights.length
+          .compareTo(a.investmentHighlights.length);
+      if (highlightsComparison != 0) return highlightsComparison;
 
-      final wcA = a.workingCapitalDays ?? double.infinity;
-      final wcB = b.workingCapitalDays ?? double.infinity;
-      final wcComparison = wcA.compareTo(wcB);
-      if (wcComparison != 0) return wcComparison;
+      final roeComparison = (b.roe ?? 0).compareTo(a.roe ?? 0);
+      if (roeComparison != 0) return roeComparison;
 
       return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
     });
 
-    return companies.take(40).toList();
+    return companies.take(50).toList();
   });
 });
 
 // ============================================================================
-// ENHANCED FILTER STATS WITH NEW METRICS
+// ENHANCED FILTER STATS WITH BUSINESS INSIGHTS METRICS
 // ============================================================================
 
 final filterStatsProvider =
@@ -661,7 +764,7 @@ final filterStatsProvider =
     return FirebaseFirestore.instance
         .collection('companies')
         .where('market_cap', isGreaterThan: 100)
-        .limit(600)
+        .limit(800)
         .snapshots()
         .map((snapshot) {
       try {
@@ -702,6 +805,11 @@ class EnhancedFilterStats {
   final double avgWorkingCapitalDays;
   final double avgCurrentRatio;
   final int qualityStocksCount;
+  final int businessInsightRichCount;
+  final int debtFreeCount;
+  final int dividendPayingCount;
+  final Map<String, int> riskDistribution;
+  final Map<String, int> qualityGradeDistribution;
 
   EnhancedFilterStats({
     required this.totalCount,
@@ -711,6 +819,11 @@ class EnhancedFilterStats {
     required this.avgWorkingCapitalDays,
     required this.avgCurrentRatio,
     required this.qualityStocksCount,
+    required this.businessInsightRichCount,
+    required this.debtFreeCount,
+    required this.dividendPayingCount,
+    required this.riskDistribution,
+    required this.qualityGradeDistribution,
   });
 
   factory EnhancedFilterStats.empty() {
@@ -722,6 +835,11 @@ class EnhancedFilterStats {
       avgWorkingCapitalDays: 0,
       avgCurrentRatio: 0,
       qualityStocksCount: 0,
+      businessInsightRichCount: 0,
+      debtFreeCount: 0,
+      dividendPayingCount: 0,
+      riskDistribution: {},
+      qualityGradeDistribution: {},
     );
   }
 
@@ -754,6 +872,22 @@ class EnhancedFilterStats {
 
     final qualityStocksCount =
         companies.where((c) => c.qualityScore >= 3).length;
+    final businessInsightRichCount = companies
+        .where((c) =>
+            c.businessOverview.isNotEmpty && c.investmentHighlights.isNotEmpty)
+        .length;
+    final debtFreeCount = companies.where((c) => c.isDebtFree).length;
+    final dividendPayingCount = companies.where((c) => c.paysDividends).length;
+
+    final riskDistribution = <String, int>{};
+    final qualityGradeDistribution = <String, int>{};
+
+    for (final company in companies) {
+      riskDistribution[company.riskLevel] =
+          (riskDistribution[company.riskLevel] ?? 0) + 1;
+      qualityGradeDistribution[company.overallQualityGrade] =
+          (qualityGradeDistribution[company.overallQualityGrade] ?? 0) + 1;
+    }
 
     return EnhancedFilterStats(
       totalCount: companies.length,
@@ -774,6 +908,11 @@ class EnhancedFilterStats {
           : validCurrentRatios.reduce((a, b) => a + b) /
               validCurrentRatios.length,
       qualityStocksCount: qualityStocksCount,
+      businessInsightRichCount: businessInsightRichCount,
+      debtFreeCount: debtFreeCount,
+      dividendPayingCount: dividendPayingCount,
+      riskDistribution: riskDistribution,
+      qualityGradeDistribution: qualityGradeDistribution,
     );
   }
 
@@ -815,4 +954,77 @@ class EnhancedFilterStats {
     if (avgWorkingCapitalDays < 90) return 'Average';
     return 'Needs Improvement';
   }
+
+  String get businessInsightsRichness {
+    if (totalCount == 0) return 'No data';
+    final percentage = (businessInsightRichCount / totalCount) * 100;
+    if (percentage >= 80) return 'Comprehensive';
+    if (percentage >= 60) return 'Good';
+    if (percentage >= 40) return 'Moderate';
+    return 'Limited';
+  }
+
+  String get dominantRiskLevel {
+    if (riskDistribution.isEmpty) return 'Unknown';
+    return riskDistribution.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
+  }
+
+  String get dominantQualityGrade {
+    if (qualityGradeDistribution.isEmpty) return 'Unknown';
+    return qualityGradeDistribution.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
+  }
 }
+
+// ============================================================================
+// NEW: BUSINESS INSIGHTS PROVIDER
+// ============================================================================
+
+final companiesWithBusinessInsightsProvider =
+    StreamProvider<List<CompanyModel>>((ref) {
+  return FirebaseFirestore.instance
+      .collection('companies')
+      .where('business_overview', isNotEqualTo: '')
+      .where('investment_highlights', isGreaterThan: 0)
+      .where('quality_score', isGreaterThan: 2)
+      .orderBy('business_overview')
+      .orderBy('investment_highlights', descending: true)
+      .orderBy('quality_score', descending: true)
+      .limit(100)
+      .snapshots()
+      .map((snapshot) {
+    List<CompanyModel> companies = [];
+
+    for (var doc in snapshot.docs) {
+      try {
+        final company = CompanyModel.fromFirestore(doc);
+        if (company.businessOverview.isNotEmpty &&
+            company.investmentHighlights.isNotEmpty) {
+          companies.add(company);
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+
+    companies.sort((a, b) {
+      final highlightsComparison = b.investmentHighlights.length
+          .compareTo(a.investmentHighlights.length);
+      if (highlightsComparison != 0) return highlightsComparison;
+
+      final milestonesComparison =
+          b.keyMilestones.length.compareTo(a.keyMilestones.length);
+      if (milestonesComparison != 0) return milestonesComparison;
+
+      final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
+      if (qualityComparison != 0) return qualityComparison;
+
+      return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
+    });
+
+    return companies;
+  });
+});

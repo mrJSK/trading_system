@@ -7,11 +7,9 @@ import '../widgets/fundamental_tabs.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/company_list.dart';
 import '../widgets/scraping_status_bar.dart';
-import '../screens/scraping_management_screen.dart'; // Add this import
 import '../theme/app_theme.dart';
-import '../providers/theme_provider.dart';
+import '../theme/theme_provider.dart';
 import '../providers/fundamental_provider.dart';
-import '../models/fundamental_filter.dart' as fundamental;
 
 // String extension for capitalization
 extension StringExtensions on String {
@@ -306,81 +304,11 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 20),
             GridView.count(
               shrinkWrap: true,
-              crossAxisCount: 3,
+              crossAxisCount: 2,
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
+              childAspectRatio: 1.2,
               children: [
-                _buildQuickActionCard(
-                  context,
-                  ref,
-                  'Top Gainers',
-                  Icons.trending_up,
-                  Colors.green,
-                  () {
-                    Navigator.pop(context);
-                    ref.read(companiesProvider.notifier).loadTopPerformers();
-                  },
-                ),
-                _buildQuickActionCard(
-                  context,
-                  ref,
-                  'Quality Stocks',
-                  Icons.star,
-                  Colors.blue,
-                  () {
-                    Navigator.pop(context);
-                    ref.read(companiesProvider.notifier).loadQualityStocks();
-                  },
-                ),
-                _buildQuickActionCard(
-                  context,
-                  ref,
-                  'Debt Free',
-                  Icons.shield,
-                  Colors.purple,
-                  () {
-                    Navigator.pop(context);
-                    final selectedFilter = fundamental
-                        .FundamentalFilter.defaultFilters
-                        .firstWhere((f) =>
-                            f.type == fundamental.FundamentalType.debtFree);
-                    ref.read(selectedFundamentalProvider.notifier).state =
-                        selectedFilter;
-                  },
-                ),
-                _buildQuickActionCard(
-                  context,
-                  ref,
-                  'High ROE',
-                  Icons.grade,
-                  Colors.orange,
-                  () {
-                    Navigator.pop(context);
-                    final selectedFilter = fundamental
-                        .FundamentalFilter.defaultFilters
-                        .firstWhere((f) =>
-                            f.type == fundamental.FundamentalType.highROE);
-                    ref.read(selectedFundamentalProvider.notifier).state =
-                        selectedFilter;
-                  },
-                ),
-                _buildQuickActionCard(
-                  context,
-                  ref,
-                  'Dividend',
-                  Icons.account_balance_wallet,
-                  Colors.teal,
-                  () {
-                    Navigator.pop(context);
-                    final selectedFilter = fundamental
-                        .FundamentalFilter.defaultFilters
-                        .firstWhere((f) =>
-                            f.type ==
-                            fundamental.FundamentalType.dividendStocks);
-                    ref.read(selectedFundamentalProvider.notifier).state =
-                        selectedFilter;
-                  },
-                ),
                 _buildQuickActionCard(
                   context,
                   ref,
@@ -390,23 +318,6 @@ class DashboardScreen extends ConsumerWidget {
                   () {
                     Navigator.pop(context);
                     _showWatchlistBottomSheet(context, ref);
-                  },
-                ),
-                // UPDATED: Navigate to Scraping Management Screen
-                _buildQuickActionCard(
-                  context,
-                  ref,
-                  'Scraping Manager',
-                  Icons.cloud_sync,
-                  Colors.deepPurple,
-                  () {
-                    Navigator.pop(context); // Close quick actions first
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ScrapingManagementScreen(),
-                      ),
-                    );
                   },
                 ),
                 _buildQuickActionCard(
@@ -449,11 +360,6 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
-
-  // REMOVED: All scraping dialog methods
-  // - _showManualScraperDialog()
-  // - _triggerManualScraper()
-  // - _showScrapingStatusDialog()
 
   Future<void> _debugFetchRawData(WidgetRef ref) async {
     print('=== 🐛 DEBUG: Starting raw companies fetch ===');
@@ -681,14 +587,14 @@ class DashboardScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
+            Icon(icon, color: color, size: 36),
+            const SizedBox(height: 12),
             Text(
               title,
               style: TextStyle(
                 color: color,
                 fontWeight: FontWeight.w600,
-                fontSize: 12,
+                fontSize: 13,
               ),
               textAlign: TextAlign.center,
             ),

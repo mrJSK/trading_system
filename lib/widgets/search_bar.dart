@@ -61,8 +61,7 @@ class _CustomSearchBarState extends ConsumerState<CustomSearchBar> {
             }
           },
           decoration: InputDecoration(
-            hintText:
-                'Search by symbol (RELIANCE) or name (Reliance Industries)...',
+            hintText: 'Search company',
             prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondary),
             suffixIcon: _controller.text.isNotEmpty
                 ? IconButton(

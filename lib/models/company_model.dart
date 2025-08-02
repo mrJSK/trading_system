@@ -74,8 +74,101 @@ class ShareholdingPatternConverter
   }
 }
 
+/// JsonConverter for KeyMilestone list
+class KeyMilestoneListConverter
+    implements JsonConverter<List<KeyMilestone>?, Object?> {
+  const KeyMilestoneListConverter();
+
+  @override
+  List<KeyMilestone>? fromJson(Object? json) {
+    if (json == null) return null;
+    try {
+      if (json is List) {
+        return json
+            .map((item) => item is Map<String, dynamic>
+                ? KeyMilestone.fromJson(item)
+                : null)
+            .where((item) => item != null)
+            .cast<KeyMilestone>()
+            .toList();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error converting from JSON to List<KeyMilestone>: $e');
+      return null;
+    }
+  }
+
+  @override
+  Object? toJson(List<KeyMilestone>? object) {
+    return object?.map((item) => item.toJson()).toList();
+  }
+}
+
+/// JsonConverter for InvestmentHighlight list
+class InvestmentHighlightListConverter
+    implements JsonConverter<List<InvestmentHighlight>?, Object?> {
+  const InvestmentHighlightListConverter();
+
+  @override
+  List<InvestmentHighlight>? fromJson(Object? json) {
+    if (json == null) return null;
+    try {
+      if (json is List) {
+        return json
+            .map((item) => item is Map<String, dynamic>
+                ? InvestmentHighlight.fromJson(item)
+                : null)
+            .where((item) => item != null)
+            .cast<InvestmentHighlight>()
+            .toList();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error converting from JSON to List<InvestmentHighlight>: $e');
+      return null;
+    }
+  }
+
+  @override
+  Object? toJson(List<InvestmentHighlight>? object) {
+    return object?.map((item) => item.toJson()).toList();
+  }
+}
+
+/// JsonConverter for FinancialSummary list
+class FinancialSummaryListConverter
+    implements JsonConverter<List<FinancialSummary>?, Object?> {
+  const FinancialSummaryListConverter();
+
+  @override
+  List<FinancialSummary>? fromJson(Object? json) {
+    if (json == null) return null;
+    try {
+      if (json is List) {
+        return json
+            .map((item) => item is Map<String, dynamic>
+                ? FinancialSummary.fromJson(item)
+                : null)
+            .where((item) => item != null)
+            .cast<FinancialSummary>()
+            .toList();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error converting from JSON to List<FinancialSummary>: $e');
+      return null;
+    }
+  }
+
+  @override
+  Object? toJson(List<FinancialSummary>? object) {
+    return object?.map((item) => item.toJson()).toList();
+  }
+}
+
 // ============================================================================
-// MAIN COMPANY MODEL - UPDATED WITH ENHANCED RATIOS
+// MAIN COMPANY MODEL - UPDATED WITH KEY POINTS AND ENHANCED RATIOS
 // ============================================================================
 
 @freezed
@@ -122,12 +215,10 @@ class CompanyModel with _$CompanyModel {
     double? debtToEquity,
     double? currentRatio,
     double? quickRatio,
-    double?
-        workingCapitalDays, // NEW: Working Capital Days (like 38 for 3M India)
-    double? debtorDays, // NEW: Debtor Days (like 65 for 3M India)
-    double? inventoryDays, // NEW: Inventory Days (like 89 for 3M India)
-    double?
-        cashConversionCycle, // NEW: Cash Conversion Cycle (like 50 for 3M India)
+    double? workingCapitalDays, // NEW: Working Capital Days
+    double? debtorDays, // NEW: Debtor Days
+    double? inventoryDays, // NEW: Inventory Days
+    double? cashConversionCycle, // NEW: Cash Conversion Cycle
     double? interestCoverage,
     double? assetTurnover,
 
@@ -155,16 +246,37 @@ class CompanyModel with _$CompanyModel {
     double? profitCAGR3Y,
     double? profitCAGR5Y,
 
+    // **NEW: KEY POINTS AND COMPANY INSIGHTS FROM ENHANCED SCRAPER**
+    @Default('') String businessOverview,
+    String? sector,
+    String? industry,
+    @Default([]) List<String> industryClassification,
+    @Default({}) Map<String, dynamic> recentPerformance,
+    @KeyMilestoneListConverter() @Default([]) List<KeyMilestone> keyMilestones,
+    @InvestmentHighlightListConverter()
+    @Default([])
+    List<InvestmentHighlight> investmentHighlights,
+    @FinancialSummaryListConverter()
+    @Default([])
+    List<FinancialSummary> financialSummary,
+
+    // **NEW: ENHANCED QUALITY AND EFFICIENCY METRICS**
+    @Default(3) int qualityScore, // 1-5 score from scraper
+    @Default('C') String overallQualityGrade, // A, B, C, D grade
+    @Default('Unknown')
+    String workingCapitalEfficiency, // Excellent, Good, Average, Poor
+    @Default('Unknown') String cashCycleEfficiency,
+    @Default('Unknown') String liquidityStatus,
+    @Default('Unknown') String debtStatus,
+    @Default('Medium') String riskLevel, // Low, Medium, High
+
     // Quality scores (if available from scraper)
     double? piotroskiScore,
     double? altmanZScore,
     String? qualityGrade,
     String? creditRating,
 
-    // Industry and shareholding data
-    String? sector,
-    String? industry,
-    @Default([]) List<String> industryClassification,
+    // Shareholding data
     @ShareholdingPatternConverter() ShareholdingPattern? shareholdingPattern,
     @Default({}) Map<String, dynamic> ratiosData,
     @Default({}) Map<String, Map<String, String>> growthTables,
@@ -221,7 +333,7 @@ class CompanyModel with _$CompanyModel {
   factory CompanyModel.fromJson(Map<String, dynamic> json) =>
       _$CompanyModelFromJson(json);
 
-  /// Enhanced fromFirestore method with new ratios fields
+  /// Enhanced fromFirestore method with new key points and ratios fields
   factory CompanyModel.fromFirestore(DocumentSnapshot doc) {
     try {
       final rawData = doc.data();
@@ -283,21 +395,47 @@ class CompanyModel with _$CompanyModel {
         // Calculate price to book if available
         'priceToBook': _calculatePriceToBook(dataMap),
 
+        // **NEW: KEY POINTS AND COMPANY INSIGHTS**
+        'businessOverview': _safeString(dataMap['business_overview']) ?? '',
+        'sector': _safeString(dataMap['sector']),
+        'industry': _safeString(dataMap['industry']),
+        'industryClassification':
+            _safeStringList(dataMap['industry_classification']) ?? [],
+        'recentPerformance': _safeMap(dataMap['recent_performance']),
+        'keyMilestones': _parseKeyMilestones(dataMap['key_milestones']),
+        'investmentHighlights':
+            _parseInvestmentHighlights(dataMap['investment_highlights']),
+        'financialSummary':
+            _parseFinancialSummary(dataMap['financial_summary']),
+
+        // **NEW: ENHANCED QUALITY AND EFFICIENCY METRICS**
+        'qualityScore': _safeInt(dataMap['quality_score']) ?? 3,
+        'overallQualityGrade':
+            _safeString(dataMap['overall_quality_grade']) ?? 'C',
+        'workingCapitalEfficiency':
+            _safeString(dataMap['working_capital_efficiency']) ?? 'Unknown',
+        'cashCycleEfficiency':
+            _safeString(dataMap['cash_cycle_efficiency']) ?? 'Unknown',
+        'liquidityStatus':
+            _safeString(dataMap['liquidity_status']) ?? 'Unknown',
+        'debtStatus': _safeString(dataMap['debt_status']) ?? 'Unknown',
+        'riskLevel': _safeString(dataMap['risk_level']) ?? 'Medium',
+
         // Quality scores (if available from scraper)
         'piotroskiScore': _safeDouble(dataMap['piotroski_score']),
         'altmanZScore': _safeDouble(dataMap['altman_z_score']),
         'qualityGrade': _safeString(dataMap['quality_grade']),
 
         // Growth metrics using exact field names from database
-        'salesGrowth3Y': _safeDouble(dataMap['Compounded Sales Growth']),
-        'profitGrowth3Y': _safeDouble(dataMap['Compounded Profit Growth']),
+        'salesGrowth3Y': _safeDouble(dataMap['sales_growth_3y']) ??
+            _safeDouble(dataMap['Compounded Sales Growth']),
+        'profitGrowth3Y': _safeDouble(dataMap['profit_growth_3y']) ??
+            _safeDouble(dataMap['Compounded Profit Growth']),
         'salesCAGR3Y': _safeDouble(dataMap['Stock Price CAGR']),
 
         // Arrays with safe parsing
         'pros': _safeStringList(dataMap['pros']) ?? [],
         'cons': _safeStringList(dataMap['cons']) ?? [],
-        'industryClassification':
-            _safeStringList(dataMap['industry_classification']) ?? [],
 
         // Complex objects with bulletproof parsing
         'quarterlyResults':
@@ -347,11 +485,19 @@ class CompanyModel with _$CompanyModel {
         'displayName':
             _safeString(dataMap['display_name']) ?? 'Unknown Company',
         'lastUpdated': DateTime.now().toIso8601String(),
+        'businessOverview': '',
         'marketCap': _safeDouble(dataMap['market_cap']),
         'currentPrice': _safeDouble(dataMap['current_price']),
         'changePercent': _safeDouble(dataMap['change_percent']) ?? 0.0,
         'changeAmount': 0.0,
         'previousClose': 0.0,
+        'qualityScore': 3,
+        'overallQualityGrade': 'C',
+        'workingCapitalEfficiency': 'Unknown',
+        'cashCycleEfficiency': 'Unknown',
+        'liquidityStatus': 'Unknown',
+        'debtStatus': 'Unknown',
+        'riskLevel': 'Medium',
         'pros': <String>[],
         'cons': <String>[],
         'industryClassification': <String>[],
@@ -363,6 +509,10 @@ class CompanyModel with _$CompanyModel {
         'indices': <String>[],
         'ratiosData': <String, dynamic>{},
         'growthTables': <String, Map<String, String>>{},
+        'recentPerformance': <String, dynamic>{},
+        'keyMilestones': <KeyMilestone>[],
+        'investmentHighlights': <InvestmentHighlight>[],
+        'financialSummary': <FinancialSummary>[],
       });
     }
   }
@@ -384,6 +534,17 @@ class CompanyModel with _$CompanyModel {
     if (value is String) {
       final clean = value.replaceAll(RegExp(r'[^0-9.-]'), '');
       return double.tryParse(clean);
+    }
+    return null;
+  }
+
+  static int? _safeInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.round();
+    if (value is String) {
+      final clean = value.replaceAll(RegExp(r'[^0-9.-]'), '');
+      return int.tryParse(clean);
     }
     return null;
   }
@@ -427,6 +588,67 @@ class CompanyModel with _$CompanyModel {
       return double.parse((price / book).toStringAsFixed(2));
     }
     return null;
+  }
+
+  // ============================================================================
+  // NEW: KEY POINTS PARSING METHODS
+  // ============================================================================
+
+  static List<KeyMilestone> _parseKeyMilestones(dynamic value) {
+    if (value == null) return [];
+    try {
+      if (value is List) {
+        return value
+            .map((item) => item is Map<String, dynamic>
+                ? KeyMilestone.fromJson(item)
+                : null)
+            .where((item) => item != null)
+            .cast<KeyMilestone>()
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error parsing key milestones: $e');
+      return [];
+    }
+  }
+
+  static List<InvestmentHighlight> _parseInvestmentHighlights(dynamic value) {
+    if (value == null) return [];
+    try {
+      if (value is List) {
+        return value
+            .map((item) => item is Map<String, dynamic>
+                ? InvestmentHighlight.fromJson(item)
+                : null)
+            .where((item) => item != null)
+            .cast<InvestmentHighlight>()
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error parsing investment highlights: $e');
+      return [];
+    }
+  }
+
+  static List<FinancialSummary> _parseFinancialSummary(dynamic value) {
+    if (value == null) return [];
+    try {
+      if (value is List) {
+        return value
+            .map((item) => item is Map<String, dynamic>
+                ? FinancialSummary.fromJson(item)
+                : null)
+            .where((item) => item != null)
+            .cast<FinancialSummary>()
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error parsing financial summary: $e');
+      return [];
+    }
   }
 
   // ============================================================================
@@ -507,7 +729,8 @@ class CompanyModel with _$CompanyModel {
 
   static bool _calculateHasConsistentProfits(Map<String, dynamic> data) {
     final roe = _safeDouble(data['roe']);
-    final profitGrowth = _safeDouble(data['Compounded Profit Growth']);
+    final profitGrowth = _safeDouble(data['Compounded Profit Growth']) ??
+        _safeDouble(data['profit_growth_3y']);
     return (roe != null && roe > 10.0) &&
         (profitGrowth != null && profitGrowth > 0);
   }
@@ -518,8 +741,10 @@ class CompanyModel with _$CompanyModel {
   }
 
   static bool _calculateIsGrowthStock(Map<String, dynamic> data) {
-    final salesGrowth = _safeDouble(data['Compounded Sales Growth']);
-    final profitGrowth = _safeDouble(data['Compounded Profit Growth']);
+    final salesGrowth = _safeDouble(data['Compounded Sales Growth']) ??
+        _safeDouble(data['sales_growth_3y']);
+    final profitGrowth = _safeDouble(data['Compounded Profit Growth']) ??
+        _safeDouble(data['profit_growth_3y']);
     return (salesGrowth != null && salesGrowth > 15.0) ||
         (profitGrowth != null && profitGrowth > 15.0);
   }
@@ -534,9 +759,11 @@ class CompanyModel with _$CompanyModel {
     final roe = _safeDouble(data['roe']);
     final roce = _safeDouble(data['roce']);
     final piotroskiScore = _safeDouble(data['piotroski_score']);
+    final qualityScore = _safeInt(data['quality_score']);
     return (roe != null && roe > 15.0) ||
         (roce != null && roce > 15.0) ||
-        (piotroskiScore != null && piotroskiScore >= 7);
+        (piotroskiScore != null && piotroskiScore >= 7) ||
+        (qualityScore != null && qualityScore >= 4);
   }
 
   // ============================================================================
@@ -591,85 +818,23 @@ class CompanyModel with _$CompanyModel {
     }
   }
 
-  // Enhanced quality score using available data
-  int get qualityScore {
-    int score = 0;
-
-    // Use Piotroski score if available, otherwise calculate manually
-    if (piotroskiScore != null && piotroskiScore! >= 7) {
-      return 5; // Excellent quality
-    } else if (piotroskiScore != null && piotroskiScore! >= 5) {
-      return 4; // Good quality
-    } else if (piotroskiScore != null && piotroskiScore! >= 3) {
-      return 3; // Average quality
+  // NEW: Additional formatted getters for display
+  String get formattedBusinessOverview {
+    if (businessOverview.isEmpty) {
+      return '$name operates in the ${sector ?? "various"} sector'
+          '${industry != null ? ", specifically in $industry" : ""}. '
+          'With a market capitalization of $formattedMarketCap, '
+          'the company is classified as a ${marketCapCategoryText.toLowerCase()} entity.';
     }
-
-    // Manual calculation if no Piotroski score
-    if (roe != null && roe! > 15) score++;
-    if (debtToEquity != null && debtToEquity! < 0.5) score++;
-    if (currentRatio != null && currentRatio! > 1.5) score++;
-    if (interestCoverage != null && interestCoverage! > 5) score++;
-    if (hasConsistentProfits) score++;
-
-    return score;
+    return businessOverview;
   }
 
-  // **MISSING GETTER - This was causing the error**
-  String get overallQualityGrade {
-    // Use scraped quality grade if available
-    if (qualityGrade != null && qualityGrade!.isNotEmpty) {
-      return qualityGrade!;
-    }
-
-    // Fallback to calculated grade based on quality score
-    final score = qualityScore;
-    if (score >= 4) return 'A';
-    if (score >= 3) return 'B';
-    if (score >= 2) return 'C';
-    return 'D';
+  String get formattedSector {
+    return sector ?? 'Unknown Sector';
   }
 
-  String get riskLevel {
-    if (betaValue == null) return 'Unknown';
-    if (betaValue! > 1.5) return 'High';
-    if (betaValue! > 1.0) return 'Medium';
-    return 'Low';
-  }
-
-  // Enhanced working capital efficiency
-  String get workingCapitalEfficiency {
-    if (workingCapitalDays == null) return 'Unknown';
-    if (workingCapitalDays! < 30) return 'Excellent';
-    if (workingCapitalDays! < 60) return 'Good';
-    if (workingCapitalDays! < 90) return 'Average';
-    return 'Poor';
-  }
-
-  // Cash conversion cycle analysis
-  String get cashCycleEfficiency {
-    if (cashConversionCycle == null) return 'Unknown';
-    if (cashConversionCycle! < 30) return 'Excellent';
-    if (cashConversionCycle! < 60) return 'Good';
-    if (cashConversionCycle! < 90) return 'Average';
-    return 'Poor';
-  }
-
-  // Liquidity analysis
-  String get liquidityStatus {
-    if (currentRatio == null) return 'Unknown';
-    if (currentRatio! >= 2.0) return 'Excellent';
-    if (currentRatio! >= 1.5) return 'Good';
-    if (currentRatio! >= 1.0) return 'Adequate';
-    return 'Poor';
-  }
-
-  // Debt analysis
-  String get debtStatus {
-    if (debtToEquity == null) return 'Unknown';
-    if (debtToEquity! <= 0.1) return 'Debt Free';
-    if (debtToEquity! <= 0.3) return 'Low Debt';
-    if (debtToEquity! <= 0.6) return 'Moderate Debt';
-    return 'High Debt';
+  String get formattedIndustry {
+    return industry ?? 'Unknown Industry';
   }
 
   bool matchesFundamentalFilter(FundamentalType type) {
@@ -718,8 +883,54 @@ class CompanyModel with _$CompanyModel {
     return name.toLowerCase().contains(queryLower) ||
         symbol.toLowerCase().contains(queryLower) ||
         displayName.toLowerCase().contains(queryLower) ||
-        (sector?.toLowerCase().contains(queryLower) ?? false);
+        (sector?.toLowerCase().contains(queryLower) ?? false) ||
+        (industry?.toLowerCase().contains(queryLower) ?? false);
   }
+}
+
+// ============================================================================
+// NEW: KEY POINTS SUPPORTING DATA MODELS
+// ============================================================================
+
+@freezed
+class KeyMilestone with _$KeyMilestone {
+  const factory KeyMilestone({
+    required String category,
+    required String description,
+    @Default('medium') String relevance,
+    String? year,
+    @TimestampConverter() DateTime? date,
+  }) = _KeyMilestone;
+
+  factory KeyMilestone.fromJson(Map<String, dynamic> json) =>
+      _$KeyMilestoneFromJson(json);
+}
+
+@freezed
+class InvestmentHighlight with _$InvestmentHighlight {
+  const factory InvestmentHighlight({
+    required String type,
+    required String description,
+    required String impact, // positive, negative, neutral
+    double? value,
+    String? unit,
+  }) = _InvestmentHighlight;
+
+  factory InvestmentHighlight.fromJson(Map<String, dynamic> json) =>
+      _$InvestmentHighlightFromJson(json);
+}
+
+@freezed
+class FinancialSummary with _$FinancialSummary {
+  const factory FinancialSummary({
+    required String metric,
+    required String value,
+    String? unit,
+    String? trend, // up, down, stable
+  }) = _FinancialSummary;
+
+  factory FinancialSummary.fromJson(Map<String, dynamic> json) =>
+      _$FinancialSummaryFromJson(json);
 }
 
 // ============================================================================
@@ -748,6 +959,8 @@ class QuarterlyData with _$QuarterlyData {
     double? depreciation,
     double? interestExpense,
     double? taxExpense,
+    double? profitMargin,
+    double? ebitdaMargin,
     @TimestampConverter() DateTime? reportDate,
   }) = _QuarterlyData;
 
@@ -769,6 +982,26 @@ class AnnualData with _$AnnualData {
     double? pbRatio,
     double? dividendPerShare,
     double? faceValue,
+    double? operatingProfit,
+    double? ebitda,
+    double? grossProfit,
+    double? totalAssets,
+    double? totalLiabilities,
+    double? shareholdersEquity,
+    double? totalDebt,
+    double? workingCapital,
+    double? operatingCashFlow,
+    double? investingCashFlow,
+    double? financingCashFlow,
+    double? freeCashFlow,
+    double? currentRatio,
+    double? quickRatio,
+    double? debtToEquity,
+    double? profitMargin,
+    double? ebitdaMargin,
+    double? assetTurnover,
+    double? inventoryTurnover,
+    double? interestCoverage,
     @TimestampConverter() DateTime? yearEnd,
   }) = _AnnualData;
 

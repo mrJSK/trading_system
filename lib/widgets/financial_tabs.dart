@@ -1,18 +1,37 @@
-// widgets/financial_tabs.dart
 import 'package:flutter/material.dart';
 import '../models/company_model.dart';
 import '../theme/app_theme.dart';
 
+class FinancialTabs extends StatelessWidget {
+  final CompanyModel company;
+  final String initialTab;
+
+  const FinancialTabs({
+    Key? key,
+    required this.company,
+    required this.initialTab,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return FinancialTab(
+      company: company,
+      type: initialTab,
+      showProsAndCons: initialTab == 'overview',
+    );
+  }
+}
+
 class FinancialTab extends StatelessWidget {
   final CompanyModel company;
   final String type;
-  final bool showProsAndCons; // FIXED: Made this a proper field
+  final bool showProsAndCons;
 
   const FinancialTab({
     Key? key,
     required this.company,
     required this.type,
-    this.showProsAndCons = false, // FIXED: Made optional with default false
+    this.showProsAndCons = false,
   }) : super(key: key);
 
   @override
@@ -24,28 +43,123 @@ class FinancialTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildEnhancedFinancialHeader(),
+            const SizedBox(height: 16),
             _buildFinancialTable(),
             const SizedBox(height: 20),
-
-            // FIXED: Only show pros/cons if explicitly enabled AND data exists
             if (showProsAndCons &&
-                (company.pros.isNotEmpty || company.cons.isNotEmpty)) ...[
+                (company.pros.isNotEmpty || company.cons.isNotEmpty))
               _buildProsConsSection(),
+            if (showProsAndCons &&
+                (company.pros.isNotEmpty || company.cons.isNotEmpty))
               const SizedBox(height: 20),
-            ],
-
             if (type == 'shareholding' && company.shareholdingPattern != null)
               _buildShareholdingDetails(),
+            if (type == 'ratios') _buildEnhancedRatiosInsights(),
+            if (type == 'quarterly' && company.quarterlyDataHistory.isNotEmpty)
+              _buildQuarterlyTrends(),
+            if (type == 'profit_loss') _buildProfitabilityAnalysis(),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildEnhancedFinancialHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryGreen.withOpacity(0.05),
+            Colors.white,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.primaryGreen.withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              _getTabIcon(),
+              color: AppTheme.primaryGreen,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getTableTitle(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                Text(
+                  '${company.name} (${company.symbol})',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              'Updated: ${company.formattedLastUpdated}',
+              style: TextStyle(
+                fontSize: 10,
+                color: AppTheme.primaryGreen.withOpacity(0.8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getTabIcon() {
+    switch (type) {
+      case 'quarterly':
+        return Icons.calendar_view_month;
+      case 'profit_loss':
+        return Icons.trending_up;
+      case 'balance_sheet':
+        return Icons.account_balance;
+      case 'cash_flow':
+        return Icons.water_drop;
+      case 'ratios':
+        return Icons.analytics;
+      case 'shareholding':
+        return Icons.pie_chart;
+      default:
+        return Icons.bar_chart;
+    }
+  }
+
   Widget _buildFinancialTable() {
     final data = _getFinancialData();
     if (data.isEmpty) {
-      return _buildNoDataAvailable();
+      return _buildEnhancedNoDataState();
     }
 
     final headers = _getTableHeaders();
@@ -55,15 +169,21 @@ class FinancialTab extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          // Table Header
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: AppTheme.cardBackground,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withOpacity(0.05),
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
               ),
@@ -73,43 +193,36 @@ class FinancialTab extends StatelessWidget {
                 Expanded(
                   flex: 2,
                   child: Text(
-                    _getTableTitle(),
-                    style: const TextStyle(
-                      fontSize: 16,
+                    'Particulars',
+                    style: TextStyle(
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.primaryGreen.withOpacity(0.8),
                     ),
                   ),
                 ),
-                ...headers
-                    .map((header) => Expanded(
-                          child: Text(
-                            header,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                        ))
-                    .toList(),
+                ...headers.map((header) => Expanded(
+                      child: Text(
+                        header,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.primaryGreen.withOpacity(0.8),
+                        ),
+                      ),
+                    )),
               ],
             ),
           ),
-          // Table Rows
           ...data.entries
-              .map((entry) => _buildTableRow(
-                    entry.key,
-                    entry.value,
-                  ))
-              .toList(),
+              .map((entry) => _buildEnhancedTableRow(entry.key, entry.value)),
         ],
       ),
     );
   }
 
-  Widget _buildNoDataAvailable() {
+  Widget _buildEnhancedNoDataState() {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
@@ -117,34 +230,371 @@ class FinancialTab extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.borderColor),
       ),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(
-              Icons.analytics_outlined,
-              size: 48,
-              color: AppTheme.textSecondary.withOpacity(0.5),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withOpacity(0.05),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Financial data not available',
+            child: Icon(
+              _getTabIcon(),
+              size: 48,
+              color: AppTheme.primaryGreen.withOpacity(0.6),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'No ${_getTableTitle()} Available',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Financial data will be updated during the next scraping cycle',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.textSecondary.withOpacity(0.8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              'Check other financial tabs for available data',
               style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.textSecondary.withOpacity(0.7),
+                fontSize: 12,
+                color: AppTheme.primaryGreen.withOpacity(0.8),
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Data will be updated during the next scraping cycle',
-              style: TextStyle(
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedTableRow(String label, List<String> values) {
+    final paddedValues = List<String>.from(values);
+    while (paddedValues.length < 4) {
+      paddedValues.add('N/A');
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: const BoxDecoration(
+        border:
+            Border(bottom: BorderSide(color: AppTheme.borderColor, width: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: const TextStyle(
                 fontSize: 14,
-                color: AppTheme.textSecondary.withOpacity(0.5),
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.w500,
               ),
-              textAlign: TextAlign.center,
             ),
-          ],
-        ),
+          ),
+          ...paddedValues.take(4).map((value) => Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    value,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _getValueColor(value, label),
+                      fontWeight:
+                          value == 'N/A' ? FontWeight.w400 : FontWeight.w500,
+                    ),
+                  ),
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  Color _getValueColor(String value, String rowLabel) {
+    if (value == 'N/A' || value.isEmpty) return AppTheme.textSecondary;
+
+    final cleanValue = value.replaceAll(RegExp(r'[^\d.-]'), '');
+    final numValue = double.tryParse(cleanValue);
+
+    if (numValue != null) {
+      if (rowLabel.contains('Loss') || rowLabel.contains('Debt')) {
+        return numValue > 0 ? AppTheme.lossRed : AppTheme.profitGreen;
+      }
+      if (rowLabel.contains('Profit') ||
+          rowLabel.contains('Revenue') ||
+          rowLabel.contains('Growth')) {
+        return numValue > 0 ? AppTheme.profitGreen : AppTheme.lossRed;
+      }
+    }
+
+    return AppTheme.textPrimary;
+  }
+
+  Widget _buildEnhancedRatiosInsights() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.insights, color: AppTheme.primaryGreen, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Key Ratio Insights',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildRatioInsightRow('Profitability',
+              company.roe != null && company.roe! > 15 ? 'Strong' : 'Moderate'),
+          _buildRatioInsightRow(
+              'Valuation',
+              company.stockPe != null && company.stockPe! < 20
+                  ? 'Attractive'
+                  : 'Premium'),
+          _buildRatioInsightRow(
+              'Leverage',
+              company.debtToEquity != null && company.debtToEquity! < 0.5
+                  ? 'Conservative'
+                  : 'Moderate'),
+          _buildRatioInsightRow(
+              'Liquidity',
+              company.currentRatio != null && company.currentRatio! > 1.5
+                  ? 'Healthy'
+                  : 'Adequate'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatioInsightRow(String metric, String assessment) {
+    Color assessmentColor;
+    switch (assessment) {
+      case 'Strong':
+      case 'Healthy':
+      case 'Conservative':
+        assessmentColor = AppTheme.profitGreen;
+        break;
+      case 'Attractive':
+        assessmentColor = Colors.blue;
+        break;
+      case 'Premium':
+        assessmentColor = Colors.orange;
+        break;
+      default:
+        assessmentColor = AppTheme.textSecondary;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            metric,
+            style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: assessmentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              assessment,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: assessmentColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuarterlyTrends() {
+    if (company.quarterlyDataHistory.length < 2) return const SizedBox.shrink();
+
+    final recent = company.quarterlyDataHistory.first;
+    final previous = company.quarterlyDataHistory[1];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.trending_up, color: AppTheme.primaryGreen, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Quarter-over-Quarter Trends',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (recent.sales != null && previous.sales != null)
+            _buildTrendRow('Sales Growth',
+                _calculateGrowth(recent.sales!, previous.sales!)),
+          if (recent.netProfit != null && previous.netProfit != null)
+            _buildTrendRow('Profit Growth',
+                _calculateGrowth(recent.netProfit!, previous.netProfit!)),
+          if (recent.ebitda != null && previous.ebitda != null)
+            _buildTrendRow('EBITDA Growth',
+                _calculateGrowth(recent.ebitda!, previous.ebitda!)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendRow(String metric, double growth) {
+    final isPositive = growth >= 0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            metric,
+            style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
+          ),
+          Row(
+            children: [
+              Icon(
+                isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                size: 16,
+                color: isPositive ? AppTheme.profitGreen : AppTheme.lossRed,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${growth >= 0 ? '+' : ''}${growth.toStringAsFixed(1)}%',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isPositive ? AppTheme.profitGreen : AppTheme.lossRed,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _calculateGrowth(double current, double previous) {
+    if (previous == 0) return 0;
+    return ((current - previous) / previous) * 100;
+  }
+
+  Widget _buildProfitabilityAnalysis() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.analytics_outlined,
+                  color: AppTheme.primaryGreen, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Profitability Analysis',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildAnalysisItem(
+              'ROE Performance',
+              company.roe != null
+                  ? '${company.roe!.toStringAsFixed(1)}%'
+                  : 'N/A'),
+          _buildAnalysisItem(
+              'ROCE Performance',
+              company.roce != null
+                  ? '${company.roce!.toStringAsFixed(1)}%'
+                  : 'N/A'),
+          _buildAnalysisItem(
+              'Profit Growth (3Y)',
+              company.profitGrowth3Y != null
+                  ? '${company.profitGrowth3Y!.toStringAsFixed(1)}%'
+                  : 'N/A'),
+          _buildAnalysisItem('Quality Score',
+              '${company.qualityScore}/5 (${company.overallQualityGrade})'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalysisItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -155,7 +605,6 @@ class FinancialTab extends StatelessWidget {
       case 'profit_loss':
       case 'balance_sheet':
       case 'cash_flow':
-        // Get actual quarter headers from data
         final quarters = company.quarterlyDataHistory
             .take(4)
             .map((q) => '${q.quarter} ${q.year}')
@@ -164,24 +613,19 @@ class FinancialTab extends StatelessWidget {
           return ['Current', 'Previous', '-2', '-3'];
         }
         return quarters;
-
       case 'ratios':
-        // For ratios, show years from annual data
         final years =
             company.annualDataHistory.take(4).map((a) => a.year).toList();
         if (years.isEmpty) {
           return ['Current', 'FY-1', 'FY-2', 'FY-3'];
         }
         return years;
-
       case 'shareholding':
-        // Get latest quarter data for shareholding
         final shareholding = company.shareholdingPattern?.quarterly;
         if (shareholding?.isNotEmpty == true) {
           return shareholding!.keys.take(4).toList();
         }
         return ['Q1', 'Q2', 'Q3', 'Q4'];
-
       default:
         return ['Current', 'Previous', '-2', '-3'];
     }
@@ -262,13 +706,10 @@ class FinancialTab extends StatelessWidget {
     data['Book Value (₹)'] =
         years.map((y) => y.bookValue?.toStringAsFixed(2) ?? 'N/A').toList();
 
-    // Add more balance sheet items as available in your data model
     return data;
   }
 
   Map<String, List<String>> _getCashFlowData() {
-    // This would need cash flow specific data from your model
-    // For now, return empty if no cash flow data structure exists
     return {};
   }
 
@@ -276,7 +717,6 @@ class FinancialTab extends StatelessWidget {
     final annualData = company.annualDataHistory;
     final data = <String, List<String>>{};
 
-    // Current year ratios
     final currentRatios = [
       company.roe?.toStringAsFixed(1) ?? 'N/A',
       company.stockPe?.toStringAsFixed(1) ?? 'N/A',
@@ -284,7 +724,6 @@ class FinancialTab extends StatelessWidget {
       company.roce?.toStringAsFixed(1) ?? 'N/A',
     ];
 
-    // Historical ratios from annual data
     final years = annualData.take(3).toList();
 
     data['ROE (%)'] = [
@@ -299,7 +738,7 @@ class FinancialTab extends StatelessWidget {
 
     data['Debt/Equity'] = [
       currentRatios[2],
-      ...List.filled(years.length, 'N/A'), // Historical D/E not in annual model
+      ...List.filled(years.length, 'N/A'),
     ];
 
     data['ROCE (%)'] = [
@@ -307,7 +746,6 @@ class FinancialTab extends StatelessWidget {
       ...years.map((y) => y.roce?.toStringAsFixed(1) ?? 'N/A'),
     ];
 
-    // Additional ratios
     if (company.currentRatio != null) {
       data['Current Ratio'] = [
         company.currentRatio!.toStringAsFixed(2),
@@ -335,13 +773,10 @@ class FinancialTab extends StatelessWidget {
     if (quarterlyData.isNotEmpty) {
       final quarters = quarterlyData.keys.take(4).toList();
 
-      // Extract shareholding pattern data
       data['Promoter (%)'] =
           quarters.map((q) => quarterlyData[q]?['promoter'] ?? 'N/A').toList();
-
       data['Public (%)'] =
           quarters.map((q) => quarterlyData[q]?['public'] ?? 'N/A').toList();
-
       data['Institutional (%)'] = quarters
           .map((q) => quarterlyData[q]?['institutional'] ?? 'N/A')
           .toList();
@@ -397,13 +832,10 @@ class FinancialTab extends StatelessWidget {
             const SizedBox(height: 8),
             ...shareholding.majorShareholders
                 .take(5)
-                .map(
-                  (shareholder) => _buildShareholdingRow(
-                    shareholder.name,
-                    '${shareholder.percentage.toStringAsFixed(2)}%',
-                  ),
-                )
-                .toList(),
+                .map((shareholder) => _buildShareholdingRow(
+                      shareholder.name,
+                      '${shareholder.percentage.toStringAsFixed(2)}%',
+                    )),
           ],
         ],
       ),
@@ -457,55 +889,6 @@ class FinancialTab extends StatelessWidget {
     }
   }
 
-  Widget _buildTableRow(String label, List<String> values) {
-    // Ensure we have exactly 4 values, pad with 'N/A' if needed
-    final paddedValues = List<String>.from(values);
-    while (paddedValues.length < 4) {
-      paddedValues.add('N/A');
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        border:
-            Border(bottom: BorderSide(color: AppTheme.borderColor, width: 0.5)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppTheme.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          ...paddedValues
-              .take(4)
-              .map((value) => Expanded(
-                    child: Text(
-                      value,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: value == 'N/A'
-                            ? AppTheme.textSecondary
-                            : AppTheme.textPrimary,
-                        fontWeight:
-                            value == 'N/A' ? FontWeight.w400 : FontWeight.w500,
-                      ),
-                    ),
-                  ))
-              .toList(),
-        ],
-      ),
-    );
-  }
-
-  // FIXED: This method now only gets called when showProsAndCons is true
   Widget _buildProsConsSection() {
     return Container(
       decoration: BoxDecoration(
@@ -536,28 +919,26 @@ class FinancialTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            ...company.pros
-                .map((pro) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.check_circle,
-                              color: AppTheme.profitGreen, size: 16),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              pro,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: AppTheme.textPrimary,
-                              ),
-                            ),
+            ...company.pros.map((pro) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.check_circle,
+                          color: AppTheme.profitGreen, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          pro,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.textPrimary,
                           ),
-                        ],
+                        ),
                       ),
-                    ))
-                .toList(),
+                    ],
+                  ),
+                )),
             if (company.cons.isNotEmpty) const SizedBox(height: 16),
           ],
           if (company.cons.isNotEmpty) ...[
@@ -570,28 +951,28 @@ class FinancialTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            ...company.cons
-                .map((con) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.warning,
-                              color: AppTheme.lossRed, size: 16),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              con,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: AppTheme.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ],
+            ...company.cons.map(
+              (con) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning,
+                        color: AppTheme.lossRed, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        con,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textPrimary,
+                        ),
                       ),
-                    ))
-                .toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ],
       ),

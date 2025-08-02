@@ -74,16 +74,40 @@ _$CompanyModelImpl _$$CompanyModelImplFromJson(Map<String, dynamic> json) =>
       salesCAGR5Y: (json['salesCAGR5Y'] as num?)?.toDouble(),
       profitCAGR3Y: (json['profitCAGR3Y'] as num?)?.toDouble(),
       profitCAGR5Y: (json['profitCAGR5Y'] as num?)?.toDouble(),
-      piotroskiScore: (json['piotroskiScore'] as num?)?.toDouble(),
-      altmanZScore: (json['altmanZScore'] as num?)?.toDouble(),
-      qualityGrade: json['qualityGrade'] as String?,
-      creditRating: json['creditRating'] as String?,
+      businessOverview: json['businessOverview'] as String? ?? '',
       sector: json['sector'] as String?,
       industry: json['industry'] as String?,
       industryClassification: (json['industryClassification'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      recentPerformance:
+          json['recentPerformance'] as Map<String, dynamic>? ?? const {},
+      keyMilestones: (json['keyMilestones'] as List<dynamic>?)
+              ?.map((e) => KeyMilestone.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      investmentHighlights: (json['investmentHighlights'] as List<dynamic>?)
+              ?.map((e) =>
+                  InvestmentHighlight.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      financialSummary: (json['financialSummary'] as List<dynamic>?)
+              ?.map((e) => FinancialSummary.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      qualityScore: (json['qualityScore'] as num?)?.toInt() ?? 3,
+      overallQualityGrade: json['overallQualityGrade'] as String? ?? 'C',
+      workingCapitalEfficiency:
+          json['workingCapitalEfficiency'] as String? ?? 'Unknown',
+      cashCycleEfficiency: json['cashCycleEfficiency'] as String? ?? 'Unknown',
+      liquidityStatus: json['liquidityStatus'] as String? ?? 'Unknown',
+      debtStatus: json['debtStatus'] as String? ?? 'Unknown',
+      riskLevel: json['riskLevel'] as String? ?? 'Medium',
+      piotroskiScore: (json['piotroskiScore'] as num?)?.toDouble(),
+      altmanZScore: (json['altmanZScore'] as num?)?.toDouble(),
+      qualityGrade: json['qualityGrade'] as String?,
+      creditRating: json['creditRating'] as String?,
       shareholdingPattern: const ShareholdingPatternConverter()
           .fromJson(json['shareholdingPattern']),
       ratiosData: json['ratiosData'] as Map<String, dynamic>? ?? const {},
@@ -207,13 +231,25 @@ Map<String, dynamic> _$$CompanyModelImplToJson(_$CompanyModelImpl instance) =>
       'salesCAGR5Y': instance.salesCAGR5Y,
       'profitCAGR3Y': instance.profitCAGR3Y,
       'profitCAGR5Y': instance.profitCAGR5Y,
+      'businessOverview': instance.businessOverview,
+      'sector': instance.sector,
+      'industry': instance.industry,
+      'industryClassification': instance.industryClassification,
+      'recentPerformance': instance.recentPerformance,
+      'keyMilestones': instance.keyMilestones,
+      'investmentHighlights': instance.investmentHighlights,
+      'financialSummary': instance.financialSummary,
+      'qualityScore': instance.qualityScore,
+      'overallQualityGrade': instance.overallQualityGrade,
+      'workingCapitalEfficiency': instance.workingCapitalEfficiency,
+      'cashCycleEfficiency': instance.cashCycleEfficiency,
+      'liquidityStatus': instance.liquidityStatus,
+      'debtStatus': instance.debtStatus,
+      'riskLevel': instance.riskLevel,
       'piotroskiScore': instance.piotroskiScore,
       'altmanZScore': instance.altmanZScore,
       'qualityGrade': instance.qualityGrade,
       'creditRating': instance.creditRating,
-      'sector': instance.sector,
-      'industry': instance.industry,
-      'industryClassification': instance.industryClassification,
       'shareholdingPattern': const ShareholdingPatternConverter()
           .toJson(instance.shareholdingPattern),
       'ratiosData': instance.ratiosData,
@@ -252,6 +288,62 @@ Map<String, dynamic> _$$CompanyModelImplToJson(_$CompanyModelImpl instance) =>
       'isQualityStock': instance.isQualityStock,
     };
 
+_$KeyMilestoneImpl _$$KeyMilestoneImplFromJson(Map<String, dynamic> json) =>
+    _$KeyMilestoneImpl(
+      category: json['category'] as String,
+      description: json['description'] as String,
+      relevance: json['relevance'] as String? ?? 'medium',
+      year: json['year'] as String?,
+      date: const TimestampConverter().fromJson(json['date']),
+    );
+
+Map<String, dynamic> _$$KeyMilestoneImplToJson(_$KeyMilestoneImpl instance) =>
+    <String, dynamic>{
+      'category': instance.category,
+      'description': instance.description,
+      'relevance': instance.relevance,
+      'year': instance.year,
+      'date': const TimestampConverter().toJson(instance.date),
+    };
+
+_$InvestmentHighlightImpl _$$InvestmentHighlightImplFromJson(
+        Map<String, dynamic> json) =>
+    _$InvestmentHighlightImpl(
+      type: json['type'] as String,
+      description: json['description'] as String,
+      impact: json['impact'] as String,
+      value: (json['value'] as num?)?.toDouble(),
+      unit: json['unit'] as String?,
+    );
+
+Map<String, dynamic> _$$InvestmentHighlightImplToJson(
+        _$InvestmentHighlightImpl instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'description': instance.description,
+      'impact': instance.impact,
+      'value': instance.value,
+      'unit': instance.unit,
+    };
+
+_$FinancialSummaryImpl _$$FinancialSummaryImplFromJson(
+        Map<String, dynamic> json) =>
+    _$FinancialSummaryImpl(
+      metric: json['metric'] as String,
+      value: json['value'] as String,
+      unit: json['unit'] as String?,
+      trend: json['trend'] as String?,
+    );
+
+Map<String, dynamic> _$$FinancialSummaryImplToJson(
+        _$FinancialSummaryImpl instance) =>
+    <String, dynamic>{
+      'metric': instance.metric,
+      'value': instance.value,
+      'unit': instance.unit,
+      'trend': instance.trend,
+    };
+
 _$QuarterlyDataImpl _$$QuarterlyDataImplFromJson(Map<String, dynamic> json) =>
     _$QuarterlyDataImpl(
       quarter: json['quarter'] as String,
@@ -274,6 +366,8 @@ _$QuarterlyDataImpl _$$QuarterlyDataImplFromJson(Map<String, dynamic> json) =>
       depreciation: (json['depreciation'] as num?)?.toDouble(),
       interestExpense: (json['interestExpense'] as num?)?.toDouble(),
       taxExpense: (json['taxExpense'] as num?)?.toDouble(),
+      profitMargin: (json['profitMargin'] as num?)?.toDouble(),
+      ebitdaMargin: (json['ebitdaMargin'] as num?)?.toDouble(),
       reportDate: const TimestampConverter().fromJson(json['reportDate']),
     );
 
@@ -298,6 +392,8 @@ Map<String, dynamic> _$$QuarterlyDataImplToJson(_$QuarterlyDataImpl instance) =>
       'depreciation': instance.depreciation,
       'interestExpense': instance.interestExpense,
       'taxExpense': instance.taxExpense,
+      'profitMargin': instance.profitMargin,
+      'ebitdaMargin': instance.ebitdaMargin,
       'reportDate': const TimestampConverter().toJson(instance.reportDate),
     };
 
@@ -314,6 +410,26 @@ _$AnnualDataImpl _$$AnnualDataImplFromJson(Map<String, dynamic> json) =>
       pbRatio: (json['pbRatio'] as num?)?.toDouble(),
       dividendPerShare: (json['dividendPerShare'] as num?)?.toDouble(),
       faceValue: (json['faceValue'] as num?)?.toDouble(),
+      operatingProfit: (json['operatingProfit'] as num?)?.toDouble(),
+      ebitda: (json['ebitda'] as num?)?.toDouble(),
+      grossProfit: (json['grossProfit'] as num?)?.toDouble(),
+      totalAssets: (json['totalAssets'] as num?)?.toDouble(),
+      totalLiabilities: (json['totalLiabilities'] as num?)?.toDouble(),
+      shareholdersEquity: (json['shareholdersEquity'] as num?)?.toDouble(),
+      totalDebt: (json['totalDebt'] as num?)?.toDouble(),
+      workingCapital: (json['workingCapital'] as num?)?.toDouble(),
+      operatingCashFlow: (json['operatingCashFlow'] as num?)?.toDouble(),
+      investingCashFlow: (json['investingCashFlow'] as num?)?.toDouble(),
+      financingCashFlow: (json['financingCashFlow'] as num?)?.toDouble(),
+      freeCashFlow: (json['freeCashFlow'] as num?)?.toDouble(),
+      currentRatio: (json['currentRatio'] as num?)?.toDouble(),
+      quickRatio: (json['quickRatio'] as num?)?.toDouble(),
+      debtToEquity: (json['debtToEquity'] as num?)?.toDouble(),
+      profitMargin: (json['profitMargin'] as num?)?.toDouble(),
+      ebitdaMargin: (json['ebitdaMargin'] as num?)?.toDouble(),
+      assetTurnover: (json['assetTurnover'] as num?)?.toDouble(),
+      inventoryTurnover: (json['inventoryTurnover'] as num?)?.toDouble(),
+      interestCoverage: (json['interestCoverage'] as num?)?.toDouble(),
       yearEnd: const TimestampConverter().fromJson(json['yearEnd']),
     );
 
@@ -330,6 +446,26 @@ Map<String, dynamic> _$$AnnualDataImplToJson(_$AnnualDataImpl instance) =>
       'pbRatio': instance.pbRatio,
       'dividendPerShare': instance.dividendPerShare,
       'faceValue': instance.faceValue,
+      'operatingProfit': instance.operatingProfit,
+      'ebitda': instance.ebitda,
+      'grossProfit': instance.grossProfit,
+      'totalAssets': instance.totalAssets,
+      'totalLiabilities': instance.totalLiabilities,
+      'shareholdersEquity': instance.shareholdersEquity,
+      'totalDebt': instance.totalDebt,
+      'workingCapital': instance.workingCapital,
+      'operatingCashFlow': instance.operatingCashFlow,
+      'investingCashFlow': instance.investingCashFlow,
+      'financingCashFlow': instance.financingCashFlow,
+      'freeCashFlow': instance.freeCashFlow,
+      'currentRatio': instance.currentRatio,
+      'quickRatio': instance.quickRatio,
+      'debtToEquity': instance.debtToEquity,
+      'profitMargin': instance.profitMargin,
+      'ebitdaMargin': instance.ebitdaMargin,
+      'assetTurnover': instance.assetTurnover,
+      'inventoryTurnover': instance.inventoryTurnover,
+      'interestCoverage': instance.interestCoverage,
       'yearEnd': const TimestampConverter().toJson(instance.yearEnd),
     };
 
