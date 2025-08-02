@@ -25,8 +25,13 @@ mixin _$QueueStatus {
   int get completed => throw _privateConstructorUsedError;
   int get failed => throw _privateConstructorUsedError;
   int get total => throw _privateConstructorUsedError;
-  List<RecentCompany> get recentCompleted => throw _privateConstructorUsedError;
+  bool get isActive => throw _privateConstructorUsedError;
+  bool get isCompleted => throw _privateConstructorUsedError;
+  double get progressPercentage => throw _privateConstructorUsedError;
+  String get statusText => throw _privateConstructorUsedError;
   DateTime get timestamp => throw _privateConstructorUsedError;
+  List<RecentCompletedItem> get recentCompleted =>
+      throw _privateConstructorUsedError;
   String? get estimatedTimeRemaining => throw _privateConstructorUsedError;
   double? get completionRate => throw _privateConstructorUsedError;
   Map<String, dynamic> get queueStats => throw _privateConstructorUsedError;
@@ -49,8 +54,12 @@ abstract class $QueueStatusCopyWith<$Res> {
       int completed,
       int failed,
       int total,
-      List<RecentCompany> recentCompleted,
+      bool isActive,
+      bool isCompleted,
+      double progressPercentage,
+      String statusText,
       DateTime timestamp,
+      List<RecentCompletedItem> recentCompleted,
       String? estimatedTimeRemaining,
       double? completionRate,
       Map<String, dynamic> queueStats});
@@ -74,8 +83,12 @@ class _$QueueStatusCopyWithImpl<$Res, $Val extends QueueStatus>
     Object? completed = null,
     Object? failed = null,
     Object? total = null,
-    Object? recentCompleted = null,
+    Object? isActive = null,
+    Object? isCompleted = null,
+    Object? progressPercentage = null,
+    Object? statusText = null,
     Object? timestamp = null,
+    Object? recentCompleted = null,
     Object? estimatedTimeRemaining = freezed,
     Object? completionRate = freezed,
     Object? queueStats = null,
@@ -101,14 +114,30 @@ class _$QueueStatusCopyWithImpl<$Res, $Val extends QueueStatus>
           ? _value.total
           : total // ignore: cast_nullable_to_non_nullable
               as int,
-      recentCompleted: null == recentCompleted
-          ? _value.recentCompleted
-          : recentCompleted // ignore: cast_nullable_to_non_nullable
-              as List<RecentCompany>,
+      isActive: null == isActive
+          ? _value.isActive
+          : isActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isCompleted: null == isCompleted
+          ? _value.isCompleted
+          : isCompleted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      progressPercentage: null == progressPercentage
+          ? _value.progressPercentage
+          : progressPercentage // ignore: cast_nullable_to_non_nullable
+              as double,
+      statusText: null == statusText
+          ? _value.statusText
+          : statusText // ignore: cast_nullable_to_non_nullable
+              as String,
       timestamp: null == timestamp
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      recentCompleted: null == recentCompleted
+          ? _value.recentCompleted
+          : recentCompleted // ignore: cast_nullable_to_non_nullable
+              as List<RecentCompletedItem>,
       estimatedTimeRemaining: freezed == estimatedTimeRemaining
           ? _value.estimatedTimeRemaining
           : estimatedTimeRemaining // ignore: cast_nullable_to_non_nullable
@@ -139,8 +168,12 @@ abstract class _$$QueueStatusImplCopyWith<$Res>
       int completed,
       int failed,
       int total,
-      List<RecentCompany> recentCompleted,
+      bool isActive,
+      bool isCompleted,
+      double progressPercentage,
+      String statusText,
       DateTime timestamp,
+      List<RecentCompletedItem> recentCompleted,
       String? estimatedTimeRemaining,
       double? completionRate,
       Map<String, dynamic> queueStats});
@@ -162,8 +195,12 @@ class __$$QueueStatusImplCopyWithImpl<$Res>
     Object? completed = null,
     Object? failed = null,
     Object? total = null,
-    Object? recentCompleted = null,
+    Object? isActive = null,
+    Object? isCompleted = null,
+    Object? progressPercentage = null,
+    Object? statusText = null,
     Object? timestamp = null,
+    Object? recentCompleted = null,
     Object? estimatedTimeRemaining = freezed,
     Object? completionRate = freezed,
     Object? queueStats = null,
@@ -189,14 +226,30 @@ class __$$QueueStatusImplCopyWithImpl<$Res>
           ? _value.total
           : total // ignore: cast_nullable_to_non_nullable
               as int,
-      recentCompleted: null == recentCompleted
-          ? _value._recentCompleted
-          : recentCompleted // ignore: cast_nullable_to_non_nullable
-              as List<RecentCompany>,
+      isActive: null == isActive
+          ? _value.isActive
+          : isActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isCompleted: null == isCompleted
+          ? _value.isCompleted
+          : isCompleted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      progressPercentage: null == progressPercentage
+          ? _value.progressPercentage
+          : progressPercentage // ignore: cast_nullable_to_non_nullable
+              as double,
+      statusText: null == statusText
+          ? _value.statusText
+          : statusText // ignore: cast_nullable_to_non_nullable
+              as String,
       timestamp: null == timestamp
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      recentCompleted: null == recentCompleted
+          ? _value._recentCompleted
+          : recentCompleted // ignore: cast_nullable_to_non_nullable
+              as List<RecentCompletedItem>,
       estimatedTimeRemaining: freezed == estimatedTimeRemaining
           ? _value.estimatedTimeRemaining
           : estimatedTimeRemaining // ignore: cast_nullable_to_non_nullable
@@ -222,8 +275,12 @@ class _$QueueStatusImpl implements _QueueStatus {
       this.completed = 0,
       this.failed = 0,
       this.total = 0,
-      final List<RecentCompany> recentCompleted = const [],
+      this.isActive = false,
+      this.isCompleted = false,
+      this.progressPercentage = 0.0,
+      this.statusText = 'Ready',
       required this.timestamp,
+      final List<RecentCompletedItem> recentCompleted = const [],
       this.estimatedTimeRemaining,
       this.completionRate,
       final Map<String, dynamic> queueStats = const {}})
@@ -248,17 +305,29 @@ class _$QueueStatusImpl implements _QueueStatus {
   @override
   @JsonKey()
   final int total;
-  final List<RecentCompany> _recentCompleted;
   @override
   @JsonKey()
-  List<RecentCompany> get recentCompleted {
+  final bool isActive;
+  @override
+  @JsonKey()
+  final bool isCompleted;
+  @override
+  @JsonKey()
+  final double progressPercentage;
+  @override
+  @JsonKey()
+  final String statusText;
+  @override
+  final DateTime timestamp;
+  final List<RecentCompletedItem> _recentCompleted;
+  @override
+  @JsonKey()
+  List<RecentCompletedItem> get recentCompleted {
     if (_recentCompleted is EqualUnmodifiableListView) return _recentCompleted;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_recentCompleted);
   }
 
-  @override
-  final DateTime timestamp;
   @override
   final String? estimatedTimeRemaining;
   @override
@@ -274,7 +343,7 @@ class _$QueueStatusImpl implements _QueueStatus {
 
   @override
   String toString() {
-    return 'QueueStatus(pending: $pending, processing: $processing, completed: $completed, failed: $failed, total: $total, recentCompleted: $recentCompleted, timestamp: $timestamp, estimatedTimeRemaining: $estimatedTimeRemaining, completionRate: $completionRate, queueStats: $queueStats)';
+    return 'QueueStatus(pending: $pending, processing: $processing, completed: $completed, failed: $failed, total: $total, isActive: $isActive, isCompleted: $isCompleted, progressPercentage: $progressPercentage, statusText: $statusText, timestamp: $timestamp, recentCompleted: $recentCompleted, estimatedTimeRemaining: $estimatedTimeRemaining, completionRate: $completionRate, queueStats: $queueStats)';
   }
 
   @override
@@ -289,10 +358,18 @@ class _$QueueStatusImpl implements _QueueStatus {
                 other.completed == completed) &&
             (identical(other.failed, failed) || other.failed == failed) &&
             (identical(other.total, total) || other.total == total) &&
-            const DeepCollectionEquality()
-                .equals(other._recentCompleted, _recentCompleted) &&
+            (identical(other.isActive, isActive) ||
+                other.isActive == isActive) &&
+            (identical(other.isCompleted, isCompleted) ||
+                other.isCompleted == isCompleted) &&
+            (identical(other.progressPercentage, progressPercentage) ||
+                other.progressPercentage == progressPercentage) &&
+            (identical(other.statusText, statusText) ||
+                other.statusText == statusText) &&
             (identical(other.timestamp, timestamp) ||
                 other.timestamp == timestamp) &&
+            const DeepCollectionEquality()
+                .equals(other._recentCompleted, _recentCompleted) &&
             (identical(other.estimatedTimeRemaining, estimatedTimeRemaining) ||
                 other.estimatedTimeRemaining == estimatedTimeRemaining) &&
             (identical(other.completionRate, completionRate) ||
@@ -310,8 +387,12 @@ class _$QueueStatusImpl implements _QueueStatus {
       completed,
       failed,
       total,
-      const DeepCollectionEquality().hash(_recentCompleted),
+      isActive,
+      isCompleted,
+      progressPercentage,
+      statusText,
       timestamp,
+      const DeepCollectionEquality().hash(_recentCompleted),
       estimatedTimeRemaining,
       completionRate,
       const DeepCollectionEquality().hash(_queueStats));
@@ -337,8 +418,12 @@ abstract class _QueueStatus implements QueueStatus {
       final int completed,
       final int failed,
       final int total,
-      final List<RecentCompany> recentCompleted,
+      final bool isActive,
+      final bool isCompleted,
+      final double progressPercentage,
+      final String statusText,
       required final DateTime timestamp,
+      final List<RecentCompletedItem> recentCompleted,
       final String? estimatedTimeRemaining,
       final double? completionRate,
       final Map<String, dynamic> queueStats}) = _$QueueStatusImpl;
@@ -357,9 +442,17 @@ abstract class _QueueStatus implements QueueStatus {
   @override
   int get total;
   @override
-  List<RecentCompany> get recentCompleted;
+  bool get isActive;
+  @override
+  bool get isCompleted;
+  @override
+  double get progressPercentage;
+  @override
+  String get statusText;
   @override
   DateTime get timestamp;
+  @override
+  List<RecentCompletedItem> get recentCompleted;
   @override
   String? get estimatedTimeRemaining;
   @override
@@ -372,35 +465,35 @@ abstract class _QueueStatus implements QueueStatus {
       throw _privateConstructorUsedError;
 }
 
-RecentCompany _$RecentCompanyFromJson(Map<String, dynamic> json) {
-  return _RecentCompany.fromJson(json);
+RecentCompletedItem _$RecentCompletedItemFromJson(Map<String, dynamic> json) {
+  return _RecentCompletedItem.fromJson(json);
 }
 
 /// @nodoc
-mixin _$RecentCompany {
+mixin _$RecentCompletedItem {
   String get symbol => throw _privateConstructorUsedError;
   String get companyName => throw _privateConstructorUsedError;
-  DateTime get completedAt => throw _privateConstructorUsedError;
+  String get completedAt => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
-  $RecentCompanyCopyWith<RecentCompany> get copyWith =>
+  $RecentCompletedItemCopyWith<RecentCompletedItem> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $RecentCompanyCopyWith<$Res> {
-  factory $RecentCompanyCopyWith(
-          RecentCompany value, $Res Function(RecentCompany) then) =
-      _$RecentCompanyCopyWithImpl<$Res, RecentCompany>;
+abstract class $RecentCompletedItemCopyWith<$Res> {
+  factory $RecentCompletedItemCopyWith(
+          RecentCompletedItem value, $Res Function(RecentCompletedItem) then) =
+      _$RecentCompletedItemCopyWithImpl<$Res, RecentCompletedItem>;
   @useResult
-  $Res call({String symbol, String companyName, DateTime completedAt});
+  $Res call({String symbol, String companyName, String completedAt});
 }
 
 /// @nodoc
-class _$RecentCompanyCopyWithImpl<$Res, $Val extends RecentCompany>
-    implements $RecentCompanyCopyWith<$Res> {
-  _$RecentCompanyCopyWithImpl(this._value, this._then);
+class _$RecentCompletedItemCopyWithImpl<$Res, $Val extends RecentCompletedItem>
+    implements $RecentCompletedItemCopyWith<$Res> {
+  _$RecentCompletedItemCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
@@ -426,28 +519,28 @@ class _$RecentCompanyCopyWithImpl<$Res, $Val extends RecentCompany>
       completedAt: null == completedAt
           ? _value.completedAt
           : completedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as String,
     ) as $Val);
   }
 }
 
 /// @nodoc
-abstract class _$$RecentCompanyImplCopyWith<$Res>
-    implements $RecentCompanyCopyWith<$Res> {
-  factory _$$RecentCompanyImplCopyWith(
-          _$RecentCompanyImpl value, $Res Function(_$RecentCompanyImpl) then) =
-      __$$RecentCompanyImplCopyWithImpl<$Res>;
+abstract class _$$RecentCompletedItemImplCopyWith<$Res>
+    implements $RecentCompletedItemCopyWith<$Res> {
+  factory _$$RecentCompletedItemImplCopyWith(_$RecentCompletedItemImpl value,
+          $Res Function(_$RecentCompletedItemImpl) then) =
+      __$$RecentCompletedItemImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String symbol, String companyName, DateTime completedAt});
+  $Res call({String symbol, String companyName, String completedAt});
 }
 
 /// @nodoc
-class __$$RecentCompanyImplCopyWithImpl<$Res>
-    extends _$RecentCompanyCopyWithImpl<$Res, _$RecentCompanyImpl>
-    implements _$$RecentCompanyImplCopyWith<$Res> {
-  __$$RecentCompanyImplCopyWithImpl(
-      _$RecentCompanyImpl _value, $Res Function(_$RecentCompanyImpl) _then)
+class __$$RecentCompletedItemImplCopyWithImpl<$Res>
+    extends _$RecentCompletedItemCopyWithImpl<$Res, _$RecentCompletedItemImpl>
+    implements _$$RecentCompletedItemImplCopyWith<$Res> {
+  __$$RecentCompletedItemImplCopyWithImpl(_$RecentCompletedItemImpl _value,
+      $Res Function(_$RecentCompletedItemImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -457,7 +550,7 @@ class __$$RecentCompanyImplCopyWithImpl<$Res>
     Object? companyName = null,
     Object? completedAt = null,
   }) {
-    return _then(_$RecentCompanyImpl(
+    return _then(_$RecentCompletedItemImpl(
       symbol: null == symbol
           ? _value.symbol
           : symbol // ignore: cast_nullable_to_non_nullable
@@ -469,39 +562,39 @@ class __$$RecentCompanyImplCopyWithImpl<$Res>
       completedAt: null == completedAt
           ? _value.completedAt
           : completedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as String,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$RecentCompanyImpl implements _RecentCompany {
-  const _$RecentCompanyImpl(
+class _$RecentCompletedItemImpl implements _RecentCompletedItem {
+  const _$RecentCompletedItemImpl(
       {required this.symbol,
       required this.companyName,
       required this.completedAt});
 
-  factory _$RecentCompanyImpl.fromJson(Map<String, dynamic> json) =>
-      _$$RecentCompanyImplFromJson(json);
+  factory _$RecentCompletedItemImpl.fromJson(Map<String, dynamic> json) =>
+      _$$RecentCompletedItemImplFromJson(json);
 
   @override
   final String symbol;
   @override
   final String companyName;
   @override
-  final DateTime completedAt;
+  final String completedAt;
 
   @override
   String toString() {
-    return 'RecentCompany(symbol: $symbol, companyName: $companyName, completedAt: $completedAt)';
+    return 'RecentCompletedItem(symbol: $symbol, companyName: $companyName, completedAt: $completedAt)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$RecentCompanyImpl &&
+            other is _$RecentCompletedItemImpl &&
             (identical(other.symbol, symbol) || other.symbol == symbol) &&
             (identical(other.companyName, companyName) ||
                 other.companyName == companyName) &&
@@ -517,35 +610,472 @@ class _$RecentCompanyImpl implements _RecentCompany {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$RecentCompanyImplCopyWith<_$RecentCompanyImpl> get copyWith =>
-      __$$RecentCompanyImplCopyWithImpl<_$RecentCompanyImpl>(this, _$identity);
+  _$$RecentCompletedItemImplCopyWith<_$RecentCompletedItemImpl> get copyWith =>
+      __$$RecentCompletedItemImplCopyWithImpl<_$RecentCompletedItemImpl>(
+          this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$RecentCompanyImplToJson(
+    return _$$RecentCompletedItemImplToJson(
       this,
     );
   }
 }
 
-abstract class _RecentCompany implements RecentCompany {
-  const factory _RecentCompany(
+abstract class _RecentCompletedItem implements RecentCompletedItem {
+  const factory _RecentCompletedItem(
       {required final String symbol,
       required final String companyName,
-      required final DateTime completedAt}) = _$RecentCompanyImpl;
+      required final String completedAt}) = _$RecentCompletedItemImpl;
 
-  factory _RecentCompany.fromJson(Map<String, dynamic> json) =
-      _$RecentCompanyImpl.fromJson;
+  factory _RecentCompletedItem.fromJson(Map<String, dynamic> json) =
+      _$RecentCompletedItemImpl.fromJson;
 
   @override
   String get symbol;
   @override
   String get companyName;
   @override
-  DateTime get completedAt;
+  String get completedAt;
   @override
   @JsonKey(ignore: true)
-  _$$RecentCompanyImplCopyWith<_$RecentCompanyImpl> get copyWith =>
+  _$$RecentCompletedItemImplCopyWith<_$RecentCompletedItemImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+ScrapingStatus _$ScrapingStatusFromJson(Map<String, dynamic> json) {
+  return _ScrapingStatus.fromJson(json);
+}
+
+/// @nodoc
+mixin _$ScrapingStatus {
+  int get processedCount => throw _privateConstructorUsedError;
+  int get totalCount => throw _privateConstructorUsedError;
+  int get failedCount => throw _privateConstructorUsedError;
+  int get pendingCount => throw _privateConstructorUsedError;
+  int get processingCount => throw _privateConstructorUsedError;
+  bool get isActive => throw _privateConstructorUsedError;
+  bool get isCompleted => throw _privateConstructorUsedError;
+  bool get hasErrors => throw _privateConstructorUsedError;
+  String get statusMessage => throw _privateConstructorUsedError;
+  int get estimatedTimeRemaining => throw _privateConstructorUsedError;
+  double get progress => throw _privateConstructorUsedError;
+  DateTime? get lastUpdated => throw _privateConstructorUsedError;
+  QueueStatus? get queueStatus => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $ScrapingStatusCopyWith<ScrapingStatus> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ScrapingStatusCopyWith<$Res> {
+  factory $ScrapingStatusCopyWith(
+          ScrapingStatus value, $Res Function(ScrapingStatus) then) =
+      _$ScrapingStatusCopyWithImpl<$Res, ScrapingStatus>;
+  @useResult
+  $Res call(
+      {int processedCount,
+      int totalCount,
+      int failedCount,
+      int pendingCount,
+      int processingCount,
+      bool isActive,
+      bool isCompleted,
+      bool hasErrors,
+      String statusMessage,
+      int estimatedTimeRemaining,
+      double progress,
+      DateTime? lastUpdated,
+      QueueStatus? queueStatus});
+
+  $QueueStatusCopyWith<$Res>? get queueStatus;
+}
+
+/// @nodoc
+class _$ScrapingStatusCopyWithImpl<$Res, $Val extends ScrapingStatus>
+    implements $ScrapingStatusCopyWith<$Res> {
+  _$ScrapingStatusCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? processedCount = null,
+    Object? totalCount = null,
+    Object? failedCount = null,
+    Object? pendingCount = null,
+    Object? processingCount = null,
+    Object? isActive = null,
+    Object? isCompleted = null,
+    Object? hasErrors = null,
+    Object? statusMessage = null,
+    Object? estimatedTimeRemaining = null,
+    Object? progress = null,
+    Object? lastUpdated = freezed,
+    Object? queueStatus = freezed,
+  }) {
+    return _then(_value.copyWith(
+      processedCount: null == processedCount
+          ? _value.processedCount
+          : processedCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      totalCount: null == totalCount
+          ? _value.totalCount
+          : totalCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      failedCount: null == failedCount
+          ? _value.failedCount
+          : failedCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      pendingCount: null == pendingCount
+          ? _value.pendingCount
+          : pendingCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      processingCount: null == processingCount
+          ? _value.processingCount
+          : processingCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      isActive: null == isActive
+          ? _value.isActive
+          : isActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isCompleted: null == isCompleted
+          ? _value.isCompleted
+          : isCompleted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hasErrors: null == hasErrors
+          ? _value.hasErrors
+          : hasErrors // ignore: cast_nullable_to_non_nullable
+              as bool,
+      statusMessage: null == statusMessage
+          ? _value.statusMessage
+          : statusMessage // ignore: cast_nullable_to_non_nullable
+              as String,
+      estimatedTimeRemaining: null == estimatedTimeRemaining
+          ? _value.estimatedTimeRemaining
+          : estimatedTimeRemaining // ignore: cast_nullable_to_non_nullable
+              as int,
+      progress: null == progress
+          ? _value.progress
+          : progress // ignore: cast_nullable_to_non_nullable
+              as double,
+      lastUpdated: freezed == lastUpdated
+          ? _value.lastUpdated
+          : lastUpdated // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      queueStatus: freezed == queueStatus
+          ? _value.queueStatus
+          : queueStatus // ignore: cast_nullable_to_non_nullable
+              as QueueStatus?,
+    ) as $Val);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $QueueStatusCopyWith<$Res>? get queueStatus {
+    if (_value.queueStatus == null) {
+      return null;
+    }
+
+    return $QueueStatusCopyWith<$Res>(_value.queueStatus!, (value) {
+      return _then(_value.copyWith(queueStatus: value) as $Val);
+    });
+  }
+}
+
+/// @nodoc
+abstract class _$$ScrapingStatusImplCopyWith<$Res>
+    implements $ScrapingStatusCopyWith<$Res> {
+  factory _$$ScrapingStatusImplCopyWith(_$ScrapingStatusImpl value,
+          $Res Function(_$ScrapingStatusImpl) then) =
+      __$$ScrapingStatusImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {int processedCount,
+      int totalCount,
+      int failedCount,
+      int pendingCount,
+      int processingCount,
+      bool isActive,
+      bool isCompleted,
+      bool hasErrors,
+      String statusMessage,
+      int estimatedTimeRemaining,
+      double progress,
+      DateTime? lastUpdated,
+      QueueStatus? queueStatus});
+
+  @override
+  $QueueStatusCopyWith<$Res>? get queueStatus;
+}
+
+/// @nodoc
+class __$$ScrapingStatusImplCopyWithImpl<$Res>
+    extends _$ScrapingStatusCopyWithImpl<$Res, _$ScrapingStatusImpl>
+    implements _$$ScrapingStatusImplCopyWith<$Res> {
+  __$$ScrapingStatusImplCopyWithImpl(
+      _$ScrapingStatusImpl _value, $Res Function(_$ScrapingStatusImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? processedCount = null,
+    Object? totalCount = null,
+    Object? failedCount = null,
+    Object? pendingCount = null,
+    Object? processingCount = null,
+    Object? isActive = null,
+    Object? isCompleted = null,
+    Object? hasErrors = null,
+    Object? statusMessage = null,
+    Object? estimatedTimeRemaining = null,
+    Object? progress = null,
+    Object? lastUpdated = freezed,
+    Object? queueStatus = freezed,
+  }) {
+    return _then(_$ScrapingStatusImpl(
+      processedCount: null == processedCount
+          ? _value.processedCount
+          : processedCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      totalCount: null == totalCount
+          ? _value.totalCount
+          : totalCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      failedCount: null == failedCount
+          ? _value.failedCount
+          : failedCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      pendingCount: null == pendingCount
+          ? _value.pendingCount
+          : pendingCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      processingCount: null == processingCount
+          ? _value.processingCount
+          : processingCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      isActive: null == isActive
+          ? _value.isActive
+          : isActive // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isCompleted: null == isCompleted
+          ? _value.isCompleted
+          : isCompleted // ignore: cast_nullable_to_non_nullable
+              as bool,
+      hasErrors: null == hasErrors
+          ? _value.hasErrors
+          : hasErrors // ignore: cast_nullable_to_non_nullable
+              as bool,
+      statusMessage: null == statusMessage
+          ? _value.statusMessage
+          : statusMessage // ignore: cast_nullable_to_non_nullable
+              as String,
+      estimatedTimeRemaining: null == estimatedTimeRemaining
+          ? _value.estimatedTimeRemaining
+          : estimatedTimeRemaining // ignore: cast_nullable_to_non_nullable
+              as int,
+      progress: null == progress
+          ? _value.progress
+          : progress // ignore: cast_nullable_to_non_nullable
+              as double,
+      lastUpdated: freezed == lastUpdated
+          ? _value.lastUpdated
+          : lastUpdated // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      queueStatus: freezed == queueStatus
+          ? _value.queueStatus
+          : queueStatus // ignore: cast_nullable_to_non_nullable
+              as QueueStatus?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ScrapingStatusImpl implements _ScrapingStatus {
+  const _$ScrapingStatusImpl(
+      {this.processedCount = 0,
+      this.totalCount = 0,
+      this.failedCount = 0,
+      this.pendingCount = 0,
+      this.processingCount = 0,
+      this.isActive = false,
+      this.isCompleted = false,
+      this.hasErrors = false,
+      this.statusMessage = '',
+      this.estimatedTimeRemaining = 0,
+      this.progress = 0.0,
+      this.lastUpdated,
+      this.queueStatus});
+
+  factory _$ScrapingStatusImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ScrapingStatusImplFromJson(json);
+
+  @override
+  @JsonKey()
+  final int processedCount;
+  @override
+  @JsonKey()
+  final int totalCount;
+  @override
+  @JsonKey()
+  final int failedCount;
+  @override
+  @JsonKey()
+  final int pendingCount;
+  @override
+  @JsonKey()
+  final int processingCount;
+  @override
+  @JsonKey()
+  final bool isActive;
+  @override
+  @JsonKey()
+  final bool isCompleted;
+  @override
+  @JsonKey()
+  final bool hasErrors;
+  @override
+  @JsonKey()
+  final String statusMessage;
+  @override
+  @JsonKey()
+  final int estimatedTimeRemaining;
+  @override
+  @JsonKey()
+  final double progress;
+  @override
+  final DateTime? lastUpdated;
+  @override
+  final QueueStatus? queueStatus;
+
+  @override
+  String toString() {
+    return 'ScrapingStatus(processedCount: $processedCount, totalCount: $totalCount, failedCount: $failedCount, pendingCount: $pendingCount, processingCount: $processingCount, isActive: $isActive, isCompleted: $isCompleted, hasErrors: $hasErrors, statusMessage: $statusMessage, estimatedTimeRemaining: $estimatedTimeRemaining, progress: $progress, lastUpdated: $lastUpdated, queueStatus: $queueStatus)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ScrapingStatusImpl &&
+            (identical(other.processedCount, processedCount) ||
+                other.processedCount == processedCount) &&
+            (identical(other.totalCount, totalCount) ||
+                other.totalCount == totalCount) &&
+            (identical(other.failedCount, failedCount) ||
+                other.failedCount == failedCount) &&
+            (identical(other.pendingCount, pendingCount) ||
+                other.pendingCount == pendingCount) &&
+            (identical(other.processingCount, processingCount) ||
+                other.processingCount == processingCount) &&
+            (identical(other.isActive, isActive) ||
+                other.isActive == isActive) &&
+            (identical(other.isCompleted, isCompleted) ||
+                other.isCompleted == isCompleted) &&
+            (identical(other.hasErrors, hasErrors) ||
+                other.hasErrors == hasErrors) &&
+            (identical(other.statusMessage, statusMessage) ||
+                other.statusMessage == statusMessage) &&
+            (identical(other.estimatedTimeRemaining, estimatedTimeRemaining) ||
+                other.estimatedTimeRemaining == estimatedTimeRemaining) &&
+            (identical(other.progress, progress) ||
+                other.progress == progress) &&
+            (identical(other.lastUpdated, lastUpdated) ||
+                other.lastUpdated == lastUpdated) &&
+            (identical(other.queueStatus, queueStatus) ||
+                other.queueStatus == queueStatus));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      processedCount,
+      totalCount,
+      failedCount,
+      pendingCount,
+      processingCount,
+      isActive,
+      isCompleted,
+      hasErrors,
+      statusMessage,
+      estimatedTimeRemaining,
+      progress,
+      lastUpdated,
+      queueStatus);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ScrapingStatusImplCopyWith<_$ScrapingStatusImpl> get copyWith =>
+      __$$ScrapingStatusImplCopyWithImpl<_$ScrapingStatusImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ScrapingStatusImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _ScrapingStatus implements ScrapingStatus {
+  const factory _ScrapingStatus(
+      {final int processedCount,
+      final int totalCount,
+      final int failedCount,
+      final int pendingCount,
+      final int processingCount,
+      final bool isActive,
+      final bool isCompleted,
+      final bool hasErrors,
+      final String statusMessage,
+      final int estimatedTimeRemaining,
+      final double progress,
+      final DateTime? lastUpdated,
+      final QueueStatus? queueStatus}) = _$ScrapingStatusImpl;
+
+  factory _ScrapingStatus.fromJson(Map<String, dynamic> json) =
+      _$ScrapingStatusImpl.fromJson;
+
+  @override
+  int get processedCount;
+  @override
+  int get totalCount;
+  @override
+  int get failedCount;
+  @override
+  int get pendingCount;
+  @override
+  int get processingCount;
+  @override
+  bool get isActive;
+  @override
+  bool get isCompleted;
+  @override
+  bool get hasErrors;
+  @override
+  String get statusMessage;
+  @override
+  int get estimatedTimeRemaining;
+  @override
+  double get progress;
+  @override
+  DateTime? get lastUpdated;
+  @override
+  QueueStatus? get queueStatus;
+  @override
+  @JsonKey(ignore: true)
+  _$$ScrapingStatusImplCopyWith<_$ScrapingStatusImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -555,10 +1085,14 @@ ScrapingState _$ScrapingStateFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$ScrapingState {
+  ScrapingStatus? get scrapingStatus => throw _privateConstructorUsedError;
   QueueStatus? get queueStatus => throw _privateConstructorUsedError;
   bool get isLoading => throw _privateConstructorUsedError;
+  bool get isTriggering => throw _privateConstructorUsedError;
   String? get error => throw _privateConstructorUsedError;
   bool get showDetails => throw _privateConstructorUsedError;
+  DateTime? get lastTriggered => throw _privateConstructorUsedError;
+  List<ScrapingEvent> get recentEvents => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -573,11 +1107,16 @@ abstract class $ScrapingStateCopyWith<$Res> {
       _$ScrapingStateCopyWithImpl<$Res, ScrapingState>;
   @useResult
   $Res call(
-      {QueueStatus? queueStatus,
+      {ScrapingStatus? scrapingStatus,
+      QueueStatus? queueStatus,
       bool isLoading,
+      bool isTriggering,
       String? error,
-      bool showDetails});
+      bool showDetails,
+      DateTime? lastTriggered,
+      List<ScrapingEvent> recentEvents});
 
+  $ScrapingStatusCopyWith<$Res>? get scrapingStatus;
   $QueueStatusCopyWith<$Res>? get queueStatus;
 }
 
@@ -594,12 +1133,20 @@ class _$ScrapingStateCopyWithImpl<$Res, $Val extends ScrapingState>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? scrapingStatus = freezed,
     Object? queueStatus = freezed,
     Object? isLoading = null,
+    Object? isTriggering = null,
     Object? error = freezed,
     Object? showDetails = null,
+    Object? lastTriggered = freezed,
+    Object? recentEvents = null,
   }) {
     return _then(_value.copyWith(
+      scrapingStatus: freezed == scrapingStatus
+          ? _value.scrapingStatus
+          : scrapingStatus // ignore: cast_nullable_to_non_nullable
+              as ScrapingStatus?,
       queueStatus: freezed == queueStatus
           ? _value.queueStatus
           : queueStatus // ignore: cast_nullable_to_non_nullable
@@ -607,6 +1154,10 @@ class _$ScrapingStateCopyWithImpl<$Res, $Val extends ScrapingState>
       isLoading: null == isLoading
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isTriggering: null == isTriggering
+          ? _value.isTriggering
+          : isTriggering // ignore: cast_nullable_to_non_nullable
               as bool,
       error: freezed == error
           ? _value.error
@@ -616,7 +1167,27 @@ class _$ScrapingStateCopyWithImpl<$Res, $Val extends ScrapingState>
           ? _value.showDetails
           : showDetails // ignore: cast_nullable_to_non_nullable
               as bool,
+      lastTriggered: freezed == lastTriggered
+          ? _value.lastTriggered
+          : lastTriggered // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      recentEvents: null == recentEvents
+          ? _value.recentEvents
+          : recentEvents // ignore: cast_nullable_to_non_nullable
+              as List<ScrapingEvent>,
     ) as $Val);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $ScrapingStatusCopyWith<$Res>? get scrapingStatus {
+    if (_value.scrapingStatus == null) {
+      return null;
+    }
+
+    return $ScrapingStatusCopyWith<$Res>(_value.scrapingStatus!, (value) {
+      return _then(_value.copyWith(scrapingStatus: value) as $Val);
+    });
   }
 
   @override
@@ -641,11 +1212,17 @@ abstract class _$$ScrapingStateImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {QueueStatus? queueStatus,
+      {ScrapingStatus? scrapingStatus,
+      QueueStatus? queueStatus,
       bool isLoading,
+      bool isTriggering,
       String? error,
-      bool showDetails});
+      bool showDetails,
+      DateTime? lastTriggered,
+      List<ScrapingEvent> recentEvents});
 
+  @override
+  $ScrapingStatusCopyWith<$Res>? get scrapingStatus;
   @override
   $QueueStatusCopyWith<$Res>? get queueStatus;
 }
@@ -661,12 +1238,20 @@ class __$$ScrapingStateImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? scrapingStatus = freezed,
     Object? queueStatus = freezed,
     Object? isLoading = null,
+    Object? isTriggering = null,
     Object? error = freezed,
     Object? showDetails = null,
+    Object? lastTriggered = freezed,
+    Object? recentEvents = null,
   }) {
     return _then(_$ScrapingStateImpl(
+      scrapingStatus: freezed == scrapingStatus
+          ? _value.scrapingStatus
+          : scrapingStatus // ignore: cast_nullable_to_non_nullable
+              as ScrapingStatus?,
       queueStatus: freezed == queueStatus
           ? _value.queueStatus
           : queueStatus // ignore: cast_nullable_to_non_nullable
@@ -674,6 +1259,10 @@ class __$$ScrapingStateImplCopyWithImpl<$Res>
       isLoading: null == isLoading
           ? _value.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isTriggering: null == isTriggering
+          ? _value.isTriggering
+          : isTriggering // ignore: cast_nullable_to_non_nullable
               as bool,
       error: freezed == error
           ? _value.error
@@ -683,6 +1272,14 @@ class __$$ScrapingStateImplCopyWithImpl<$Res>
           ? _value.showDetails
           : showDetails // ignore: cast_nullable_to_non_nullable
               as bool,
+      lastTriggered: freezed == lastTriggered
+          ? _value.lastTriggered
+          : lastTriggered // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      recentEvents: null == recentEvents
+          ? _value._recentEvents
+          : recentEvents // ignore: cast_nullable_to_non_nullable
+              as List<ScrapingEvent>,
     ));
   }
 }
@@ -691,28 +1288,48 @@ class __$$ScrapingStateImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ScrapingStateImpl implements _ScrapingState {
   const _$ScrapingStateImpl(
-      {this.queueStatus,
+      {this.scrapingStatus,
+      this.queueStatus,
       this.isLoading = false,
+      this.isTriggering = false,
       this.error,
-      this.showDetails = false});
+      this.showDetails = false,
+      this.lastTriggered,
+      final List<ScrapingEvent> recentEvents = const []})
+      : _recentEvents = recentEvents;
 
   factory _$ScrapingStateImpl.fromJson(Map<String, dynamic> json) =>
       _$$ScrapingStateImplFromJson(json);
 
+  @override
+  final ScrapingStatus? scrapingStatus;
   @override
   final QueueStatus? queueStatus;
   @override
   @JsonKey()
   final bool isLoading;
   @override
+  @JsonKey()
+  final bool isTriggering;
+  @override
   final String? error;
   @override
   @JsonKey()
   final bool showDetails;
+  @override
+  final DateTime? lastTriggered;
+  final List<ScrapingEvent> _recentEvents;
+  @override
+  @JsonKey()
+  List<ScrapingEvent> get recentEvents {
+    if (_recentEvents is EqualUnmodifiableListView) return _recentEvents;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_recentEvents);
+  }
 
   @override
   String toString() {
-    return 'ScrapingState(queueStatus: $queueStatus, isLoading: $isLoading, error: $error, showDetails: $showDetails)';
+    return 'ScrapingState(scrapingStatus: $scrapingStatus, queueStatus: $queueStatus, isLoading: $isLoading, isTriggering: $isTriggering, error: $error, showDetails: $showDetails, lastTriggered: $lastTriggered, recentEvents: $recentEvents)';
   }
 
   @override
@@ -720,19 +1337,35 @@ class _$ScrapingStateImpl implements _ScrapingState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$ScrapingStateImpl &&
+            (identical(other.scrapingStatus, scrapingStatus) ||
+                other.scrapingStatus == scrapingStatus) &&
             (identical(other.queueStatus, queueStatus) ||
                 other.queueStatus == queueStatus) &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
+            (identical(other.isTriggering, isTriggering) ||
+                other.isTriggering == isTriggering) &&
             (identical(other.error, error) || other.error == error) &&
             (identical(other.showDetails, showDetails) ||
-                other.showDetails == showDetails));
+                other.showDetails == showDetails) &&
+            (identical(other.lastTriggered, lastTriggered) ||
+                other.lastTriggered == lastTriggered) &&
+            const DeepCollectionEquality()
+                .equals(other._recentEvents, _recentEvents));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, queueStatus, isLoading, error, showDetails);
+  int get hashCode => Object.hash(
+      runtimeType,
+      scrapingStatus,
+      queueStatus,
+      isLoading,
+      isTriggering,
+      error,
+      showDetails,
+      lastTriggered,
+      const DeepCollectionEquality().hash(_recentEvents));
 
   @JsonKey(ignore: true)
   @override
@@ -750,22 +1383,34 @@ class _$ScrapingStateImpl implements _ScrapingState {
 
 abstract class _ScrapingState implements ScrapingState {
   const factory _ScrapingState(
-      {final QueueStatus? queueStatus,
+      {final ScrapingStatus? scrapingStatus,
+      final QueueStatus? queueStatus,
       final bool isLoading,
+      final bool isTriggering,
       final String? error,
-      final bool showDetails}) = _$ScrapingStateImpl;
+      final bool showDetails,
+      final DateTime? lastTriggered,
+      final List<ScrapingEvent> recentEvents}) = _$ScrapingStateImpl;
 
   factory _ScrapingState.fromJson(Map<String, dynamic> json) =
       _$ScrapingStateImpl.fromJson;
 
   @override
+  ScrapingStatus? get scrapingStatus;
+  @override
   QueueStatus? get queueStatus;
   @override
   bool get isLoading;
   @override
+  bool get isTriggering;
+  @override
   String? get error;
   @override
   bool get showDetails;
+  @override
+  DateTime? get lastTriggered;
+  @override
+  List<ScrapingEvent> get recentEvents;
   @override
   @JsonKey(ignore: true)
   _$$ScrapingStateImplCopyWith<_$ScrapingStateImpl> get copyWith =>
@@ -786,6 +1431,8 @@ mixin _$DetailedProgress {
   String? get estimatedRemainingTime => throw _privateConstructorUsedError;
   Map<String, dynamic> get performanceMetrics =>
       throw _privateConstructorUsedError;
+  double get successRate => throw _privateConstructorUsedError;
+  double get averageProcessingTime => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -805,7 +1452,9 @@ abstract class $DetailedProgressCopyWith<$Res> {
       List<FailedItem> recentFailures,
       DateTime? estimatedCompletion,
       String? estimatedRemainingTime,
-      Map<String, dynamic> performanceMetrics});
+      Map<String, dynamic> performanceMetrics,
+      double successRate,
+      double averageProcessingTime});
 
   $QueueStatusCopyWith<$Res> get queueStatus;
 }
@@ -829,6 +1478,8 @@ class _$DetailedProgressCopyWithImpl<$Res, $Val extends DetailedProgress>
     Object? estimatedCompletion = freezed,
     Object? estimatedRemainingTime = freezed,
     Object? performanceMetrics = null,
+    Object? successRate = null,
+    Object? averageProcessingTime = null,
   }) {
     return _then(_value.copyWith(
       queueStatus: null == queueStatus
@@ -855,6 +1506,14 @@ class _$DetailedProgressCopyWithImpl<$Res, $Val extends DetailedProgress>
           ? _value.performanceMetrics
           : performanceMetrics // ignore: cast_nullable_to_non_nullable
               as Map<String, dynamic>,
+      successRate: null == successRate
+          ? _value.successRate
+          : successRate // ignore: cast_nullable_to_non_nullable
+              as double,
+      averageProcessingTime: null == averageProcessingTime
+          ? _value.averageProcessingTime
+          : averageProcessingTime // ignore: cast_nullable_to_non_nullable
+              as double,
     ) as $Val);
   }
 
@@ -881,7 +1540,9 @@ abstract class _$$DetailedProgressImplCopyWith<$Res>
       List<FailedItem> recentFailures,
       DateTime? estimatedCompletion,
       String? estimatedRemainingTime,
-      Map<String, dynamic> performanceMetrics});
+      Map<String, dynamic> performanceMetrics,
+      double successRate,
+      double averageProcessingTime});
 
   @override
   $QueueStatusCopyWith<$Res> get queueStatus;
@@ -904,6 +1565,8 @@ class __$$DetailedProgressImplCopyWithImpl<$Res>
     Object? estimatedCompletion = freezed,
     Object? estimatedRemainingTime = freezed,
     Object? performanceMetrics = null,
+    Object? successRate = null,
+    Object? averageProcessingTime = null,
   }) {
     return _then(_$DetailedProgressImpl(
       queueStatus: null == queueStatus
@@ -930,6 +1593,14 @@ class __$$DetailedProgressImplCopyWithImpl<$Res>
           ? _value._performanceMetrics
           : performanceMetrics // ignore: cast_nullable_to_non_nullable
               as Map<String, dynamic>,
+      successRate: null == successRate
+          ? _value.successRate
+          : successRate // ignore: cast_nullable_to_non_nullable
+              as double,
+      averageProcessingTime: null == averageProcessingTime
+          ? _value.averageProcessingTime
+          : averageProcessingTime // ignore: cast_nullable_to_non_nullable
+              as double,
     ));
   }
 }
@@ -943,7 +1614,9 @@ class _$DetailedProgressImpl implements _DetailedProgress {
       final List<FailedItem> recentFailures = const [],
       this.estimatedCompletion,
       this.estimatedRemainingTime,
-      final Map<String, dynamic> performanceMetrics = const {}})
+      final Map<String, dynamic> performanceMetrics = const {},
+      this.successRate = 0.0,
+      this.averageProcessingTime = 0.0})
       : _currentlyProcessing = currentlyProcessing,
         _recentFailures = recentFailures,
         _performanceMetrics = performanceMetrics;
@@ -987,8 +1660,15 @@ class _$DetailedProgressImpl implements _DetailedProgress {
   }
 
   @override
+  @JsonKey()
+  final double successRate;
+  @override
+  @JsonKey()
+  final double averageProcessingTime;
+
+  @override
   String toString() {
-    return 'DetailedProgress(queueStatus: $queueStatus, currentlyProcessing: $currentlyProcessing, recentFailures: $recentFailures, estimatedCompletion: $estimatedCompletion, estimatedRemainingTime: $estimatedRemainingTime, performanceMetrics: $performanceMetrics)';
+    return 'DetailedProgress(queueStatus: $queueStatus, currentlyProcessing: $currentlyProcessing, recentFailures: $recentFailures, estimatedCompletion: $estimatedCompletion, estimatedRemainingTime: $estimatedRemainingTime, performanceMetrics: $performanceMetrics, successRate: $successRate, averageProcessingTime: $averageProcessingTime)';
   }
 
   @override
@@ -1007,7 +1687,11 @@ class _$DetailedProgressImpl implements _DetailedProgress {
             (identical(other.estimatedRemainingTime, estimatedRemainingTime) ||
                 other.estimatedRemainingTime == estimatedRemainingTime) &&
             const DeepCollectionEquality()
-                .equals(other._performanceMetrics, _performanceMetrics));
+                .equals(other._performanceMetrics, _performanceMetrics) &&
+            (identical(other.successRate, successRate) ||
+                other.successRate == successRate) &&
+            (identical(other.averageProcessingTime, averageProcessingTime) ||
+                other.averageProcessingTime == averageProcessingTime));
   }
 
   @JsonKey(ignore: true)
@@ -1019,7 +1703,9 @@ class _$DetailedProgressImpl implements _DetailedProgress {
       const DeepCollectionEquality().hash(_recentFailures),
       estimatedCompletion,
       estimatedRemainingTime,
-      const DeepCollectionEquality().hash(_performanceMetrics));
+      const DeepCollectionEquality().hash(_performanceMetrics),
+      successRate,
+      averageProcessingTime);
 
   @JsonKey(ignore: true)
   @override
@@ -1043,7 +1729,9 @@ abstract class _DetailedProgress implements DetailedProgress {
       final List<FailedItem> recentFailures,
       final DateTime? estimatedCompletion,
       final String? estimatedRemainingTime,
-      final Map<String, dynamic> performanceMetrics}) = _$DetailedProgressImpl;
+      final Map<String, dynamic> performanceMetrics,
+      final double successRate,
+      final double averageProcessingTime}) = _$DetailedProgressImpl;
 
   factory _DetailedProgress.fromJson(Map<String, dynamic> json) =
       _$DetailedProgressImpl.fromJson;
@@ -1061,6 +1749,10 @@ abstract class _DetailedProgress implements DetailedProgress {
   @override
   Map<String, dynamic> get performanceMetrics;
   @override
+  double get successRate;
+  @override
+  double get averageProcessingTime;
+  @override
   @JsonKey(ignore: true)
   _$$DetailedProgressImplCopyWith<_$DetailedProgressImpl> get copyWith =>
       throw _privateConstructorUsedError;
@@ -1076,6 +1768,8 @@ mixin _$ProcessingItem {
   String get symbol => throw _privateConstructorUsedError;
   DateTime get startedAt => throw _privateConstructorUsedError;
   double get processingDuration => throw _privateConstructorUsedError;
+  String? get processorId => throw _privateConstructorUsedError;
+  String? get status => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -1093,7 +1787,9 @@ abstract class $ProcessingItemCopyWith<$Res> {
       {String url,
       String symbol,
       DateTime startedAt,
-      double processingDuration});
+      double processingDuration,
+      String? processorId,
+      String? status});
 }
 
 /// @nodoc
@@ -1113,6 +1809,8 @@ class _$ProcessingItemCopyWithImpl<$Res, $Val extends ProcessingItem>
     Object? symbol = null,
     Object? startedAt = null,
     Object? processingDuration = null,
+    Object? processorId = freezed,
+    Object? status = freezed,
   }) {
     return _then(_value.copyWith(
       url: null == url
@@ -1131,6 +1829,14 @@ class _$ProcessingItemCopyWithImpl<$Res, $Val extends ProcessingItem>
           ? _value.processingDuration
           : processingDuration // ignore: cast_nullable_to_non_nullable
               as double,
+      processorId: freezed == processorId
+          ? _value.processorId
+          : processorId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      status: freezed == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -1147,7 +1853,9 @@ abstract class _$$ProcessingItemImplCopyWith<$Res>
       {String url,
       String symbol,
       DateTime startedAt,
-      double processingDuration});
+      double processingDuration,
+      String? processorId,
+      String? status});
 }
 
 /// @nodoc
@@ -1165,6 +1873,8 @@ class __$$ProcessingItemImplCopyWithImpl<$Res>
     Object? symbol = null,
     Object? startedAt = null,
     Object? processingDuration = null,
+    Object? processorId = freezed,
+    Object? status = freezed,
   }) {
     return _then(_$ProcessingItemImpl(
       url: null == url
@@ -1183,6 +1893,14 @@ class __$$ProcessingItemImplCopyWithImpl<$Res>
           ? _value.processingDuration
           : processingDuration // ignore: cast_nullable_to_non_nullable
               as double,
+      processorId: freezed == processorId
+          ? _value.processorId
+          : processorId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      status: freezed == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -1194,7 +1912,9 @@ class _$ProcessingItemImpl implements _ProcessingItem {
       {required this.url,
       required this.symbol,
       required this.startedAt,
-      this.processingDuration = 0.0});
+      this.processingDuration = 0.0,
+      this.processorId,
+      this.status});
 
   factory _$ProcessingItemImpl.fromJson(Map<String, dynamic> json) =>
       _$$ProcessingItemImplFromJson(json);
@@ -1208,10 +1928,14 @@ class _$ProcessingItemImpl implements _ProcessingItem {
   @override
   @JsonKey()
   final double processingDuration;
+  @override
+  final String? processorId;
+  @override
+  final String? status;
 
   @override
   String toString() {
-    return 'ProcessingItem(url: $url, symbol: $symbol, startedAt: $startedAt, processingDuration: $processingDuration)';
+    return 'ProcessingItem(url: $url, symbol: $symbol, startedAt: $startedAt, processingDuration: $processingDuration, processorId: $processorId, status: $status)';
   }
 
   @override
@@ -1224,13 +1948,16 @@ class _$ProcessingItemImpl implements _ProcessingItem {
             (identical(other.startedAt, startedAt) ||
                 other.startedAt == startedAt) &&
             (identical(other.processingDuration, processingDuration) ||
-                other.processingDuration == processingDuration));
+                other.processingDuration == processingDuration) &&
+            (identical(other.processorId, processorId) ||
+                other.processorId == processorId) &&
+            (identical(other.status, status) || other.status == status));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, url, symbol, startedAt, processingDuration);
+  int get hashCode => Object.hash(runtimeType, url, symbol, startedAt,
+      processingDuration, processorId, status);
 
   @JsonKey(ignore: true)
   @override
@@ -1252,7 +1979,9 @@ abstract class _ProcessingItem implements ProcessingItem {
       {required final String url,
       required final String symbol,
       required final DateTime startedAt,
-      final double processingDuration}) = _$ProcessingItemImpl;
+      final double processingDuration,
+      final String? processorId,
+      final String? status}) = _$ProcessingItemImpl;
 
   factory _ProcessingItem.fromJson(Map<String, dynamic> json) =
       _$ProcessingItemImpl.fromJson;
@@ -1265,6 +1994,10 @@ abstract class _ProcessingItem implements ProcessingItem {
   DateTime get startedAt;
   @override
   double get processingDuration;
+  @override
+  String? get processorId;
+  @override
+  String? get status;
   @override
   @JsonKey(ignore: true)
   _$$ProcessingItemImplCopyWith<_$ProcessingItemImpl> get copyWith =>
@@ -1281,6 +2014,8 @@ mixin _$FailedItem {
   String get error => throw _privateConstructorUsedError;
   DateTime get failedAt => throw _privateConstructorUsedError;
   int get retryCount => throw _privateConstructorUsedError;
+  int get maxRetries => throw _privateConstructorUsedError;
+  String? get symbol => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -1294,7 +2029,13 @@ abstract class $FailedItemCopyWith<$Res> {
           FailedItem value, $Res Function(FailedItem) then) =
       _$FailedItemCopyWithImpl<$Res, FailedItem>;
   @useResult
-  $Res call({String url, String error, DateTime failedAt, int retryCount});
+  $Res call(
+      {String url,
+      String error,
+      DateTime failedAt,
+      int retryCount,
+      int maxRetries,
+      String? symbol});
 }
 
 /// @nodoc
@@ -1314,6 +2055,8 @@ class _$FailedItemCopyWithImpl<$Res, $Val extends FailedItem>
     Object? error = null,
     Object? failedAt = null,
     Object? retryCount = null,
+    Object? maxRetries = null,
+    Object? symbol = freezed,
   }) {
     return _then(_value.copyWith(
       url: null == url
@@ -1332,6 +2075,14 @@ class _$FailedItemCopyWithImpl<$Res, $Val extends FailedItem>
           ? _value.retryCount
           : retryCount // ignore: cast_nullable_to_non_nullable
               as int,
+      maxRetries: null == maxRetries
+          ? _value.maxRetries
+          : maxRetries // ignore: cast_nullable_to_non_nullable
+              as int,
+      symbol: freezed == symbol
+          ? _value.symbol
+          : symbol // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -1344,7 +2095,13 @@ abstract class _$$FailedItemImplCopyWith<$Res>
       __$$FailedItemImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String url, String error, DateTime failedAt, int retryCount});
+  $Res call(
+      {String url,
+      String error,
+      DateTime failedAt,
+      int retryCount,
+      int maxRetries,
+      String? symbol});
 }
 
 /// @nodoc
@@ -1362,6 +2119,8 @@ class __$$FailedItemImplCopyWithImpl<$Res>
     Object? error = null,
     Object? failedAt = null,
     Object? retryCount = null,
+    Object? maxRetries = null,
+    Object? symbol = freezed,
   }) {
     return _then(_$FailedItemImpl(
       url: null == url
@@ -1380,6 +2139,14 @@ class __$$FailedItemImplCopyWithImpl<$Res>
           ? _value.retryCount
           : retryCount // ignore: cast_nullable_to_non_nullable
               as int,
+      maxRetries: null == maxRetries
+          ? _value.maxRetries
+          : maxRetries // ignore: cast_nullable_to_non_nullable
+              as int,
+      symbol: freezed == symbol
+          ? _value.symbol
+          : symbol // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -1391,7 +2158,9 @@ class _$FailedItemImpl implements _FailedItem {
       {required this.url,
       required this.error,
       required this.failedAt,
-      this.retryCount = 0});
+      this.retryCount = 0,
+      this.maxRetries = 3,
+      this.symbol});
 
   factory _$FailedItemImpl.fromJson(Map<String, dynamic> json) =>
       _$$FailedItemImplFromJson(json);
@@ -1405,10 +2174,15 @@ class _$FailedItemImpl implements _FailedItem {
   @override
   @JsonKey()
   final int retryCount;
+  @override
+  @JsonKey()
+  final int maxRetries;
+  @override
+  final String? symbol;
 
   @override
   String toString() {
-    return 'FailedItem(url: $url, error: $error, failedAt: $failedAt, retryCount: $retryCount)';
+    return 'FailedItem(url: $url, error: $error, failedAt: $failedAt, retryCount: $retryCount, maxRetries: $maxRetries, symbol: $symbol)';
   }
 
   @override
@@ -1421,13 +2195,16 @@ class _$FailedItemImpl implements _FailedItem {
             (identical(other.failedAt, failedAt) ||
                 other.failedAt == failedAt) &&
             (identical(other.retryCount, retryCount) ||
-                other.retryCount == retryCount));
+                other.retryCount == retryCount) &&
+            (identical(other.maxRetries, maxRetries) ||
+                other.maxRetries == maxRetries) &&
+            (identical(other.symbol, symbol) || other.symbol == symbol));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, url, error, failedAt, retryCount);
+  int get hashCode => Object.hash(
+      runtimeType, url, error, failedAt, retryCount, maxRetries, symbol);
 
   @JsonKey(ignore: true)
   @override
@@ -1448,7 +2225,9 @@ abstract class _FailedItem implements FailedItem {
       {required final String url,
       required final String error,
       required final DateTime failedAt,
-      final int retryCount}) = _$FailedItemImpl;
+      final int retryCount,
+      final int maxRetries,
+      final String? symbol}) = _$FailedItemImpl;
 
   factory _FailedItem.fromJson(Map<String, dynamic> json) =
       _$FailedItemImpl.fromJson;
@@ -1461,6 +2240,10 @@ abstract class _FailedItem implements FailedItem {
   DateTime get failedAt;
   @override
   int get retryCount;
+  @override
+  int get maxRetries;
+  @override
+  String? get symbol;
   @override
   @JsonKey(ignore: true)
   _$$FailedItemImplCopyWith<_$FailedItemImpl> get copyWith =>
@@ -1476,6 +2259,8 @@ mixin _$ScrapingEvent {
   String get message => throw _privateConstructorUsedError;
   ScrapingEventType get type => throw _privateConstructorUsedError;
   DateTime get timestamp => throw _privateConstructorUsedError;
+  String? get details => throw _privateConstructorUsedError;
+  Map<String, dynamic>? get metadata => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -1489,7 +2274,12 @@ abstract class $ScrapingEventCopyWith<$Res> {
           ScrapingEvent value, $Res Function(ScrapingEvent) then) =
       _$ScrapingEventCopyWithImpl<$Res, ScrapingEvent>;
   @useResult
-  $Res call({String message, ScrapingEventType type, DateTime timestamp});
+  $Res call(
+      {String message,
+      ScrapingEventType type,
+      DateTime timestamp,
+      String? details,
+      Map<String, dynamic>? metadata});
 }
 
 /// @nodoc
@@ -1508,6 +2298,8 @@ class _$ScrapingEventCopyWithImpl<$Res, $Val extends ScrapingEvent>
     Object? message = null,
     Object? type = null,
     Object? timestamp = null,
+    Object? details = freezed,
+    Object? metadata = freezed,
   }) {
     return _then(_value.copyWith(
       message: null == message
@@ -1522,6 +2314,14 @@ class _$ScrapingEventCopyWithImpl<$Res, $Val extends ScrapingEvent>
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      details: freezed == details
+          ? _value.details
+          : details // ignore: cast_nullable_to_non_nullable
+              as String?,
+      metadata: freezed == metadata
+          ? _value.metadata
+          : metadata // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
     ) as $Val);
   }
 }
@@ -1534,7 +2334,12 @@ abstract class _$$ScrapingEventImplCopyWith<$Res>
       __$$ScrapingEventImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String message, ScrapingEventType type, DateTime timestamp});
+  $Res call(
+      {String message,
+      ScrapingEventType type,
+      DateTime timestamp,
+      String? details,
+      Map<String, dynamic>? metadata});
 }
 
 /// @nodoc
@@ -1551,6 +2356,8 @@ class __$$ScrapingEventImplCopyWithImpl<$Res>
     Object? message = null,
     Object? type = null,
     Object? timestamp = null,
+    Object? details = freezed,
+    Object? metadata = freezed,
   }) {
     return _then(_$ScrapingEventImpl(
       message: null == message
@@ -1565,6 +2372,14 @@ class __$$ScrapingEventImplCopyWithImpl<$Res>
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      details: freezed == details
+          ? _value.details
+          : details // ignore: cast_nullable_to_non_nullable
+              as String?,
+      metadata: freezed == metadata
+          ? _value._metadata
+          : metadata // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
     ));
   }
 }
@@ -1573,7 +2388,12 @@ class __$$ScrapingEventImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ScrapingEventImpl implements _ScrapingEvent {
   const _$ScrapingEventImpl(
-      {required this.message, required this.type, required this.timestamp});
+      {required this.message,
+      required this.type,
+      required this.timestamp,
+      this.details,
+      final Map<String, dynamic>? metadata})
+      : _metadata = metadata;
 
   factory _$ScrapingEventImpl.fromJson(Map<String, dynamic> json) =>
       _$$ScrapingEventImplFromJson(json);
@@ -1584,10 +2404,21 @@ class _$ScrapingEventImpl implements _ScrapingEvent {
   final ScrapingEventType type;
   @override
   final DateTime timestamp;
+  @override
+  final String? details;
+  final Map<String, dynamic>? _metadata;
+  @override
+  Map<String, dynamic>? get metadata {
+    final value = _metadata;
+    if (value == null) return null;
+    if (_metadata is EqualUnmodifiableMapView) return _metadata;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
 
   @override
   String toString() {
-    return 'ScrapingEvent(message: $message, type: $type, timestamp: $timestamp)';
+    return 'ScrapingEvent(message: $message, type: $type, timestamp: $timestamp, details: $details, metadata: $metadata)';
   }
 
   @override
@@ -1598,12 +2429,15 @@ class _$ScrapingEventImpl implements _ScrapingEvent {
             (identical(other.message, message) || other.message == message) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.timestamp, timestamp) ||
-                other.timestamp == timestamp));
+                other.timestamp == timestamp) &&
+            (identical(other.details, details) || other.details == details) &&
+            const DeepCollectionEquality().equals(other._metadata, _metadata));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, message, type, timestamp);
+  int get hashCode => Object.hash(runtimeType, message, type, timestamp,
+      details, const DeepCollectionEquality().hash(_metadata));
 
   @JsonKey(ignore: true)
   @override
@@ -1623,7 +2457,9 @@ abstract class _ScrapingEvent implements ScrapingEvent {
   const factory _ScrapingEvent(
       {required final String message,
       required final ScrapingEventType type,
-      required final DateTime timestamp}) = _$ScrapingEventImpl;
+      required final DateTime timestamp,
+      final String? details,
+      final Map<String, dynamic>? metadata}) = _$ScrapingEventImpl;
 
   factory _ScrapingEvent.fromJson(Map<String, dynamic> json) =
       _$ScrapingEventImpl.fromJson;
@@ -1635,7 +2471,321 @@ abstract class _ScrapingEvent implements ScrapingEvent {
   @override
   DateTime get timestamp;
   @override
+  String? get details;
+  @override
+  Map<String, dynamic>? get metadata;
+  @override
   @JsonKey(ignore: true)
   _$$ScrapingEventImplCopyWith<_$ScrapingEventImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+ScrapingStats _$ScrapingStatsFromJson(Map<String, dynamic> json) {
+  return _ScrapingStats.fromJson(json);
+}
+
+/// @nodoc
+mixin _$ScrapingStats {
+  QueueStatus get queueStatus => throw _privateConstructorUsedError;
+  List<RecentCompletedItem> get recentCompleted =>
+      throw _privateConstructorUsedError;
+  int get totalCompaniesProcessed => throw _privateConstructorUsedError;
+  int get successRate => throw _privateConstructorUsedError;
+  bool get isHealthy => throw _privateConstructorUsedError;
+  DateTime get lastUpdated => throw _privateConstructorUsedError;
+  Map<String, dynamic> get additionalMetrics =>
+      throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $ScrapingStatsCopyWith<ScrapingStats> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ScrapingStatsCopyWith<$Res> {
+  factory $ScrapingStatsCopyWith(
+          ScrapingStats value, $Res Function(ScrapingStats) then) =
+      _$ScrapingStatsCopyWithImpl<$Res, ScrapingStats>;
+  @useResult
+  $Res call(
+      {QueueStatus queueStatus,
+      List<RecentCompletedItem> recentCompleted,
+      int totalCompaniesProcessed,
+      int successRate,
+      bool isHealthy,
+      DateTime lastUpdated,
+      Map<String, dynamic> additionalMetrics});
+
+  $QueueStatusCopyWith<$Res> get queueStatus;
+}
+
+/// @nodoc
+class _$ScrapingStatsCopyWithImpl<$Res, $Val extends ScrapingStats>
+    implements $ScrapingStatsCopyWith<$Res> {
+  _$ScrapingStatsCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? queueStatus = null,
+    Object? recentCompleted = null,
+    Object? totalCompaniesProcessed = null,
+    Object? successRate = null,
+    Object? isHealthy = null,
+    Object? lastUpdated = null,
+    Object? additionalMetrics = null,
+  }) {
+    return _then(_value.copyWith(
+      queueStatus: null == queueStatus
+          ? _value.queueStatus
+          : queueStatus // ignore: cast_nullable_to_non_nullable
+              as QueueStatus,
+      recentCompleted: null == recentCompleted
+          ? _value.recentCompleted
+          : recentCompleted // ignore: cast_nullable_to_non_nullable
+              as List<RecentCompletedItem>,
+      totalCompaniesProcessed: null == totalCompaniesProcessed
+          ? _value.totalCompaniesProcessed
+          : totalCompaniesProcessed // ignore: cast_nullable_to_non_nullable
+              as int,
+      successRate: null == successRate
+          ? _value.successRate
+          : successRate // ignore: cast_nullable_to_non_nullable
+              as int,
+      isHealthy: null == isHealthy
+          ? _value.isHealthy
+          : isHealthy // ignore: cast_nullable_to_non_nullable
+              as bool,
+      lastUpdated: null == lastUpdated
+          ? _value.lastUpdated
+          : lastUpdated // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      additionalMetrics: null == additionalMetrics
+          ? _value.additionalMetrics
+          : additionalMetrics // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+    ) as $Val);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $QueueStatusCopyWith<$Res> get queueStatus {
+    return $QueueStatusCopyWith<$Res>(_value.queueStatus, (value) {
+      return _then(_value.copyWith(queueStatus: value) as $Val);
+    });
+  }
+}
+
+/// @nodoc
+abstract class _$$ScrapingStatsImplCopyWith<$Res>
+    implements $ScrapingStatsCopyWith<$Res> {
+  factory _$$ScrapingStatsImplCopyWith(
+          _$ScrapingStatsImpl value, $Res Function(_$ScrapingStatsImpl) then) =
+      __$$ScrapingStatsImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {QueueStatus queueStatus,
+      List<RecentCompletedItem> recentCompleted,
+      int totalCompaniesProcessed,
+      int successRate,
+      bool isHealthy,
+      DateTime lastUpdated,
+      Map<String, dynamic> additionalMetrics});
+
+  @override
+  $QueueStatusCopyWith<$Res> get queueStatus;
+}
+
+/// @nodoc
+class __$$ScrapingStatsImplCopyWithImpl<$Res>
+    extends _$ScrapingStatsCopyWithImpl<$Res, _$ScrapingStatsImpl>
+    implements _$$ScrapingStatsImplCopyWith<$Res> {
+  __$$ScrapingStatsImplCopyWithImpl(
+      _$ScrapingStatsImpl _value, $Res Function(_$ScrapingStatsImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? queueStatus = null,
+    Object? recentCompleted = null,
+    Object? totalCompaniesProcessed = null,
+    Object? successRate = null,
+    Object? isHealthy = null,
+    Object? lastUpdated = null,
+    Object? additionalMetrics = null,
+  }) {
+    return _then(_$ScrapingStatsImpl(
+      queueStatus: null == queueStatus
+          ? _value.queueStatus
+          : queueStatus // ignore: cast_nullable_to_non_nullable
+              as QueueStatus,
+      recentCompleted: null == recentCompleted
+          ? _value._recentCompleted
+          : recentCompleted // ignore: cast_nullable_to_non_nullable
+              as List<RecentCompletedItem>,
+      totalCompaniesProcessed: null == totalCompaniesProcessed
+          ? _value.totalCompaniesProcessed
+          : totalCompaniesProcessed // ignore: cast_nullable_to_non_nullable
+              as int,
+      successRate: null == successRate
+          ? _value.successRate
+          : successRate // ignore: cast_nullable_to_non_nullable
+              as int,
+      isHealthy: null == isHealthy
+          ? _value.isHealthy
+          : isHealthy // ignore: cast_nullable_to_non_nullable
+              as bool,
+      lastUpdated: null == lastUpdated
+          ? _value.lastUpdated
+          : lastUpdated // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      additionalMetrics: null == additionalMetrics
+          ? _value._additionalMetrics
+          : additionalMetrics // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ScrapingStatsImpl implements _ScrapingStats {
+  const _$ScrapingStatsImpl(
+      {required this.queueStatus,
+      final List<RecentCompletedItem> recentCompleted = const [],
+      this.totalCompaniesProcessed = 0,
+      this.successRate = 0,
+      this.isHealthy = true,
+      required this.lastUpdated,
+      final Map<String, dynamic> additionalMetrics = const {}})
+      : _recentCompleted = recentCompleted,
+        _additionalMetrics = additionalMetrics;
+
+  factory _$ScrapingStatsImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ScrapingStatsImplFromJson(json);
+
+  @override
+  final QueueStatus queueStatus;
+  final List<RecentCompletedItem> _recentCompleted;
+  @override
+  @JsonKey()
+  List<RecentCompletedItem> get recentCompleted {
+    if (_recentCompleted is EqualUnmodifiableListView) return _recentCompleted;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_recentCompleted);
+  }
+
+  @override
+  @JsonKey()
+  final int totalCompaniesProcessed;
+  @override
+  @JsonKey()
+  final int successRate;
+  @override
+  @JsonKey()
+  final bool isHealthy;
+  @override
+  final DateTime lastUpdated;
+  final Map<String, dynamic> _additionalMetrics;
+  @override
+  @JsonKey()
+  Map<String, dynamic> get additionalMetrics {
+    if (_additionalMetrics is EqualUnmodifiableMapView)
+      return _additionalMetrics;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_additionalMetrics);
+  }
+
+  @override
+  String toString() {
+    return 'ScrapingStats(queueStatus: $queueStatus, recentCompleted: $recentCompleted, totalCompaniesProcessed: $totalCompaniesProcessed, successRate: $successRate, isHealthy: $isHealthy, lastUpdated: $lastUpdated, additionalMetrics: $additionalMetrics)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ScrapingStatsImpl &&
+            (identical(other.queueStatus, queueStatus) ||
+                other.queueStatus == queueStatus) &&
+            const DeepCollectionEquality()
+                .equals(other._recentCompleted, _recentCompleted) &&
+            (identical(
+                    other.totalCompaniesProcessed, totalCompaniesProcessed) ||
+                other.totalCompaniesProcessed == totalCompaniesProcessed) &&
+            (identical(other.successRate, successRate) ||
+                other.successRate == successRate) &&
+            (identical(other.isHealthy, isHealthy) ||
+                other.isHealthy == isHealthy) &&
+            (identical(other.lastUpdated, lastUpdated) ||
+                other.lastUpdated == lastUpdated) &&
+            const DeepCollectionEquality()
+                .equals(other._additionalMetrics, _additionalMetrics));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      queueStatus,
+      const DeepCollectionEquality().hash(_recentCompleted),
+      totalCompaniesProcessed,
+      successRate,
+      isHealthy,
+      lastUpdated,
+      const DeepCollectionEquality().hash(_additionalMetrics));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ScrapingStatsImplCopyWith<_$ScrapingStatsImpl> get copyWith =>
+      __$$ScrapingStatsImplCopyWithImpl<_$ScrapingStatsImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ScrapingStatsImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _ScrapingStats implements ScrapingStats {
+  const factory _ScrapingStats(
+      {required final QueueStatus queueStatus,
+      final List<RecentCompletedItem> recentCompleted,
+      final int totalCompaniesProcessed,
+      final int successRate,
+      final bool isHealthy,
+      required final DateTime lastUpdated,
+      final Map<String, dynamic> additionalMetrics}) = _$ScrapingStatsImpl;
+
+  factory _ScrapingStats.fromJson(Map<String, dynamic> json) =
+      _$ScrapingStatsImpl.fromJson;
+
+  @override
+  QueueStatus get queueStatus;
+  @override
+  List<RecentCompletedItem> get recentCompleted;
+  @override
+  int get totalCompaniesProcessed;
+  @override
+  int get successRate;
+  @override
+  bool get isHealthy;
+  @override
+  DateTime get lastUpdated;
+  @override
+  Map<String, dynamic> get additionalMetrics;
+  @override
+  @JsonKey(ignore: true)
+  _$$ScrapingStatsImplCopyWith<_$ScrapingStatsImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

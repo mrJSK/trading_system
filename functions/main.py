@@ -2267,9 +2267,6 @@ def clean_text(text, field_name=""):
     return text.strip().replace('₹', '').replace(',', '').replace('%', '').replace('Cr.', '').strip()
 
 def parse_number(text):
-    if not text:
-        return None
-        
     cleaned = clean_text(text)
     if cleaned in [None, '']:
         return None
@@ -2312,15 +2309,15 @@ def parse_website_link(soup):
 def parse_financial_table(soup, table_id):
     section = soup.select_one(f'section#{table_id}')
     if not section:
-        return {'headers': [], 'body': []}
+        return {}
     
     table = section.select_one('table.data-table')
     if not table:
-        return {'headers': [], 'body': []}
+        return {}
     
     original_headers = [th.get_text(strip=True) for th in table.select('thead th')][1:]
     if not original_headers:
-        return {'headers': [], 'body': []}
+        return {}
     
     sorted_headers = sorted(original_headers, key=get_calendar_sort_key, reverse=True)
     
@@ -2373,47 +2370,6 @@ def parse_shareholding_table(soup, table_id):
     
     return data
 
-def parse_shareholding_pattern_complete(soup):
-    quarterly_data = parse_shareholding_table(soup, 'quarterly-shp')
-    
-    promoter_holding = None
-    public_holding = None
-    institutional_holding = None
-    foreign_institutional = None
-    domestic_institutional = None
-    government_holding = None
-    
-    if quarterly_data:
-        for key, values in quarterly_data.items():
-            key_lower = key.lower()
-            if values:
-                latest_value = list(values.values())[-1] if values else None
-                parsed_value = parse_number(latest_value)
-                
-                if 'promoter' in key_lower:
-                    promoter_holding = parsed_value
-                elif 'public' in key_lower:
-                    public_holding = parsed_value
-                elif 'fii' in key_lower or 'foreign' in key_lower:
-                    foreign_institutional = parsed_value
-                elif 'dii' in key_lower or 'domestic' in key_lower:
-                    domestic_institutional = parsed_value
-                elif 'government' in key_lower:
-                    government_holding = parsed_value
-                elif 'institutional' in key_lower and not foreign_institutional and not domestic_institutional:
-                    institutional_holding = parsed_value
-    
-    return {
-        'quarterly': quarterly_data,
-        'promoter_holding': promoter_holding,
-        'public_holding': public_holding,
-        'institutional_holding': institutional_holding,
-        'foreign_institutional': foreign_institutional,
-        'domestic_institutional': domestic_institutional,
-        'government_holding': government_holding,
-        'major_shareholders': []
-    }
-
 def parse_growth_tables(soup):
     data = {}
     pl_section = soup.select_one('section#profit-loss')
@@ -2441,34 +2397,18 @@ def parse_growth_tables(soup):
 def process_industry_path(soup):
     peers_section = soup.select_one('section#peers')
     if not peers_section:
-        return []
+        return None
     
     path_paragraph = peers_section.select_one('p.sub:not(#benchmarks)')
     if not path_paragraph:
-        return []
+        return None
     
     path_links = path_paragraph.select('a')
     if not path_links:
-        return []
+        return None
     
     path_names = [link.get_text(strip=True).replace('&amp;', 'and') for link in path_links]
     return path_names
-
-def parse_peer_companies(soup):
-    peers_section = soup.select_one('section#peers')
-    if not peers_section:
-        return []
-    
-    peer_links = peers_section.select('table.data-table tbody tr a')
-    peers = []
-    
-    for link in peer_links:
-        if link.get('href'):
-            peer_name = link.get_text(strip=True)
-            if peer_name and peer_name != 'Show All':
-                peers.append(peer_name)
-    
-    return peers
 
 def parse_company_data(soup, symbol):
     try:
@@ -2509,9 +2449,6 @@ def parse_company_data(soup, symbol):
         pros = [li.get_text(strip=True) for li in soup.select('.pros ul li')]
         cons = [li.get_text(strip=True) for li in soup.select('.cons ul li')]
         
-        growth_tables_data = parse_growth_tables(soup)
-        peer_companies = parse_peer_companies(soup)
-        
         return {
             'symbol': final_symbol,
             'name': company_name,
@@ -2529,50 +2466,34 @@ def parse_company_data(soup, symbol):
             'roce': parse_number(ratios_data.get('ROCE')),
             'roe': parse_number(ratios_data.get('ROE')),
             'face_value': parse_number(ratios_data.get('Face Value')),
+            'pros': pros,
+            'cons': cons,
+            'last_updated': datetime.now().isoformat(),
             'change_percent': 0.0,
             'change_amount': 0.0,
             'previous_close': parse_number(ratios_data.get('Current Price', '0.0')) or 0.0,
-            'pros': pros,
-            'cons': cons,
-            'peer_companies': peer_companies,
-            'key_management': [],
-            'indices': [],
-            'last_updated': datetime.now().isoformat(),
             'quarterly_results': parse_financial_table(soup, 'quarters'),
             'profit_loss_statement': parse_financial_table(soup, 'profit-loss'),
             'balance_sheet': parse_financial_table(soup, 'balance-sheet'),
             'cash_flow_statement': parse_financial_table(soup, 'cash-flow'),
             'ratios': parse_financial_table(soup, 'ratios'),
             'industry_classification': process_industry_path(soup),
-            'shareholding_pattern': parse_shareholding_pattern_complete(soup),
-            'growth_tables': growth_tables_data,
-            'quarterly_data_history': [],
-            'annual_data_history': [],
-            'dividend_history': [],
+            'shareholding_pattern': {
+                'quarterly': parse_shareholding_table(soup, 'quarterly-shp')
+            },
+            **parse_growth_tables(soup),
             'ratios_data': ratios_data
         }
         
-    except Exception as e:
-        print(f"Error parsing company data for {symbol}: {e}")
+    except Exception:
         return None
 
 def get_queue_status(db):
     try:
-        pending_count = len(list(db.collection('scraping_queue')
-                                .where(filter=FieldFilter('status', '==', 'pending'))
-                                .limit(1000).stream()))
-        
-        processing_count = len(list(db.collection('scraping_queue')
-                                   .where(filter=FieldFilter('status', '==', 'processing'))
-                                   .limit(1000).stream()))
-        
-        completed_count = len(list(db.collection('scraping_queue')
-                                  .where(filter=FieldFilter('status', '==', 'completed'))
-                                  .limit(1000).stream()))
-        
-        failed_count = len(list(db.collection('scraping_queue')
-                               .where(filter=FieldFilter('status', '==', 'failed'))
-                               .limit(1000).stream()))
+        pending_count = len(list(db.collection('scraping_queue').where(filter=FieldFilter('status', '==', 'pending')).limit(1000).stream()))
+        processing_count = len(list(db.collection('scraping_queue').where(filter=FieldFilter('status', '==', 'processing')).limit(1000).stream()))
+        completed_count = len(list(db.collection('scraping_queue').where(filter=FieldFilter('status', '==', 'completed')).limit(1000).stream()))
+        failed_count = len(list(db.collection('scraping_queue').where(filter=FieldFilter('status', '==', 'failed')).limit(1000).stream()))
         
         return {
             'pending': pending_count,
@@ -2679,13 +2600,11 @@ def queue_scraping_jobs(req: https_fn.Request) -> https_fn.Response:
             request_json = {}
         
         clear_queue = request_json.get('clear_existing', False)
-        max_pages = request_json.get('max_pages', 100)
+        max_pages = request_json.get('max_pages', 50)
         
         if clear_queue:
             for status in ['pending', 'failed']:
-                docs = db.collection('scraping_queue')\
-                        .where(filter=FieldFilter('status', '==', status))\
-                        .limit(500).stream()
+                docs = db.collection('scraping_queue').where(filter=FieldFilter('status', '==', status)).limit(500).stream()
                 batch = db.batch()
                 count = 0
                 for doc in docs:
@@ -2773,139 +2692,160 @@ def queue_scraping_jobs(req: https_fn.Request) -> https_fn.Response:
     timezone=scheduler_fn.Timezone("Asia/Kolkata")
 )
 def process_scraping_queue(event: scheduler_fn.ScheduledEvent) -> None:
+    print(f"Starting queue processing at {datetime.now()}")
+    
     try:
         db = get_db()
         
         cleanup_old_queue_items(db)
         reset_stale_processing_items(db)
         
-        queue_items = db.collection('scraping_queue')\
-                       .where(filter=FieldFilter('status', '==', 'pending'))\
-                       .order_by('created_at')\
-                       .limit(5)\
-                       .stream()
+        pending_items = list(db.collection('scraping_queue')
+                           .where(filter=FieldFilter('status', '==', 'pending'))
+                           .limit(10)
+                           .stream())
         
-        items_to_process = list(queue_items)
+        print(f"Found {len(pending_items)} pending items in queue")
         
-        if not items_to_process:
+        if not pending_items:
+            print("No pending items found")
+            all_items = list(db.collection('scraping_queue').limit(5).stream())
+            print(f"Total items in queue collection: {len(all_items)}")
+            
+            if len(all_items) == 0:
+                print("Queue collection is empty")
+            else:
+                for item in all_items:
+                    data = item.to_dict()
+                    print(f"Queue item status: {data.get('status')} - URL: {data.get('url', 'No URL')[:50]}...")
+            
             return
         
+        print(f"Processing first 5 items...")
         processed_count = 0
         failed_count = 0
         
         with requests.Session() as session:
-            for doc in items_to_process:
+            for i, doc in enumerate(pending_items[:5]):
+                print(f"Processing item {i+1}/5")
+                
                 try:
                     data = doc.to_dict()
                     url = data['url']
-                    retry_count = data.get('retry_count', 0)
-                    max_retries = data.get('max_retries', 3)
+                    print(f"URL: {url}")
                     
                     doc.reference.update({
                         'status': 'processing',
                         'started_at': datetime.now().isoformat(),
                         'processor_id': 'scheduler_worker'
                     })
+                    print(f"Marked {doc.id} as processing")
                     
+                    print("Fetching page...")
                     response = fetch_page(session, url, retries=2)
                     
-                    if response:
-                        soup = BeautifulSoup(response.content, 'lxml')
-                        symbol = extract_symbol_from_page(soup, url)
+                    if not response:
+                        print("Failed to fetch page")
+                        doc.reference.update({
+                            'status': 'failed',
+                            'failed_at': datetime.now().isoformat(),
+                            'error': 'Failed to fetch page'
+                        })
+                        failed_count += 1
+                        continue
+                    
+                    print(f"Page fetched successfully - Size: {len(response.content)} bytes")
+                    
+                    soup = BeautifulSoup(response.content, 'lxml')
+                    print("HTML parsed successfully")
+                    
+                    symbol = extract_symbol_from_page(soup, url)
+                    print(f"Extracted symbol: {symbol}")
+                    
+                    if not symbol:
+                        print("Failed to extract symbol")
+                        doc.reference.update({
+                            'status': 'failed',
+                            'failed_at': datetime.now().isoformat(),
+                            'error': 'Could not extract symbol'
+                        })
+                        failed_count += 1
+                        continue
+                    
+                    print("Parsing company data...")
+                    company_data = parse_company_data(soup, symbol)
+                    
+                    if not company_data:
+                        print("Failed to parse company data")
+                        doc.reference.update({
+                            'status': 'failed',
+                            'failed_at': datetime.now().isoformat(),
+                            'error': 'Failed to parse company data'
+                        })
+                        failed_count += 1
+                        continue
+                    
+                    print(f"Company data parsed successfully")
+                    print(f"Data keys: {list(company_data.keys())}")
+                    print(f"Market cap: {company_data.get('market_cap')}")
+                    print(f"Current price: {company_data.get('current_price')}")
+                    
+                    print(f"Writing to Firestore collection 'companies' with document ID: {symbol}")
+                    
+                    try:
+                        doc_ref = db.collection('companies').document(symbol)
+                        doc_ref.set(company_data)
+                        print(f"Successfully wrote {symbol} to Firestore")
                         
-                        if symbol:
-                            existing_doc = db.collection('companies').document(symbol).get()
-                            should_update = True
-                            
-                            if existing_doc.exists:
-                                existing_data = existing_doc.to_dict()
-                                last_updated = existing_data.get('last_updated')
-                                if last_updated:
-                                    try:
-                                        last_update_time = datetime.fromisoformat(last_updated.replace('Z', '+00:00'))
-                                        if datetime.now() - last_update_time < timedelta(hours=6):
-                                            should_update = False
-                                    except:
-                                        pass
-                            
-                            if should_update:
-                                company_data = parse_company_data(soup, symbol)
-                                if company_data:
-                                    db.collection('companies').document(symbol).set(company_data)
-                                    doc.reference.update({
-                                        'status': 'completed',
-                                        'completed_at': datetime.now().isoformat(),
-                                        'symbol': symbol,
-                                        'company_name': company_data.get('name', 'Unknown')
-                                    })
-                                    processed_count += 1
-                                else:
-                                    if retry_count < max_retries:
-                                        doc.reference.update({
-                                            'status': 'pending',
-                                            'retry_count': retry_count + 1,
-                                            'last_retry': datetime.now().isoformat()
-                                        })
-                                    else:
-                                        doc.reference.update({
-                                            'status': 'failed',
-                                            'failed_at': datetime.now().isoformat(),
-                                            'error': 'Failed to parse complete company data'
-                                        })
-                                        failed_count += 1
-                            else:
-                                doc.reference.update({
-                                    'status': 'completed',
-                                    'completed_at': datetime.now().isoformat(),
-                                    'symbol': symbol,
-                                    'skipped_reason': 'Recently updated'
-                                })
+                        written_doc = doc_ref.get()
+                        if written_doc.exists:
+                            print(f"Verified: Document {symbol} exists in Firestore")
                         else:
-                            if retry_count < max_retries:
-                                doc.reference.update({
-                                    'status': 'pending',
-                                    'retry_count': retry_count + 1,
-                                    'last_retry': datetime.now().isoformat()
-                                })
-                            else:
-                                doc.reference.update({
-                                    'status': 'failed',
-                                    'failed_at': datetime.now().isoformat(),
-                                    'error': 'Could not extract symbol'
-                                })
-                                failed_count += 1
-                    else:
-                        if retry_count < max_retries:
-                            doc.reference.update({
-                                'status': 'pending',
-                                'retry_count': retry_count + 1,
-                                'last_retry': datetime.now().isoformat()
-                            })
-                        else:
-                            doc.reference.update({
-                                'status': 'failed',
-                                'failed_at': datetime.now().isoformat(),
-                                'error': 'Failed to fetch page'
-                            })
-                            failed_count += 1
+                            print(f"ERROR: Document {symbol} was not found after write")
+                        
+                    except Exception as firestore_error:
+                        print(f"FIRESTORE WRITE ERROR: {str(firestore_error)}")
+                        doc.reference.update({
+                            'status': 'failed',
+                            'failed_at': datetime.now().isoformat(),
+                            'error': f'Firestore write failed: {str(firestore_error)}'
+                        })
+                        failed_count += 1
+                        continue
+                    
+                    doc.reference.update({
+                        'status': 'completed',
+                        'completed_at': datetime.now().isoformat(),
+                        'symbol': symbol,
+                        'company_name': company_data.get('name', 'Unknown')
+                    })
+                    
+                    processed_count += 1
+                    print(f"Successfully processed {symbol}")
                     
                     time.sleep(random.uniform(2, 5))
                     
-                except Exception as e:
+                except Exception as processing_error:
+                    print(f"PROCESSING ERROR: {str(processing_error)}")
                     try:
                         doc.reference.update({
                             'status': 'failed',
                             'failed_at': datetime.now().isoformat(),
-                            'error': str(e)
+                            'error': str(processing_error)
                         })
                         failed_count += 1
                     except:
-                        pass
+                        print("Failed to update error status")
+        
+        print(f"PROCESSING COMPLETE")
+        print(f"Processed: {processed_count}")
+        print(f"Failed: {failed_count}")
         
         if processed_count > 0 or failed_count > 0:
             notify_job_complete(processed_count, failed_count)
         
     except Exception as e:
+        print(f"FATAL ERROR in process_scraping_queue: {str(e)}")
         notify_job_failed(str(e))
 
 @https_fn.on_request()
@@ -2994,9 +2934,7 @@ def manage_queue(req: https_fn.Request) -> https_fn.Response:
         db = get_db()
         
         if action == 'clear_failed':
-            docs = db.collection('scraping_queue')\
-                    .where(filter=FieldFilter('status', '==', 'failed'))\
-                    .limit(1000).stream()
+            docs = db.collection('scraping_queue').where(filter=FieldFilter('status', '==', 'failed')).limit(1000).stream()
             batch = db.batch()
             count = 0
             for doc in docs:
@@ -3015,9 +2953,7 @@ def manage_queue(req: https_fn.Request) -> https_fn.Response:
             )
         
         elif action == 'retry_failed':
-            docs = db.collection('scraping_queue')\
-                    .where(filter=FieldFilter('status', '==', 'failed'))\
-                    .limit(100).stream()
+            docs = db.collection('scraping_queue').where(filter=FieldFilter('status', '==', 'failed')).limit(100).stream()
             batch = db.batch()
             count = 0
             for doc in docs:
@@ -3073,7 +3009,7 @@ def manual_scrape_trigger(req: https_fn.Request) -> https_fn.Response:
         if request_json.get('test', False):
             response_data = {
                 'status': 'success',
-                'message': 'Complete data scraping system is ready with all financial tables and Dart model compatibility',
+                'message': 'Complete data scraping system is ready with all financial tables',
                 'timestamp': datetime.now().isoformat(),
                 'test_mode': True
             }
@@ -3087,7 +3023,7 @@ def manual_scrape_trigger(req: https_fn.Request) -> https_fn.Response:
         
         response_data = {
             'status': 'success',
-            'message': 'Comprehensive data scraping with complete financial statements matching Dart models. You will receive push notification when complete.',
+            'message': 'Comprehensive data scraping with complete financial statements. You will receive push notification when complete.',
             'current_queue_status': status,
             'timestamp': datetime.now().isoformat()
         }

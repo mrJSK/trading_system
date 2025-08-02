@@ -7,6 +7,7 @@ import '../widgets/fundamental_tabs.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/company_list.dart';
 import '../widgets/scraping_status_bar.dart';
+import '../screens/scraping_management_screen.dart'; // Add this import
 import '../theme/app_theme.dart';
 import '../providers/theme_provider.dart';
 import '../providers/fundamental_provider.dart';
@@ -92,7 +93,6 @@ class DashboardScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // Handle bar
               Container(
                 width: 40,
                 height: 4,
@@ -180,7 +180,6 @@ class DashboardScreen extends ConsumerWidget {
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
         onTap: () {
-          // Handle notification tap
           Navigator.pop(context);
         },
       ),
@@ -198,7 +197,6 @@ class DashboardScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle bar
             Container(
               width: 40,
               height: 4,
@@ -283,10 +281,6 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // ============================================================================
-  // ENHANCED QUICK ACTIONS WITH DEBUG FUNCTIONALITY
-  // ============================================================================
-
   void _showQuickActionsBottomSheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
@@ -298,7 +292,6 @@ class DashboardScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle bar
             Container(
               width: 40,
               height: 4,
@@ -311,8 +304,6 @@ class DashboardScreen extends ConsumerWidget {
             Text('Quick Actions',
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 20),
-
-            // Grid of quick actions (including debug)
             GridView.count(
               shrinkWrap: true,
               crossAxisCount: 3,
@@ -401,9 +392,23 @@ class DashboardScreen extends ConsumerWidget {
                     _showWatchlistBottomSheet(context, ref);
                   },
                 ),
-                // ============================================
-                // DEBUG ACTIONS (Added for troubleshooting)
-                // ============================================
+                // UPDATED: Navigate to Scraping Management Screen
+                _buildQuickActionCard(
+                  context,
+                  ref,
+                  'Scraping Manager',
+                  Icons.cloud_sync,
+                  Colors.deepPurple,
+                  () {
+                    Navigator.pop(context); // Close quick actions first
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ScrapingManagementScreen(),
+                      ),
+                    );
+                  },
+                ),
                 _buildQuickActionCard(
                   context,
                   ref,
@@ -445,16 +450,15 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // ============================================================================
-  // DEBUG METHODS FOR TROUBLESHOOTING
-  // ============================================================================
+  // REMOVED: All scraping dialog methods
+  // - _showManualScraperDialog()
+  // - _triggerManualScraper()
+  // - _showScrapingStatusDialog()
 
-  /// Debug method to fetch first 10 companies directly from Firestore
   Future<void> _debugFetchRawData(WidgetRef ref) async {
     print('=== 🐛 DEBUG: Starting raw companies fetch ===');
 
     try {
-      // Simple query to fetch first 10 documents
       final snapshot = await FirebaseFirestore.instance
           .collection('companies')
           .limit(10)
@@ -470,7 +474,6 @@ class DashboardScreen extends ConsumerWidget {
         return;
       }
 
-      // Print raw data for each document
       for (int i = 0; i < snapshot.docs.length; i++) {
         final doc = snapshot.docs[i];
         print('--- Document ${i + 1} ---');
@@ -481,7 +484,6 @@ class DashboardScreen extends ConsumerWidget {
           final rawData = doc.data();
           print('📊 Raw data keys: ${rawData.keys.toList()}');
 
-          // Check essential fields
           print('🔍 Fields check:');
           print(
               '  - name: ${rawData['name']} (${rawData['name'].runtimeType})');
@@ -496,7 +498,6 @@ class DashboardScreen extends ConsumerWidget {
           print(
               '  - changePercent: ${rawData['changePercent']} (${rawData['changePercent'].runtimeType})');
 
-          // Check boolean fields
           print('🔍 Boolean fields:');
           print(
               '  - isDebtFree: ${rawData['isDebtFree']} (${rawData['isDebtFree'].runtimeType})');
@@ -512,7 +513,6 @@ class DashboardScreen extends ConsumerWidget {
 
       print('=== ✅ DEBUG: Raw fetch completed successfully ===');
 
-      // Show success snackbar
       if (ref.context.mounted) {
         ScaffoldMessenger.of(ref.context).showSnackBar(
           SnackBar(
@@ -537,7 +537,6 @@ class DashboardScreen extends ConsumerWidget {
         print('🐛 DEBUG: Check your internet connection and Firebase config');
       }
 
-      // Show error snackbar
       if (ref.context.mounted) {
         ScaffoldMessenger.of(ref.context).showSnackBar(
           SnackBar(
@@ -551,12 +550,10 @@ class DashboardScreen extends ConsumerWidget {
     }
   }
 
-  /// Test basic Firebase connection
   Future<void> _testFirebaseConnection(WidgetRef ref) async {
     print('=== 🔥 DEBUG: Testing Firebase Connection ===');
 
     try {
-      // Test basic Firestore connection
       final testQuery =
           FirebaseFirestore.instance.collection('companies').limit(1);
 
@@ -566,12 +563,10 @@ class DashboardScreen extends ConsumerWidget {
       print('🔥 DEBUG: Can access Firestore instance');
       print('🔥 DEBUG: Test query returned ${snapshot.docs.length} docs');
 
-      // Test collection metadata
       print('🔥 DEBUG: Snapshot metadata:');
       print('  - fromCache: ${snapshot.metadata.isFromCache}');
       print('  - hasPendingWrites: ${snapshot.metadata.hasPendingWrites}');
 
-      // Show success message
       if (ref.context.mounted) {
         ScaffoldMessenger.of(ref.context).showSnackBar(
           const SnackBar(
@@ -584,7 +579,6 @@ class DashboardScreen extends ConsumerWidget {
     } catch (error) {
       print('🔥 DEBUG: ❌ Firebase connection failed: $error');
 
-      // Show error message
       if (ref.context.mounted) {
         ScaffoldMessenger.of(ref.context).showSnackBar(
           SnackBar(
@@ -598,7 +592,6 @@ class DashboardScreen extends ConsumerWidget {
     }
   }
 
-  /// Show debug statistics in a dialog
   void _showDebugStats(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
@@ -610,7 +603,6 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Provider States
               Text('📊 Provider States:',
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
@@ -633,10 +625,7 @@ class DashboardScreen extends ConsumerWidget {
                   );
                 },
               ),
-
               const SizedBox(height: 16),
-
-              // Action Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -710,7 +699,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   void _showThemeDialog(BuildContext context, WidgetRef ref) {
-    Navigator.pop(context); // Close settings first
+    Navigator.pop(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -779,7 +768,6 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             Text('Choose what to export:'),
             SizedBox(height: 16),
-            // Add export options here
           ],
         ),
         actions: [
@@ -818,8 +806,7 @@ class DashboardScreen extends ConsumerWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pop(context); // Close settings
-              // Clear all providers
+              Navigator.pop(context);
               ref.invalidate(companiesProvider);
               ref.invalidate(selectedFundamentalProvider);
               ref.invalidate(searchQueryProvider);
@@ -883,7 +870,6 @@ class DashboardScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // Handle bar
               Container(
                 width: 40,
                 height: 4,
@@ -963,7 +949,6 @@ class DashboardScreen extends ConsumerWidget {
                                 },
                               ),
                               onTap: () {
-                                // Navigate to company details
                                 Navigator.pop(context);
                               },
                             ),

@@ -1,343 +1,565 @@
 // providers/scraping_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
-// Scraping Status Model
-class ScrapingStatus {
-  final bool isActive;
-  final int processedCount;
-  final int totalCount;
-  final String currentSymbol;
-  final DateTime? startTime;
-  final DateTime? lastUpdated;
-  final List<String> errors;
-  final String phase; // 'initializing', 'scraping', 'processing', 'completed'
+import '../models/scraping_models.dart';
+import '../services/scraping_service.dart';
 
-  const ScrapingStatus({
-    required this.isActive,
-    required this.processedCount,
-    required this.totalCount,
-    this.currentSymbol = '',
-    this.startTime,
-    this.lastUpdated,
-    this.errors = const [],
-    this.phase = 'initializing',
-  });
+// Main Scraping Status Provider (using HTTP service)
+final scrapingStatusProvider = StreamProvider<ScrapingStatus>((ref) async* {
+  final scrapingService = ScrapingService();
 
-  ScrapingStatus copyWith({
-    bool? isActive,
-    int? processedCount,
-    int? totalCount,
-    String? currentSymbol,
-    DateTime? startTime,
-    DateTime? lastUpdated,
-    List<String>? errors,
-    String? phase,
-  }) {
-    return ScrapingStatus(
-      isActive: isActive ?? this.isActive,
-      processedCount: processedCount ?? this.processedCount,
-      totalCount: totalCount ?? this.totalCount,
-      currentSymbol: currentSymbol ?? this.currentSymbol,
-      startTime: startTime ?? this.startTime,
-      lastUpdated: lastUpdated ?? this.lastUpdated,
-      errors: errors ?? this.errors,
-      phase: phase ?? this.phase,
+  // Initial load
+  try {
+    final queueStatus = await scrapingService.getQueueStatus();
+    yield ScrapingStatus.fromQueueStatus(queueStatus);
+  } catch (e) {
+    yield ScrapingStatus(
+      statusMessage: 'Failed to load status: ${e.toString()}',
+      hasErrors: true,
     );
   }
 
-  factory ScrapingStatus.fromFirestore(Map<String, dynamic> data) {
-    return ScrapingStatus(
-      isActive: data['isActive'] ?? false,
-      processedCount: data['processedCount'] ?? 0,
-      totalCount: data['totalCount'] ?? 0,
-      currentSymbol: data['currentSymbol'] ?? '',
-      startTime: data['startTime']?.toDate(),
-      lastUpdated: data['lastUpdated']?.toDate(),
-      errors: List<String>.from(data['errors'] ?? []),
-      phase: data['phase'] ?? 'initializing',
-    );
-  }
-
-  double get progress {
-    if (totalCount == 0) return 0.0;
-    return processedCount / totalCount;
-  }
-
-  String get progressText {
-    return '${(progress * 100).toStringAsFixed(1)}%';
-  }
-
-  bool get hasErrors => errors.isNotEmpty;
-
-  Duration? get elapsedTime {
-    if (startTime == null) return null;
-    final endTime = lastUpdated ?? DateTime.now();
-    return endTime.difference(startTime!);
-  }
-
-  String get statusMessage {
-    switch (phase) {
-      case 'initializing':
-        return 'Initializing scraping process...';
-      case 'scraping':
-        return 'Scraping data from Screener.in...';
-      case 'processing':
-        return 'Processing and updating database...';
-      case 'completed':
-        return 'Data update completed successfully';
-      default:
-        return 'Updating financial data...';
-    }
-  }
-}
-
-// Job Queue Item Model
-class QueueItem {
-  final String id;
-  final String symbol;
-  final String status; // 'pending', 'processing', 'completed', 'failed'
-  final DateTime createdAt;
-  final DateTime? processedAt;
-  final String? error;
-  final int retryCount;
-
-  const QueueItem({
-    required this.id,
-    required this.symbol,
-    required this.status,
-    required this.createdAt,
-    this.processedAt,
-    this.error,
-    this.retryCount = 0,
-  });
-
-  factory QueueItem.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return QueueItem(
-      id: doc.id,
-      symbol: data['symbol'] ?? '',
-      status: data['status'] ?? 'pending',
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      processedAt: data['processedAt']?.toDate(),
-      error: data['error'],
-      retryCount: data['retryCount'] ?? 0,
-    );
-  }
-}
-
-// Main Scraping Status Provider
-final scrapingStatusProvider = StreamProvider<ScrapingStatus>((ref) {
-  return FirebaseFirestore.instance
-      .collection('system')
-      .doc('scraping_status')
-      .snapshots()
-      .map((snapshot) {
-    if (!snapshot.exists) {
-      return const ScrapingStatus(
-        isActive: false,
-        processedCount: 0,
-        totalCount: 0,
+  // Set up periodic polling for real-time updates
+  yield* Stream.periodic(const Duration(seconds: 15), (count) => count)
+      .asyncMap((_) async {
+    try {
+      final queueStatus = await scrapingService.getQueueStatus();
+      return ScrapingStatus.fromQueueStatus(queueStatus);
+    } catch (e) {
+      return ScrapingStatus(
+        statusMessage: 'Connection error: ${e.toString()}',
+        hasErrors: true,
       );
     }
-
-    final data = snapshot.data() as Map<String, dynamic>;
-    return ScrapingStatus.fromFirestore(data);
   });
 });
 
-// Queue Status Provider
-final queueStatusProvider = StreamProvider<List<QueueItem>>((ref) {
-  return FirebaseFirestore.instance
-      .collection('scraping_queue')
-      .orderBy('createdAt', descending: true)
-      .limit(100)
-      .snapshots()
-      .map((snapshot) =>
-          snapshot.docs.map((doc) => QueueItem.fromFirestore(doc)).toList());
-});
+// Queue Status Provider (using HTTP service)
+final queueStatusProvider = StreamProvider<QueueStatus>((ref) async* {
+  final scrapingService = ScrapingService();
 
-// Recent Scraping Stats Provider
-final scrapingStatsProvider = StreamProvider<ScrapingStats>((ref) {
-  return FirebaseFirestore.instance
-      .collection('system')
-      .doc('scraping_stats')
-      .snapshots()
-      .map((snapshot) {
-    if (!snapshot.exists) {
-      return ScrapingStats.empty();
-    }
-
-    final data = snapshot.data() as Map<String, dynamic>;
-    return ScrapingStats.fromFirestore(data);
-  });
-});
-
-class ScrapingStats {
-  final int totalCompanies;
-  final int successfulScrapes;
-  final int failedScrapes;
-  final DateTime? lastSuccessfulRun;
-  final DateTime? lastFailedRun;
-  final double averageProcessingTime;
-  final Map<String, int> errorCounts;
-
-  const ScrapingStats({
-    required this.totalCompanies,
-    required this.successfulScrapes,
-    required this.failedScrapes,
-    this.lastSuccessfulRun,
-    this.lastFailedRun,
-    this.averageProcessingTime = 0.0,
-    this.errorCounts = const {},
-  });
-
-  factory ScrapingStats.empty() {
-    return const ScrapingStats(
-      totalCompanies: 0,
-      successfulScrapes: 0,
-      failedScrapes: 0,
+  // Initial load
+  try {
+    yield await scrapingService.getQueueStatus();
+  } catch (e) {
+    yield QueueStatus(
+      timestamp: DateTime.now(),
+      statusText: 'Failed to load queue status',
     );
   }
 
-  factory ScrapingStats.fromFirestore(Map<String, dynamic> data) {
-    return ScrapingStats(
-      totalCompanies: data['totalCompanies'] ?? 0,
-      successfulScrapes: data['successfulScrapes'] ?? 0,
-      failedScrapes: data['failedScrapes'] ?? 0,
-      lastSuccessfulRun: data['lastSuccessfulRun']?.toDate(),
-      lastFailedRun: data['lastFailedRun']?.toDate(),
-      averageProcessingTime: (data['averageProcessingTime'] ?? 0.0).toDouble(),
-      errorCounts: Map<String, int>.from(data['errorCounts'] ?? {}),
+  // Periodic updates
+  yield* Stream.periodic(const Duration(seconds: 30), (count) => count)
+      .asyncMap((_) async {
+    try {
+      return await scrapingService.getQueueStatus();
+    } catch (e) {
+      return QueueStatus(
+        timestamp: DateTime.now(),
+        statusText: 'Connection error',
+      );
+    }
+  });
+});
+
+// Scraping Stats Provider
+final scrapingStatsProvider = StreamProvider<ScrapingStats>((ref) async* {
+  final scrapingService = ScrapingService();
+
+  // Initial load
+  try {
+    final statsData = await scrapingService.getScrapingStats();
+    yield ScrapingStats.fromJson(statsData);
+  } catch (e) {
+    yield ScrapingStats(
+      queueStatus: QueueStatus(timestamp: DateTime.now()),
+      lastUpdated: DateTime.now(),
     );
   }
 
-  double get successRate {
-    final total = successfulScrapes + failedScrapes;
-    if (total == 0) return 0.0;
-    return successfulScrapes / total;
+  // Periodic updates (less frequent for stats)
+  yield* Stream.periodic(const Duration(minutes: 2), (count) => count)
+      .asyncMap((_) async {
+    try {
+      final statsData = await scrapingService.getScrapingStats();
+      return ScrapingStats.fromJson(statsData);
+    } catch (e) {
+      return ScrapingStats(
+        queueStatus: QueueStatus(timestamp: DateTime.now()),
+        lastUpdated: DateTime.now(),
+      );
+    }
+  });
+});
+
+// Recent Completed Items Provider
+final recentCompletedProvider =
+    StreamProvider<List<RecentCompletedItem>>((ref) async* {
+  final scrapingService = ScrapingService();
+
+  // Initial load
+  try {
+    yield await scrapingService.getRecentCompleted();
+  } catch (e) {
+    yield <RecentCompletedItem>[];
   }
 
-  String get formattedLastRun {
-    if (lastSuccessfulRun == null) return 'Never';
-
-    final now = DateTime.now();
-    final difference = now.difference(lastSuccessfulRun!);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${difference.inMinutes}m ago';
+  // Periodic updates
+  yield* Stream.periodic(const Duration(seconds: 45), (count) => count)
+      .asyncMap((_) async {
+    try {
+      return await scrapingService.getRecentCompleted();
+    } catch (e) {
+      return <RecentCompletedItem>[];
     }
+  });
+});
+
+// Scraping State Provider (combines multiple states)
+final scrapingStateProvider =
+    StateNotifierProvider<ScrapingStateNotifier, ScrapingState>((ref) {
+  return ScrapingStateNotifier(ref);
+});
+
+class ScrapingStateNotifier extends StateNotifier<ScrapingState> {
+  final Ref _ref;
+  StreamSubscription? _statusSubscription;
+  StreamSubscription? _queueSubscription;
+
+  ScrapingStateNotifier(this._ref) : super(const ScrapingState()) {
+    _init();
+  }
+
+  void _init() {
+    // Listen to scraping status changes
+    _statusSubscription = _ref.listen<AsyncValue<ScrapingStatus>>(
+      scrapingStatusProvider,
+      (previous, next) {
+        next.when(
+          data: (status) {
+            state = state.copyWith(
+              scrapingStatus: status,
+              isLoading: false,
+              error: null,
+            );
+          },
+          loading: () {
+            state = state.copyWith(isLoading: true);
+          },
+          error: (error, stack) {
+            state = state.copyWith(
+              error: error.toString(),
+              isLoading: false,
+            );
+          },
+        );
+      },
+    ) as StreamSubscription?;
+
+    // Listen to queue status changes
+    _queueSubscription = _ref.listen<AsyncValue<QueueStatus>>(
+      queueStatusProvider,
+      (previous, next) {
+        next.when(
+          data: (queueStatus) {
+            state = state.copyWith(queueStatus: queueStatus);
+          },
+          loading: () {},
+          error: (error, stack) {},
+        );
+      },
+    ) as StreamSubscription?;
+  }
+
+  Future<void> triggerScraping({
+    int maxPages = 10,
+    bool clearExisting = true,
+  }) async {
+    state = state.copyWith(isTriggering: true, error: null);
+
+    try {
+      final scrapingService = ScrapingService();
+      await scrapingService.startScraping(
+        maxPages: maxPages,
+        clearExisting: clearExisting,
+      );
+
+      state = state.copyWith(
+        isTriggering: false,
+        lastTriggered: DateTime.now(),
+      );
+
+      // Add event
+      _addEvent(
+        'Scraping started',
+        ScrapingEventType.started,
+        'Initiated scraping for $maxPages pages',
+      );
+
+      // Refresh providers
+      _ref.invalidate(scrapingStatusProvider);
+      _ref.invalidate(queueStatusProvider);
+    } catch (e) {
+      state = state.copyWith(
+        isTriggering: false,
+        error: e.toString(),
+      );
+
+      _addEvent(
+        'Scraping failed to start',
+        ScrapingEventType.error,
+        e.toString(),
+      );
+    }
+  }
+
+  Future<void> stopScraping() async {
+    try {
+      final scrapingService = ScrapingService();
+      await scrapingService.stopScraping();
+
+      _addEvent(
+        'Scraping stopped',
+        ScrapingEventType.stopped,
+        'Scraping process has been stopped',
+      );
+
+      _ref.invalidate(scrapingStatusProvider);
+      _ref.invalidate(queueStatusProvider);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+
+      _addEvent(
+        'Failed to stop scraping',
+        ScrapingEventType.error,
+        e.toString(),
+      );
+    }
+  }
+
+  Future<void> retryFailed() async {
+    try {
+      final scrapingService = ScrapingService();
+      final message = await scrapingService.retryFailed();
+
+      _addEvent(
+        'Retrying failed items',
+        ScrapingEventType.action,
+        message,
+      );
+
+      _ref.invalidate(scrapingStatusProvider);
+      _ref.invalidate(queueStatusProvider);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+
+      _addEvent(
+        'Failed to retry items',
+        ScrapingEventType.error,
+        e.toString(),
+      );
+    }
+  }
+
+  Future<void> clearFailed() async {
+    try {
+      final scrapingService = ScrapingService();
+      final message = await scrapingService.clearFailed();
+
+      _addEvent(
+        'Cleared failed items',
+        ScrapingEventType.action,
+        message,
+      );
+
+      _ref.invalidate(scrapingStatusProvider);
+      _ref.invalidate(queueStatusProvider);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+
+      _addEvent(
+        'Failed to clear items',
+        ScrapingEventType.error,
+        e.toString(),
+      );
+    }
+  }
+
+  Future<void> testConnection() async {
+    try {
+      final scrapingService = ScrapingService();
+      final message = await scrapingService.testConnection();
+
+      _addEvent(
+        'Connection test',
+        ScrapingEventType.success,
+        message,
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+
+      _addEvent(
+        'Connection test failed',
+        ScrapingEventType.error,
+        e.toString(),
+      );
+    }
+  }
+
+  void toggleDetails() {
+    state = state.copyWith(showDetails: !state.showDetails);
+  }
+
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
+
+  void _addEvent(String message, ScrapingEventType type, [String? details]) {
+    final event = ScrapingEvent(
+      message: message,
+      type: type,
+      timestamp: DateTime.now(),
+      details: details,
+    );
+
+    final updatedEvents = [event, ...state.recentEvents].take(20).toList();
+    state = state.copyWith(recentEvents: updatedEvents);
+  }
+
+  @override
+  void dispose() {
+    _statusSubscription?.cancel();
+    _queueSubscription?.cancel();
+    super.dispose();
   }
 }
 
-// Scraping Control Provider
-final scrapingControlProvider = Provider<ScrapingControl>((ref) {
-  return ScrapingControl();
+// Enhanced Scraping Control Provider
+final scrapingControlProvider = Provider<EnhancedScrapingControl>((ref) {
+  return EnhancedScrapingControl(ref);
 });
 
-class ScrapingControl {
-  // Trigger manual scraping
-  Future<void> startScraping({List<String>? symbols}) async {
+class EnhancedScrapingControl {
+  final Ref _ref;
+  late final ScrapingService _scrapingService;
+
+  EnhancedScrapingControl(this._ref) {
+    _scrapingService = ScrapingService();
+  }
+
+  Future<String> startScraping({
+    int maxPages = 100,
+    bool clearExisting = true,
+  }) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('system')
-          .doc('scraping_control')
-          .set({
-        'action': 'start',
-        'symbols': symbols,
-        'requestedAt': FieldValue.serverTimestamp(),
-        'requestedBy': 'mobile_app',
-      });
+      final message = await _scrapingService.startScraping(
+        maxPages: maxPages,
+        clearExisting: clearExisting,
+      );
+
+      // Refresh all providers
+      _ref.invalidate(scrapingStatusProvider);
+      _ref.invalidate(queueStatusProvider);
+      _ref.invalidate(scrapingStatsProvider);
+
+      return message;
     } catch (e) {
       throw Exception('Failed to start scraping: $e');
     }
   }
 
-  // Stop scraping
-  Future<void> stopScraping() async {
+  Future<String> stopScraping() async {
     try {
-      await FirebaseFirestore.instance
-          .collection('system')
-          .doc('scraping_control')
-          .set({
-        'action': 'stop',
-        'requestedAt': FieldValue.serverTimestamp(),
-        'requestedBy': 'mobile_app',
-      });
+      final message = await _scrapingService.stopScraping();
+
+      _ref.invalidate(scrapingStatusProvider);
+      _ref.invalidate(queueStatusProvider);
+
+      return message;
     } catch (e) {
       throw Exception('Failed to stop scraping: $e');
     }
   }
 
-  // Clear failed items from queue
-  Future<void> clearFailedItems() async {
+  Future<String> retryFailedItems() async {
     try {
-      final failedItems = await FirebaseFirestore.instance
-          .collection('scraping_queue')
-          .where('status', isEqualTo: 'failed')
-          .get();
+      final message = await _scrapingService.retryFailed();
 
-      final batch = FirebaseFirestore.instance.batch();
-      for (final doc in failedItems.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
-    } catch (e) {
-      throw Exception('Failed to clear failed items: $e');
-    }
-  }
+      _ref.invalidate(scrapingStatusProvider);
+      _ref.invalidate(queueStatusProvider);
 
-  // Retry failed items
-  Future<void> retryFailedItems() async {
-    try {
-      final failedItems = await FirebaseFirestore.instance
-          .collection('scraping_queue')
-          .where('status', isEqualTo: 'failed')
-          .get();
-
-      final batch = FirebaseFirestore.instance.batch();
-      for (final doc in failedItems.docs) {
-        batch.update(doc.reference, {
-          'status': 'pending',
-          'error': null,
-          'retryCount': FieldValue.increment(1),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
-      await batch.commit();
+      return message;
     } catch (e) {
       throw Exception('Failed to retry failed items: $e');
     }
   }
 
-  // Get queue statistics
-  Future<Map<String, int>> getQueueStats() async {
+  Future<String> clearFailedItems() async {
     try {
-      final queueSnapshot =
-          await FirebaseFirestore.instance.collection('scraping_queue').get();
+      final message = await _scrapingService.clearFailed();
 
-      final stats = <String, int>{
-        'total': 0,
-        'pending': 0,
-        'processing': 0,
-        'completed': 0,
-        'failed': 0,
-      };
+      _ref.invalidate(scrapingStatusProvider);
+      _ref.invalidate(queueStatusProvider);
 
-      for (final doc in queueSnapshot.docs) {
-        final data = doc.data();
-        final status = data['status'] ?? 'unknown';
-        stats['total'] = (stats['total'] ?? 0) + 1;
-        stats[status] = (stats[status] ?? 0) + 1;
-      }
-
-      return stats;
+      return message;
     } catch (e) {
-      throw Exception('Failed to get queue stats: $e');
+      throw Exception('Failed to clear failed items: $e');
     }
   }
+
+  Future<QueueStatus> getQueueStatus() async {
+    try {
+      return await _scrapingService.getQueueStatus();
+    } catch (e) {
+      throw Exception('Failed to get queue status: $e');
+    }
+  }
+
+  Future<ScrapingStats> getScrapingStats() async {
+    try {
+      final statsData = await _scrapingService.getScrapingStats();
+      return ScrapingStats.fromJson(statsData);
+    } catch (e) {
+      throw Exception('Failed to get scraping stats: $e');
+    }
+  }
+
+  Future<bool> isScrapingActive() async {
+    try {
+      return await _scrapingService.isScrapingActive();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<double> getProgressPercentage() async {
+    try {
+      return await _scrapingService.getProgressPercentage();
+    } catch (e) {
+      return 0.0;
+    }
+  }
+
+  Future<int> getEstimatedTimeRemaining() async {
+    try {
+      return await _scrapingService.getEstimatedTimeRemaining();
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  Future<String> testConnection() async {
+    try {
+      return await _scrapingService.testConnection();
+    } catch (e) {
+      throw Exception('Connection test failed: $e');
+    }
+  }
+
+  Future<String> triggerManualScrape({
+    int maxPages = 5,
+    bool testMode = false,
+  }) async {
+    try {
+      final message = await _scrapingService.triggerManualScrape(
+        maxPages: maxPages,
+        testMode: testMode,
+      );
+
+      _ref.invalidate(scrapingStatusProvider);
+      _ref.invalidate(queueStatusProvider);
+
+      return message;
+    } catch (e) {
+      throw Exception('Failed to trigger manual scrape: $e');
+    }
+  }
+
+  void refreshAllProviders() {
+    _ref.invalidate(scrapingStatusProvider);
+    _ref.invalidate(queueStatusProvider);
+    _ref.invalidate(scrapingStatsProvider);
+    _ref.invalidate(recentCompletedProvider);
+  }
+}
+
+// Helper providers for specific UI needs
+final isScrapingActiveProvider = Provider<bool>((ref) {
+  final scrapingStatus = ref.watch(scrapingStatusProvider);
+  return scrapingStatus.when(
+    data: (status) => status.isActive,
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
+final scrapingProgressProvider = Provider<double>((ref) {
+  final scrapingStatus = ref.watch(scrapingStatusProvider);
+  return scrapingStatus.when(
+    data: (status) => status.progress,
+    loading: () => 0.0,
+    error: (_, __) => 0.0,
+  );
+});
+
+final scrapingHealthProvider = Provider<bool>((ref) {
+  final stats = ref.watch(scrapingStatsProvider);
+  return stats.when(
+    data: (stats) => stats.isHealthy,
+    loading: () => true,
+    error: (_, __) => false,
+  );
+});
+
+// Combined provider for dashboard summary
+final scrapingSummaryProvider = Provider<ScrapingSummary>((ref) {
+  final scrapingStatus = ref.watch(scrapingStatusProvider);
+  final queueStatus = ref.watch(queueStatusProvider);
+  final stats = ref.watch(scrapingStatsProvider);
+
+  return ScrapingSummary(
+    isActive: scrapingStatus.when(
+      data: (status) => status.isActive,
+      loading: () => false,
+      error: (_, __) => false,
+    ),
+    progress: scrapingStatus.when(
+      data: (status) => status.progress,
+      loading: () => 0.0,
+      error: (_, __) => 0.0,
+    ),
+    statusMessage: scrapingStatus.when(
+      data: (status) => status.statusMessage,
+      loading: () => 'Loading...',
+      error: (error, __) => 'Error: ${error.toString()}',
+    ),
+    totalItems: queueStatus.when(
+      data: (queue) => queue.total,
+      loading: () => 0,
+      error: (_, __) => 0,
+    ),
+    isHealthy: stats.when(
+      data: (stats) => stats.isHealthy,
+      loading: () => true,
+      error: (_, __) => false,
+    ),
+  );
+});
+
+class ScrapingSummary {
+  final bool isActive;
+  final double progress;
+  final String statusMessage;
+  final int totalItems;
+  final bool isHealthy;
+
+  ScrapingSummary({
+    required this.isActive,
+    required this.progress,
+    required this.statusMessage,
+    required this.totalItems,
+    required this.isHealthy,
+  });
 }
