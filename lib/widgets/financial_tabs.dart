@@ -6,9 +6,14 @@ import '../theme/app_theme.dart';
 class FinancialTab extends StatelessWidget {
   final CompanyModel company;
   final String type;
+  final bool showProsAndCons; // FIXED: Made this a proper field
 
-  const FinancialTab({Key? key, required this.company, required this.type})
-      : super(key: key);
+  const FinancialTab({
+    Key? key,
+    required this.company,
+    required this.type,
+    this.showProsAndCons = false, // FIXED: Made optional with default false
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +26,14 @@ class FinancialTab extends StatelessWidget {
           children: [
             _buildFinancialTable(),
             const SizedBox(height: 20),
-            if (company.pros.isNotEmpty || company.cons.isNotEmpty)
+
+            // FIXED: Only show pros/cons if explicitly enabled AND data exists
+            if (showProsAndCons &&
+                (company.pros.isNotEmpty || company.cons.isNotEmpty)) ...[
               _buildProsConsSection(),
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
+            ],
+
             if (type == 'shareholding' && company.shareholdingPattern != null)
               _buildShareholdingDetails(),
           ],
@@ -495,78 +505,96 @@ class FinancialTab extends StatelessWidget {
     );
   }
 
+  // FIXED: This method now only gets called when showProsAndCons is true
   Widget _buildProsConsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (company.pros.isNotEmpty) ...[
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderColor),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           const Text(
-            'Pros',
+            'Analysis Summary',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: AppTheme.profitGreen,
+              color: AppTheme.textPrimary,
             ),
           ),
-          const SizedBox(height: 8),
-          ...company.pros
-              .map((pro) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.check_circle,
-                            color: AppTheme.profitGreen, size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            pro,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ))
-              .toList(),
           const SizedBox(height: 16),
-        ],
-        if (company.cons.isNotEmpty) ...[
-          const Text(
-            'Cons',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.lossRed,
+          if (company.pros.isNotEmpty) ...[
+            const Text(
+              'Strengths',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.profitGreen,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          ...company.cons
-              .map((con) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.cancel,
-                            color: AppTheme.lossRed, size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            con,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppTheme.textPrimary,
+            const SizedBox(height: 8),
+            ...company.pros
+                .map((pro) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.check_circle,
+                              color: AppTheme.profitGreen, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              pro,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.textPrimary,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ))
-              .toList(),
+                        ],
+                      ),
+                    ))
+                .toList(),
+            if (company.cons.isNotEmpty) const SizedBox(height: 16),
+          ],
+          if (company.cons.isNotEmpty) ...[
+            const Text(
+              'Areas of Concern',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.lossRed,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...company.cons
+                .map((con) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.warning,
+                              color: AppTheme.lossRed, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              con,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ))
+                .toList(),
+          ],
         ],
-      ],
+      ),
     );
   }
 

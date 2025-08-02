@@ -48,7 +48,7 @@ mixin _$CompanyModel {
   double get changePercent => throw _privateConstructorUsedError;
   double get changeAmount => throw _privateConstructorUsedError;
   double get previousClose =>
-      throw _privateConstructorUsedError; // 🔥 CRITICAL FIX: Enhanced Financial statements with JsonConverter annotations
+      throw _privateConstructorUsedError; // Enhanced Financial statements with JsonConverter annotations
   @FinancialDataModelConverter()
   FinancialDataModel? get quarterlyResults =>
       throw _privateConstructorUsedError;
@@ -62,12 +62,21 @@ mixin _$CompanyModel {
       throw _privateConstructorUsedError;
   @FinancialDataModelConverter()
   FinancialDataModel? get ratios =>
-      throw _privateConstructorUsedError; // Additional financial metrics
+      throw _privateConstructorUsedError; // **ENHANCED RATIOS FROM UPDATED SCRAPER** - All new fields
   double? get debtToEquity => throw _privateConstructorUsedError;
   double? get currentRatio => throw _privateConstructorUsedError;
   double? get quickRatio => throw _privateConstructorUsedError;
+  double? get workingCapitalDays =>
+      throw _privateConstructorUsedError; // NEW: Working Capital Days (like 38 for 3M India)
+  double? get debtorDays =>
+      throw _privateConstructorUsedError; // NEW: Debtor Days (like 65 for 3M India)
+  double? get inventoryDays =>
+      throw _privateConstructorUsedError; // NEW: Inventory Days (like 89 for 3M India)
+  double? get cashConversionCycle =>
+      throw _privateConstructorUsedError; // NEW: Cash Conversion Cycle (like 50 for 3M India)
   double? get interestCoverage => throw _privateConstructorUsedError;
-  double? get assetTurnover => throw _privateConstructorUsedError;
+  double? get assetTurnover =>
+      throw _privateConstructorUsedError; // Additional financial metrics (keeping existing ones)
   double? get inventoryTurnover => throw _privateConstructorUsedError;
   double? get receivablesTurnover => throw _privateConstructorUsedError;
   double? get payablesTurnover => throw _privateConstructorUsedError;
@@ -77,7 +86,8 @@ mixin _$CompanyModel {
   double? get priceToBook => throw _privateConstructorUsedError;
   double? get priceToSales => throw _privateConstructorUsedError;
   double? get pegRatio => throw _privateConstructorUsedError;
-  double? get betaValue => throw _privateConstructorUsedError; // Growth metrics
+  double? get betaValue =>
+      throw _privateConstructorUsedError; // Growth metrics - using exact field names from scraper
   double? get salesGrowth1Y => throw _privateConstructorUsedError;
   double? get salesGrowth3Y => throw _privateConstructorUsedError;
   double? get salesGrowth5Y => throw _privateConstructorUsedError;
@@ -88,9 +98,10 @@ mixin _$CompanyModel {
   double? get salesCAGR5Y => throw _privateConstructorUsedError;
   double? get profitCAGR3Y => throw _privateConstructorUsedError;
   double? get profitCAGR5Y =>
-      throw _privateConstructorUsedError; // Valuation and quality scores
+      throw _privateConstructorUsedError; // Quality scores (if available from scraper)
   double? get piotroskiScore => throw _privateConstructorUsedError;
   double? get altmanZScore => throw _privateConstructorUsedError;
+  String? get qualityGrade => throw _privateConstructorUsedError;
   String? get creditRating =>
       throw _privateConstructorUsedError; // Industry and shareholding data
   String? get sector => throw _privateConstructorUsedError;
@@ -186,6 +197,10 @@ abstract class $CompanyModelCopyWith<$Res> {
       double? debtToEquity,
       double? currentRatio,
       double? quickRatio,
+      double? workingCapitalDays,
+      double? debtorDays,
+      double? inventoryDays,
+      double? cashConversionCycle,
       double? interestCoverage,
       double? assetTurnover,
       double? inventoryTurnover,
@@ -210,6 +225,7 @@ abstract class $CompanyModelCopyWith<$Res> {
       double? profitCAGR5Y,
       double? piotroskiScore,
       double? altmanZScore,
+      String? qualityGrade,
       String? creditRating,
       String? sector,
       String? industry,
@@ -303,6 +319,10 @@ class _$CompanyModelCopyWithImpl<$Res, $Val extends CompanyModel>
     Object? debtToEquity = freezed,
     Object? currentRatio = freezed,
     Object? quickRatio = freezed,
+    Object? workingCapitalDays = freezed,
+    Object? debtorDays = freezed,
+    Object? inventoryDays = freezed,
+    Object? cashConversionCycle = freezed,
     Object? interestCoverage = freezed,
     Object? assetTurnover = freezed,
     Object? inventoryTurnover = freezed,
@@ -327,6 +347,7 @@ class _$CompanyModelCopyWithImpl<$Res, $Val extends CompanyModel>
     Object? profitCAGR5Y = freezed,
     Object? piotroskiScore = freezed,
     Object? altmanZScore = freezed,
+    Object? qualityGrade = freezed,
     Object? creditRating = freezed,
     Object? sector = freezed,
     Object? industry = freezed,
@@ -496,6 +517,22 @@ class _$CompanyModelCopyWithImpl<$Res, $Val extends CompanyModel>
           ? _value.quickRatio
           : quickRatio // ignore: cast_nullable_to_non_nullable
               as double?,
+      workingCapitalDays: freezed == workingCapitalDays
+          ? _value.workingCapitalDays
+          : workingCapitalDays // ignore: cast_nullable_to_non_nullable
+              as double?,
+      debtorDays: freezed == debtorDays
+          ? _value.debtorDays
+          : debtorDays // ignore: cast_nullable_to_non_nullable
+              as double?,
+      inventoryDays: freezed == inventoryDays
+          ? _value.inventoryDays
+          : inventoryDays // ignore: cast_nullable_to_non_nullable
+              as double?,
+      cashConversionCycle: freezed == cashConversionCycle
+          ? _value.cashConversionCycle
+          : cashConversionCycle // ignore: cast_nullable_to_non_nullable
+              as double?,
       interestCoverage: freezed == interestCoverage
           ? _value.interestCoverage
           : interestCoverage // ignore: cast_nullable_to_non_nullable
@@ -592,6 +629,10 @@ class _$CompanyModelCopyWithImpl<$Res, $Val extends CompanyModel>
           ? _value.altmanZScore
           : altmanZScore // ignore: cast_nullable_to_non_nullable
               as double?,
+      qualityGrade: freezed == qualityGrade
+          ? _value.qualityGrade
+          : qualityGrade // ignore: cast_nullable_to_non_nullable
+              as String?,
       creditRating: freezed == creditRating
           ? _value.creditRating
           : creditRating // ignore: cast_nullable_to_non_nullable
@@ -868,6 +909,10 @@ abstract class _$$CompanyModelImplCopyWith<$Res>
       double? debtToEquity,
       double? currentRatio,
       double? quickRatio,
+      double? workingCapitalDays,
+      double? debtorDays,
+      double? inventoryDays,
+      double? cashConversionCycle,
       double? interestCoverage,
       double? assetTurnover,
       double? inventoryTurnover,
@@ -892,6 +937,7 @@ abstract class _$$CompanyModelImplCopyWith<$Res>
       double? profitCAGR5Y,
       double? piotroskiScore,
       double? altmanZScore,
+      String? qualityGrade,
       String? creditRating,
       String? sector,
       String? industry,
@@ -989,6 +1035,10 @@ class __$$CompanyModelImplCopyWithImpl<$Res>
     Object? debtToEquity = freezed,
     Object? currentRatio = freezed,
     Object? quickRatio = freezed,
+    Object? workingCapitalDays = freezed,
+    Object? debtorDays = freezed,
+    Object? inventoryDays = freezed,
+    Object? cashConversionCycle = freezed,
     Object? interestCoverage = freezed,
     Object? assetTurnover = freezed,
     Object? inventoryTurnover = freezed,
@@ -1013,6 +1063,7 @@ class __$$CompanyModelImplCopyWithImpl<$Res>
     Object? profitCAGR5Y = freezed,
     Object? piotroskiScore = freezed,
     Object? altmanZScore = freezed,
+    Object? qualityGrade = freezed,
     Object? creditRating = freezed,
     Object? sector = freezed,
     Object? industry = freezed,
@@ -1182,6 +1233,22 @@ class __$$CompanyModelImplCopyWithImpl<$Res>
           ? _value.quickRatio
           : quickRatio // ignore: cast_nullable_to_non_nullable
               as double?,
+      workingCapitalDays: freezed == workingCapitalDays
+          ? _value.workingCapitalDays
+          : workingCapitalDays // ignore: cast_nullable_to_non_nullable
+              as double?,
+      debtorDays: freezed == debtorDays
+          ? _value.debtorDays
+          : debtorDays // ignore: cast_nullable_to_non_nullable
+              as double?,
+      inventoryDays: freezed == inventoryDays
+          ? _value.inventoryDays
+          : inventoryDays // ignore: cast_nullable_to_non_nullable
+              as double?,
+      cashConversionCycle: freezed == cashConversionCycle
+          ? _value.cashConversionCycle
+          : cashConversionCycle // ignore: cast_nullable_to_non_nullable
+              as double?,
       interestCoverage: freezed == interestCoverage
           ? _value.interestCoverage
           : interestCoverage // ignore: cast_nullable_to_non_nullable
@@ -1278,6 +1345,10 @@ class __$$CompanyModelImplCopyWithImpl<$Res>
           ? _value.altmanZScore
           : altmanZScore // ignore: cast_nullable_to_non_nullable
               as double?,
+      qualityGrade: freezed == qualityGrade
+          ? _value.qualityGrade
+          : qualityGrade // ignore: cast_nullable_to_non_nullable
+              as String?,
       creditRating: freezed == creditRating
           ? _value.creditRating
           : creditRating // ignore: cast_nullable_to_non_nullable
@@ -1474,6 +1545,10 @@ class _$CompanyModelImpl extends _CompanyModel {
       this.debtToEquity,
       this.currentRatio,
       this.quickRatio,
+      this.workingCapitalDays,
+      this.debtorDays,
+      this.inventoryDays,
+      this.cashConversionCycle,
       this.interestCoverage,
       this.assetTurnover,
       this.inventoryTurnover,
@@ -1498,6 +1573,7 @@ class _$CompanyModelImpl extends _CompanyModel {
       this.profitCAGR5Y,
       this.piotroskiScore,
       this.altmanZScore,
+      this.qualityGrade,
       this.creditRating,
       this.sector,
       this.industry,
@@ -1622,7 +1698,7 @@ class _$CompanyModelImpl extends _CompanyModel {
   @override
   @JsonKey()
   final double previousClose;
-// 🔥 CRITICAL FIX: Enhanced Financial statements with JsonConverter annotations
+// Enhanced Financial statements with JsonConverter annotations
   @override
   @FinancialDataModelConverter()
   final FinancialDataModel? quarterlyResults;
@@ -1638,7 +1714,7 @@ class _$CompanyModelImpl extends _CompanyModel {
   @override
   @FinancialDataModelConverter()
   final FinancialDataModel? ratios;
-// Additional financial metrics
+// **ENHANCED RATIOS FROM UPDATED SCRAPER** - All new fields
   @override
   final double? debtToEquity;
   @override
@@ -1646,9 +1722,22 @@ class _$CompanyModelImpl extends _CompanyModel {
   @override
   final double? quickRatio;
   @override
+  final double? workingCapitalDays;
+// NEW: Working Capital Days (like 38 for 3M India)
+  @override
+  final double? debtorDays;
+// NEW: Debtor Days (like 65 for 3M India)
+  @override
+  final double? inventoryDays;
+// NEW: Inventory Days (like 89 for 3M India)
+  @override
+  final double? cashConversionCycle;
+// NEW: Cash Conversion Cycle (like 50 for 3M India)
+  @override
   final double? interestCoverage;
   @override
   final double? assetTurnover;
+// Additional financial metrics (keeping existing ones)
   @override
   final double? inventoryTurnover;
   @override
@@ -1669,7 +1758,7 @@ class _$CompanyModelImpl extends _CompanyModel {
   final double? pegRatio;
   @override
   final double? betaValue;
-// Growth metrics
+// Growth metrics - using exact field names from scraper
   @override
   final double? salesGrowth1Y;
   @override
@@ -1690,11 +1779,13 @@ class _$CompanyModelImpl extends _CompanyModel {
   final double? profitCAGR3Y;
   @override
   final double? profitCAGR5Y;
-// Valuation and quality scores
+// Quality scores (if available from scraper)
   @override
   final double? piotroskiScore;
   @override
   final double? altmanZScore;
+  @override
+  final String? qualityGrade;
   @override
   final String? creditRating;
 // Industry and shareholding data
@@ -1862,7 +1953,7 @@ class _$CompanyModelImpl extends _CompanyModel {
 
   @override
   String toString() {
-    return 'CompanyModel(symbol: $symbol, name: $name, displayName: $displayName, about: $about, website: $website, bseCode: $bseCode, nseCode: $nseCode, marketCap: $marketCap, currentPrice: $currentPrice, highLow: $highLow, stockPe: $stockPe, bookValue: $bookValue, dividendYield: $dividendYield, roce: $roce, roe: $roe, faceValue: $faceValue, pros: $pros, cons: $cons, createdAt: $createdAt, updatedAt: $updatedAt, lastUpdated: $lastUpdated, changePercent: $changePercent, changeAmount: $changeAmount, previousClose: $previousClose, quarterlyResults: $quarterlyResults, profitLossStatement: $profitLossStatement, balanceSheet: $balanceSheet, cashFlowStatement: $cashFlowStatement, ratios: $ratios, debtToEquity: $debtToEquity, currentRatio: $currentRatio, quickRatio: $quickRatio, interestCoverage: $interestCoverage, assetTurnover: $assetTurnover, inventoryTurnover: $inventoryTurnover, receivablesTurnover: $receivablesTurnover, payablesTurnover: $payablesTurnover, workingCapital: $workingCapital, enterpriseValue: $enterpriseValue, evEbitda: $evEbitda, priceToBook: $priceToBook, priceToSales: $priceToSales, pegRatio: $pegRatio, betaValue: $betaValue, salesGrowth1Y: $salesGrowth1Y, salesGrowth3Y: $salesGrowth3Y, salesGrowth5Y: $salesGrowth5Y, profitGrowth1Y: $profitGrowth1Y, profitGrowth3Y: $profitGrowth3Y, profitGrowth5Y: $profitGrowth5Y, salesCAGR3Y: $salesCAGR3Y, salesCAGR5Y: $salesCAGR5Y, profitCAGR3Y: $profitCAGR3Y, profitCAGR5Y: $profitCAGR5Y, piotroskiScore: $piotroskiScore, altmanZScore: $altmanZScore, creditRating: $creditRating, sector: $sector, industry: $industry, industryClassification: $industryClassification, shareholdingPattern: $shareholdingPattern, ratiosData: $ratiosData, growthTables: $growthTables, quarterlyDataHistory: $quarterlyDataHistory, annualDataHistory: $annualDataHistory, peerCompanies: $peerCompanies, sectorPE: $sectorPE, sectorROE: $sectorROE, sectorDebtToEquity: $sectorDebtToEquity, dividendPerShare: $dividendPerShare, dividendFrequency: $dividendFrequency, dividendHistory: $dividendHistory, keyManagement: $keyManagement, promoterHolding: $promoterHolding, institutionalHolding: $institutionalHolding, publicHolding: $publicHolding, volatility30D: $volatility30D, volatility1Y: $volatility1Y, maxDrawdown: $maxDrawdown, sharpeRatio: $sharpeRatio, marketCapCategory: $marketCapCategory, isIndexConstituent: $isIndexConstituent, indices: $indices, rsi: $rsi, sma50: $sma50, sma200: $sma200, ema12: $ema12, ema26: $ema26, isDebtFree: $isDebtFree, isProfitable: $isProfitable, hasConsistentProfits: $hasConsistentProfits, paysDividends: $paysDividends, isGrowthStock: $isGrowthStock, isValueStock: $isValueStock, isQualityStock: $isQualityStock)';
+    return 'CompanyModel(symbol: $symbol, name: $name, displayName: $displayName, about: $about, website: $website, bseCode: $bseCode, nseCode: $nseCode, marketCap: $marketCap, currentPrice: $currentPrice, highLow: $highLow, stockPe: $stockPe, bookValue: $bookValue, dividendYield: $dividendYield, roce: $roce, roe: $roe, faceValue: $faceValue, pros: $pros, cons: $cons, createdAt: $createdAt, updatedAt: $updatedAt, lastUpdated: $lastUpdated, changePercent: $changePercent, changeAmount: $changeAmount, previousClose: $previousClose, quarterlyResults: $quarterlyResults, profitLossStatement: $profitLossStatement, balanceSheet: $balanceSheet, cashFlowStatement: $cashFlowStatement, ratios: $ratios, debtToEquity: $debtToEquity, currentRatio: $currentRatio, quickRatio: $quickRatio, workingCapitalDays: $workingCapitalDays, debtorDays: $debtorDays, inventoryDays: $inventoryDays, cashConversionCycle: $cashConversionCycle, interestCoverage: $interestCoverage, assetTurnover: $assetTurnover, inventoryTurnover: $inventoryTurnover, receivablesTurnover: $receivablesTurnover, payablesTurnover: $payablesTurnover, workingCapital: $workingCapital, enterpriseValue: $enterpriseValue, evEbitda: $evEbitda, priceToBook: $priceToBook, priceToSales: $priceToSales, pegRatio: $pegRatio, betaValue: $betaValue, salesGrowth1Y: $salesGrowth1Y, salesGrowth3Y: $salesGrowth3Y, salesGrowth5Y: $salesGrowth5Y, profitGrowth1Y: $profitGrowth1Y, profitGrowth3Y: $profitGrowth3Y, profitGrowth5Y: $profitGrowth5Y, salesCAGR3Y: $salesCAGR3Y, salesCAGR5Y: $salesCAGR5Y, profitCAGR3Y: $profitCAGR3Y, profitCAGR5Y: $profitCAGR5Y, piotroskiScore: $piotroskiScore, altmanZScore: $altmanZScore, qualityGrade: $qualityGrade, creditRating: $creditRating, sector: $sector, industry: $industry, industryClassification: $industryClassification, shareholdingPattern: $shareholdingPattern, ratiosData: $ratiosData, growthTables: $growthTables, quarterlyDataHistory: $quarterlyDataHistory, annualDataHistory: $annualDataHistory, peerCompanies: $peerCompanies, sectorPE: $sectorPE, sectorROE: $sectorROE, sectorDebtToEquity: $sectorDebtToEquity, dividendPerShare: $dividendPerShare, dividendFrequency: $dividendFrequency, dividendHistory: $dividendHistory, keyManagement: $keyManagement, promoterHolding: $promoterHolding, institutionalHolding: $institutionalHolding, publicHolding: $publicHolding, volatility30D: $volatility30D, volatility1Y: $volatility1Y, maxDrawdown: $maxDrawdown, sharpeRatio: $sharpeRatio, marketCapCategory: $marketCapCategory, isIndexConstituent: $isIndexConstituent, indices: $indices, rsi: $rsi, sma50: $sma50, sma200: $sma200, ema12: $ema12, ema26: $ema26, isDebtFree: $isDebtFree, isProfitable: $isProfitable, hasConsistentProfits: $hasConsistentProfits, paysDividends: $paysDividends, isGrowthStock: $isGrowthStock, isValueStock: $isValueStock, isQualityStock: $isQualityStock)';
   }
 
   @override
@@ -1921,6 +2012,14 @@ class _$CompanyModelImpl extends _CompanyModel {
                 other.currentRatio == currentRatio) &&
             (identical(other.quickRatio, quickRatio) ||
                 other.quickRatio == quickRatio) &&
+            (identical(other.workingCapitalDays, workingCapitalDays) ||
+                other.workingCapitalDays == workingCapitalDays) &&
+            (identical(other.debtorDays, debtorDays) ||
+                other.debtorDays == debtorDays) &&
+            (identical(other.inventoryDays, inventoryDays) ||
+                other.inventoryDays == inventoryDays) &&
+            (identical(other.cashConversionCycle, cashConversionCycle) ||
+                other.cashConversionCycle == cashConversionCycle) &&
             (identical(other.interestCoverage, interestCoverage) ||
                 other.interestCoverage == interestCoverage) &&
             (identical(other.assetTurnover, assetTurnover) ||
@@ -1961,14 +2060,11 @@ class _$CompanyModelImpl extends _CompanyModel {
                 other.salesCAGR3Y == salesCAGR3Y) &&
             (identical(other.salesCAGR5Y, salesCAGR5Y) ||
                 other.salesCAGR5Y == salesCAGR5Y) &&
-            (identical(other.profitCAGR3Y, profitCAGR3Y) ||
-                other.profitCAGR3Y == profitCAGR3Y) &&
-            (identical(other.profitCAGR5Y, profitCAGR5Y) ||
-                other.profitCAGR5Y == profitCAGR5Y) &&
-            (identical(other.piotroskiScore, piotroskiScore) ||
-                other.piotroskiScore == piotroskiScore) &&
-            (identical(other.altmanZScore, altmanZScore) ||
-                other.altmanZScore == altmanZScore) &&
+            (identical(other.profitCAGR3Y, profitCAGR3Y) || other.profitCAGR3Y == profitCAGR3Y) &&
+            (identical(other.profitCAGR5Y, profitCAGR5Y) || other.profitCAGR5Y == profitCAGR5Y) &&
+            (identical(other.piotroskiScore, piotroskiScore) || other.piotroskiScore == piotroskiScore) &&
+            (identical(other.altmanZScore, altmanZScore) || other.altmanZScore == altmanZScore) &&
+            (identical(other.qualityGrade, qualityGrade) || other.qualityGrade == qualityGrade) &&
             (identical(other.creditRating, creditRating) || other.creditRating == creditRating) &&
             (identical(other.sector, sector) || other.sector == sector) &&
             (identical(other.industry, industry) || other.industry == industry) &&
@@ -2046,6 +2142,10 @@ class _$CompanyModelImpl extends _CompanyModel {
         debtToEquity,
         currentRatio,
         quickRatio,
+        workingCapitalDays,
+        debtorDays,
+        inventoryDays,
+        cashConversionCycle,
         interestCoverage,
         assetTurnover,
         inventoryTurnover,
@@ -2070,6 +2170,7 @@ class _$CompanyModelImpl extends _CompanyModel {
         profitCAGR5Y,
         piotroskiScore,
         altmanZScore,
+        qualityGrade,
         creditRating,
         sector,
         industry,
@@ -2161,6 +2262,10 @@ abstract class _CompanyModel extends CompanyModel {
       final double? debtToEquity,
       final double? currentRatio,
       final double? quickRatio,
+      final double? workingCapitalDays,
+      final double? debtorDays,
+      final double? inventoryDays,
+      final double? cashConversionCycle,
       final double? interestCoverage,
       final double? assetTurnover,
       final double? inventoryTurnover,
@@ -2185,6 +2290,7 @@ abstract class _CompanyModel extends CompanyModel {
       final double? profitCAGR5Y,
       final double? piotroskiScore,
       final double? altmanZScore,
+      final String? qualityGrade,
       final String? creditRating,
       final String? sector,
       final String? industry,
@@ -2280,7 +2386,7 @@ abstract class _CompanyModel extends CompanyModel {
   double get changeAmount;
   @override
   double get previousClose;
-  @override // 🔥 CRITICAL FIX: Enhanced Financial statements with JsonConverter annotations
+  @override // Enhanced Financial statements with JsonConverter annotations
   @FinancialDataModelConverter()
   FinancialDataModel? get quarterlyResults;
   @override
@@ -2295,17 +2401,25 @@ abstract class _CompanyModel extends CompanyModel {
   @override
   @FinancialDataModelConverter()
   FinancialDataModel? get ratios;
-  @override // Additional financial metrics
+  @override // **ENHANCED RATIOS FROM UPDATED SCRAPER** - All new fields
   double? get debtToEquity;
   @override
   double? get currentRatio;
   @override
   double? get quickRatio;
   @override
+  double? get workingCapitalDays;
+  @override // NEW: Working Capital Days (like 38 for 3M India)
+  double? get debtorDays;
+  @override // NEW: Debtor Days (like 65 for 3M India)
+  double? get inventoryDays;
+  @override // NEW: Inventory Days (like 89 for 3M India)
+  double? get cashConversionCycle;
+  @override // NEW: Cash Conversion Cycle (like 50 for 3M India)
   double? get interestCoverage;
   @override
   double? get assetTurnover;
-  @override
+  @override // Additional financial metrics (keeping existing ones)
   double? get inventoryTurnover;
   @override
   double? get receivablesTurnover;
@@ -2325,7 +2439,7 @@ abstract class _CompanyModel extends CompanyModel {
   double? get pegRatio;
   @override
   double? get betaValue;
-  @override // Growth metrics
+  @override // Growth metrics - using exact field names from scraper
   double? get salesGrowth1Y;
   @override
   double? get salesGrowth3Y;
@@ -2345,10 +2459,12 @@ abstract class _CompanyModel extends CompanyModel {
   double? get profitCAGR3Y;
   @override
   double? get profitCAGR5Y;
-  @override // Valuation and quality scores
+  @override // Quality scores (if available from scraper)
   double? get piotroskiScore;
   @override
   double? get altmanZScore;
+  @override
+  String? get qualityGrade;
   @override
   String? get creditRating;
   @override // Industry and shareholding data

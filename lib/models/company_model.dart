@@ -13,7 +13,7 @@ part 'company_model.g.dart';
 // JSON CONVERTERS FOR COMPLEX TYPES
 // ============================================================================
 
-/// 🔥 CRITICAL FIX: JsonConverter for FinancialDataModel to resolve serialization errors
+/// JsonConverter for FinancialDataModel to resolve serialization errors
 class FinancialDataModelConverter
     implements JsonConverter<FinancialDataModel?, Object?> {
   const FinancialDataModelConverter();
@@ -75,7 +75,7 @@ class ShareholdingPatternConverter
 }
 
 // ============================================================================
-// MAIN COMPANY MODEL
+// MAIN COMPANY MODEL - UPDATED WITH ENHANCED RATIOS
 // ============================================================================
 
 @freezed
@@ -111,19 +111,27 @@ class CompanyModel with _$CompanyModel {
     @Default(0.0) double changeAmount,
     @Default(0.0) double previousClose,
 
-    // 🔥 CRITICAL FIX: Enhanced Financial statements with JsonConverter annotations
+    // Enhanced Financial statements with JsonConverter annotations
     @FinancialDataModelConverter() FinancialDataModel? quarterlyResults,
     @FinancialDataModelConverter() FinancialDataModel? profitLossStatement,
     @FinancialDataModelConverter() FinancialDataModel? balanceSheet,
     @FinancialDataModelConverter() FinancialDataModel? cashFlowStatement,
     @FinancialDataModelConverter() FinancialDataModel? ratios,
 
-    // Additional financial metrics
+    // **ENHANCED RATIOS FROM UPDATED SCRAPER** - All new fields
     double? debtToEquity,
     double? currentRatio,
     double? quickRatio,
+    double?
+        workingCapitalDays, // NEW: Working Capital Days (like 38 for 3M India)
+    double? debtorDays, // NEW: Debtor Days (like 65 for 3M India)
+    double? inventoryDays, // NEW: Inventory Days (like 89 for 3M India)
+    double?
+        cashConversionCycle, // NEW: Cash Conversion Cycle (like 50 for 3M India)
     double? interestCoverage,
     double? assetTurnover,
+
+    // Additional financial metrics (keeping existing ones)
     double? inventoryTurnover,
     double? receivablesTurnover,
     double? payablesTurnover,
@@ -135,7 +143,7 @@ class CompanyModel with _$CompanyModel {
     double? pegRatio,
     double? betaValue,
 
-    // Growth metrics
+    // Growth metrics - using exact field names from scraper
     double? salesGrowth1Y,
     double? salesGrowth3Y,
     double? salesGrowth5Y,
@@ -147,9 +155,10 @@ class CompanyModel with _$CompanyModel {
     double? profitCAGR3Y,
     double? profitCAGR5Y,
 
-    // Valuation and quality scores
+    // Quality scores (if available from scraper)
     double? piotroskiScore,
     double? altmanZScore,
+    String? qualityGrade,
     String? creditRating,
 
     // Industry and shareholding data
@@ -212,7 +221,7 @@ class CompanyModel with _$CompanyModel {
   factory CompanyModel.fromJson(Map<String, dynamic> json) =>
       _$CompanyModelFromJson(json);
 
-  /// 🔥 BULLETPROOF: Enhanced fromFirestore method with comprehensive error handling
+  /// Enhanced fromFirestore method with new ratios fields
   factory CompanyModel.fromFirestore(DocumentSnapshot doc) {
     try {
       final rawData = doc.data();
@@ -246,7 +255,7 @@ class CompanyModel with _$CompanyModel {
         'bseCode': _safeString(dataMap['bse_code']),
         'nseCode': _safeString(dataMap['nse_code']),
 
-        // 🔥 CRITICAL FIX: Correct field name mappings from Firestore snake_case to camelCase
+        // Basic financial metrics
         'marketCap': _safeDouble(dataMap['market_cap']),
         'currentPrice': _safeDouble(dataMap['current_price']),
         'changePercent': _safeDouble(dataMap['change_percent']) ?? 0.0,
@@ -260,6 +269,25 @@ class CompanyModel with _$CompanyModel {
         'faceValue': _safeDouble(dataMap['face_value']),
         'highLow': _safeString(dataMap['high_low']),
 
+        // **NEW ENHANCED RATIOS FROM UPDATED SCRAPER**
+        'debtToEquity': _safeDouble(dataMap['debt_to_equity']),
+        'currentRatio': _safeDouble(dataMap['current_ratio']),
+        'quickRatio': _safeDouble(dataMap['quick_ratio']),
+        'workingCapitalDays': _safeDouble(dataMap['working_capital_days']),
+        'debtorDays': _safeDouble(dataMap['debtor_days']),
+        'inventoryDays': _safeDouble(dataMap['inventory_days']),
+        'cashConversionCycle': _safeDouble(dataMap['cash_conversion_cycle']),
+        'interestCoverage': _safeDouble(dataMap['interest_coverage']),
+        'assetTurnover': _safeDouble(dataMap['asset_turnover']),
+
+        // Calculate price to book if available
+        'priceToBook': _calculatePriceToBook(dataMap),
+
+        // Quality scores (if available from scraper)
+        'piotroskiScore': _safeDouble(dataMap['piotroski_score']),
+        'altmanZScore': _safeDouble(dataMap['altman_z_score']),
+        'qualityGrade': _safeString(dataMap['quality_grade']),
+
         // Growth metrics using exact field names from database
         'salesGrowth3Y': _safeDouble(dataMap['Compounded Sales Growth']),
         'profitGrowth3Y': _safeDouble(dataMap['Compounded Profit Growth']),
@@ -271,7 +299,7 @@ class CompanyModel with _$CompanyModel {
         'industryClassification':
             _safeStringList(dataMap['industry_classification']) ?? [],
 
-        // 🔥 FIXED: Complex objects with bulletproof parsing
+        // Complex objects with bulletproof parsing
         'quarterlyResults':
             _parseFinancialDataSafe(dataMap['quarterly_results']),
         'balanceSheet': _parseFinancialDataSafe(dataMap['balance_sheet']),
@@ -284,7 +312,7 @@ class CompanyModel with _$CompanyModel {
         'shareholdingPattern':
             _parseShareholdingPatternSafe(dataMap['shareholding_pattern']),
 
-        // Calculated boolean flags with proper type conversion
+        // Enhanced calculated boolean flags
         'isDebtFree': _calculateIsDebtFree(dataMap),
         'isProfitable': _calculateIsProfitable(dataMap),
         'hasConsistentProfits': _calculateHasConsistentProfits(dataMap),
@@ -307,7 +335,7 @@ class CompanyModel with _$CompanyModel {
     } catch (e, stack) {
       debugPrint('🔥 Error parsing company ${doc.id}: $e\n$stack');
 
-      // 🔥 FALLBACK: Return minimal working company instead of crashing
+      // Fallback: Return minimal working company instead of crashing
       final rawData = doc.data();
       final dataMap = rawData is Map
           ? Map<String, dynamic>.from(rawData)
@@ -391,11 +419,21 @@ class CompanyModel with _$CompanyModel {
     return {};
   }
 
+  // Calculate price to book ratio
+  static double? _calculatePriceToBook(Map<String, dynamic> data) {
+    final price = _safeDouble(data['current_price']);
+    final book = _safeDouble(data['book_value']);
+    if (price != null && book != null && book > 0) {
+      return double.parse((price / book).toStringAsFixed(2));
+    }
+    return null;
+  }
+
   // ============================================================================
   // BULLETPROOF COMPLEX OBJECT PARSERS
   // ============================================================================
 
-  /// 🔥 FIXED: Bulletproof financial data parsing with all edge cases handled
+  /// Bulletproof financial data parsing with all edge cases handled
   static FinancialDataModel? _parseFinancialDataSafe(dynamic value) {
     if (value == null) return null;
     try {
@@ -421,11 +459,11 @@ class CompanyModel with _$CompanyModel {
     }
   }
 
-  /// 🔥 FIXED: Bulletproof shareholding pattern parsing to handle Freezed objects
+  /// Bulletproof shareholding pattern parsing to handle Freezed objects
   static ShareholdingPattern? _parseShareholdingPatternSafe(dynamic value) {
     if (value == null) return null;
     try {
-      // Handle already parsed ShareholdingPattern objects (main issue from logs!)
+      // Handle already parsed ShareholdingPattern objects
       if (value is ShareholdingPattern) return value;
       if (value.runtimeType.toString().contains('ShareholdingPattern')) {
         return value as ShareholdingPattern;
@@ -451,65 +489,8 @@ class CompanyModel with _$CompanyModel {
     }
   }
 
-  static List<QuarterlyData> _parseQuarterlyDataList(dynamic value) {
-    if (value == null || value is! List) return [];
-    return value
-        .map((item) {
-          try {
-            if (item is Map<String, dynamic>) {
-              return QuarterlyData.fromJson(item);
-            }
-            return null;
-          } catch (e) {
-            debugPrint('Error parsing quarterly data: $e');
-            return null;
-          }
-        })
-        .where((item) => item != null)
-        .cast<QuarterlyData>()
-        .toList();
-  }
-
-  static List<AnnualData> _parseAnnualDataList(dynamic value) {
-    if (value == null || value is! List) return [];
-    return value
-        .map((item) {
-          try {
-            if (item is Map<String, dynamic>) {
-              return AnnualData.fromJson(item);
-            }
-            return null;
-          } catch (e) {
-            debugPrint('Error parsing annual data: $e');
-            return null;
-          }
-        })
-        .where((item) => item != null)
-        .cast<AnnualData>()
-        .toList();
-  }
-
-  static List<DividendHistory> _parseDividendHistoryList(dynamic value) {
-    if (value == null || value is! List) return [];
-    return value
-        .map((item) {
-          try {
-            if (item is Map<String, dynamic>) {
-              return DividendHistory.fromJson(item);
-            }
-            return null;
-          } catch (e) {
-            debugPrint('Error parsing dividend history: $e');
-            return null;
-          }
-        })
-        .where((item) => item != null)
-        .cast<DividendHistory>()
-        .toList();
-  }
-
   // ============================================================================
-  // CALCULATED BOOLEAN FLAGS (Since they don't exist in your database)
+  // ENHANCED CALCULATED BOOLEAN FLAGS
   // ============================================================================
 
   static bool _calculateIsDebtFree(Map<String, dynamic> data) {
@@ -552,11 +533,14 @@ class CompanyModel with _$CompanyModel {
   static bool _calculateIsQualityStock(Map<String, dynamic> data) {
     final roe = _safeDouble(data['roe']);
     final roce = _safeDouble(data['roce']);
-    return (roe != null && roe > 15.0) || (roce != null && roce > 15.0);
+    final piotroskiScore = _safeDouble(data['piotroski_score']);
+    return (roe != null && roe > 15.0) ||
+        (roce != null && roce > 15.0) ||
+        (piotroskiScore != null && piotroskiScore >= 7);
   }
 
   // ============================================================================
-  // INSTANCE METHODS
+  // ENHANCED INSTANCE METHODS & GETTERS
   // ============================================================================
 
   Map<String, dynamic> toFirestore() {
@@ -607,6 +591,87 @@ class CompanyModel with _$CompanyModel {
     }
   }
 
+  // Enhanced quality score using available data
+  int get qualityScore {
+    int score = 0;
+
+    // Use Piotroski score if available, otherwise calculate manually
+    if (piotroskiScore != null && piotroskiScore! >= 7) {
+      return 5; // Excellent quality
+    } else if (piotroskiScore != null && piotroskiScore! >= 5) {
+      return 4; // Good quality
+    } else if (piotroskiScore != null && piotroskiScore! >= 3) {
+      return 3; // Average quality
+    }
+
+    // Manual calculation if no Piotroski score
+    if (roe != null && roe! > 15) score++;
+    if (debtToEquity != null && debtToEquity! < 0.5) score++;
+    if (currentRatio != null && currentRatio! > 1.5) score++;
+    if (interestCoverage != null && interestCoverage! > 5) score++;
+    if (hasConsistentProfits) score++;
+
+    return score;
+  }
+
+  // **MISSING GETTER - This was causing the error**
+  String get overallQualityGrade {
+    // Use scraped quality grade if available
+    if (qualityGrade != null && qualityGrade!.isNotEmpty) {
+      return qualityGrade!;
+    }
+
+    // Fallback to calculated grade based on quality score
+    final score = qualityScore;
+    if (score >= 4) return 'A';
+    if (score >= 3) return 'B';
+    if (score >= 2) return 'C';
+    return 'D';
+  }
+
+  String get riskLevel {
+    if (betaValue == null) return 'Unknown';
+    if (betaValue! > 1.5) return 'High';
+    if (betaValue! > 1.0) return 'Medium';
+    return 'Low';
+  }
+
+  // Enhanced working capital efficiency
+  String get workingCapitalEfficiency {
+    if (workingCapitalDays == null) return 'Unknown';
+    if (workingCapitalDays! < 30) return 'Excellent';
+    if (workingCapitalDays! < 60) return 'Good';
+    if (workingCapitalDays! < 90) return 'Average';
+    return 'Poor';
+  }
+
+  // Cash conversion cycle analysis
+  String get cashCycleEfficiency {
+    if (cashConversionCycle == null) return 'Unknown';
+    if (cashConversionCycle! < 30) return 'Excellent';
+    if (cashConversionCycle! < 60) return 'Good';
+    if (cashConversionCycle! < 90) return 'Average';
+    return 'Poor';
+  }
+
+  // Liquidity analysis
+  String get liquidityStatus {
+    if (currentRatio == null) return 'Unknown';
+    if (currentRatio! >= 2.0) return 'Excellent';
+    if (currentRatio! >= 1.5) return 'Good';
+    if (currentRatio! >= 1.0) return 'Adequate';
+    return 'Poor';
+  }
+
+  // Debt analysis
+  String get debtStatus {
+    if (debtToEquity == null) return 'Unknown';
+    if (debtToEquity! <= 0.1) return 'Debt Free';
+    if (debtToEquity! <= 0.3) return 'Low Debt';
+    if (debtToEquity! <= 0.6) return 'Moderate Debt';
+    return 'High Debt';
+  }
+
   bool matchesFundamentalFilter(FundamentalType type) {
     switch (type) {
       case FundamentalType.debtFree:
@@ -614,7 +679,7 @@ class CompanyModel with _$CompanyModel {
       case FundamentalType.highROE:
         return roe != null && roe! > 15.0;
       case FundamentalType.lowPE:
-        return stockPe != null && stockPe! < 20.0;
+        return stockPe != null && stockPe! < 20.0 && stockPe! > 0;
       case FundamentalType.dividendStocks:
         return paysDividends || (dividendYield != null && dividendYield! > 2.0);
       case FundamentalType.growthStocks:
@@ -647,23 +712,6 @@ class CompanyModel with _$CompanyModel {
     }
   }
 
-  int get qualityScore {
-    int score = 0;
-    if (roe != null && roe! > 15) score++;
-    if (debtToEquity != null && debtToEquity! < 0.5) score++;
-    if (currentRatio != null && currentRatio! > 1.5) score++;
-    if (interestCoverage != null && interestCoverage! > 5) score++;
-    if (hasConsistentProfits) score++;
-    return score;
-  }
-
-  String get riskLevel {
-    if (betaValue == null) return 'Unknown';
-    if (betaValue! > 1.5) return 'High';
-    if (betaValue! > 1.0) return 'Medium';
-    return 'Low';
-  }
-
   bool matchesSearchQuery(String query) {
     if (query.isEmpty) return true;
     final queryLower = query.toLowerCase();
@@ -675,7 +723,7 @@ class CompanyModel with _$CompanyModel {
 }
 
 // ============================================================================
-// SUPPORTING DATA MODELS
+// SUPPORTING DATA MODELS (keeping all your existing ones)
 // ============================================================================
 
 @freezed
@@ -743,7 +791,6 @@ class DividendHistory with _$DividendHistory {
       _$DividendHistoryFromJson(json);
 }
 
-// 🔥 FIXED: ShareholdingPattern with proper factory constructor
 @freezed
 class ShareholdingPattern with _$ShareholdingPattern {
   const factory ShareholdingPattern({
@@ -758,7 +805,6 @@ class ShareholdingPattern with _$ShareholdingPattern {
     @Default(<MajorShareholder>[]) List<MajorShareholder> majorShareholders,
   }) = _ShareholdingPattern;
 
-  // 🔥 FIXED: Proper fromJson method that will generate _$ShareholdingPatternFromJson
   factory ShareholdingPattern.fromJson(Map<String, dynamic> json) =>
       _$ShareholdingPatternFromJson(json);
 }

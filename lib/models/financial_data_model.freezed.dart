@@ -107,14 +107,14 @@ class __$$FinancialDataModelImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$FinancialDataModelImpl
-    with DiagnosticableTreeMixin
-    implements _FinancialDataModel {
+class _$FinancialDataModelImpl extends _FinancialDataModel
+    with DiagnosticableTreeMixin {
   const _$FinancialDataModelImpl(
       {final List<String> headers = const [],
       final List<FinancialDataRow> body = const []})
       : _headers = headers,
-        _body = body;
+        _body = body,
+        super._();
 
   factory _$FinancialDataModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$FinancialDataModelImplFromJson(json);
@@ -182,10 +182,11 @@ class _$FinancialDataModelImpl
   }
 }
 
-abstract class _FinancialDataModel implements FinancialDataModel {
+abstract class _FinancialDataModel extends FinancialDataModel {
   const factory _FinancialDataModel(
       {final List<String> headers,
       final List<FinancialDataRow> body}) = _$FinancialDataModelImpl;
+  const _FinancialDataModel._() : super._();
 
   factory _FinancialDataModel.fromJson(Map<String, dynamic> json) =
       _$FinancialDataModelImpl.fromJson;
@@ -206,8 +207,7 @@ FinancialDataRow _$FinancialDataRowFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$FinancialDataRow {
-  String get description =>
-      throw _privateConstructorUsedError; // 🔥 FIXED: Uses default instead of required
+  String get description => throw _privateConstructorUsedError;
   List<String> get values => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -294,12 +294,12 @@ class __$$FinancialDataRowImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$FinancialDataRowImpl
-    with DiagnosticableTreeMixin
-    implements _FinancialDataRow {
+class _$FinancialDataRowImpl extends _FinancialDataRow
+    with DiagnosticableTreeMixin {
   const _$FinancialDataRowImpl(
       {this.description = '', final List<String> values = const []})
-      : _values = values;
+      : _values = values,
+        super._();
 
   factory _$FinancialDataRowImpl.fromJson(Map<String, dynamic> json) =>
       _$$FinancialDataRowImplFromJson(json);
@@ -307,9 +307,7 @@ class _$FinancialDataRowImpl
   @override
   @JsonKey()
   final String description;
-// 🔥 FIXED: Uses default instead of required
   final List<String> _values;
-// 🔥 FIXED: Uses default instead of required
   @override
   @JsonKey()
   List<String> get values {
@@ -362,17 +360,18 @@ class _$FinancialDataRowImpl
   }
 }
 
-abstract class _FinancialDataRow implements FinancialDataRow {
+abstract class _FinancialDataRow extends FinancialDataRow {
   const factory _FinancialDataRow(
       {final String description,
       final List<String> values}) = _$FinancialDataRowImpl;
+  const _FinancialDataRow._() : super._();
 
   factory _FinancialDataRow.fromJson(Map<String, dynamic> json) =
       _$FinancialDataRowImpl.fromJson;
 
   @override
   String get description;
-  @override // 🔥 FIXED: Uses default instead of required
+  @override
   List<String> get values;
   @override
   @JsonKey(ignore: true)

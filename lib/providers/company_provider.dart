@@ -18,10 +18,9 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
   bool _hasMore = true;
   bool _isLoading = false;
 
-  // ✅ Your debug methods are excellent - keep them as is
-
+  // Enhanced debug methods for new financial fields
   Future<void> debugFetchRawCompanies() async {
-    print('=== 🐛 DEBUG: Starting raw companies fetch ===');
+    print('=== 🐛 DEBUG: Starting enhanced raw companies fetch ===');
 
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -46,21 +45,34 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
           final rawData = doc.data() as Map<String, dynamic>;
           print('📊 Available fields: ${rawData.keys.toList()}');
 
-          // Check essential fields with correct snake_case names
-          print('🔍 Fields check:');
+          // Check essential fields
+          print('🔍 Basic fields check:');
           print('  - name: ${rawData['name']}');
           print('  - market_cap: ${rawData['market_cap']}');
           print('  - current_price: ${rawData['current_price']}');
-          print('  - change_percent: ${rawData['change_percent']}');
-          print('  - last_updated: ${rawData['last_updated']}');
           print('  - roe: ${rawData['roe']}');
           print('  - stock_pe: ${rawData['stock_pe']}');
+
+          // Check enhanced ratios from updated scraper
+          print('🎯 Enhanced ratio fields:');
+          print('  - debt_to_equity: ${rawData['debt_to_equity']}');
+          print('  - current_ratio: ${rawData['current_ratio']}');
+          print('  - working_capital_days: ${rawData['working_capital_days']}');
+          print('  - debtor_days: ${rawData['debtor_days']}');
+          print('  - inventory_days: ${rawData['inventory_days']}');
+          print(
+              '  - cash_conversion_cycle: ${rawData['cash_conversion_cycle']}');
+
+          // Check quality scores
+          print('📈 Quality score fields:');
+          print('  - piotroski_score: ${rawData['piotroski_score']}');
+          print('  - quality_grade: ${rawData['quality_grade']}');
         } catch (e) {
           print('❌ Error reading document data: $e');
         }
       }
 
-      print('=== ✅ DEBUG: Raw fetch completed successfully ===');
+      print('=== ✅ DEBUG: Enhanced raw fetch completed successfully ===');
     } catch (error) {
       print('🐛 DEBUG: ❌ Error fetching raw companies: $error');
     }
@@ -73,11 +85,12 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
     _isLoading = true;
 
     try {
-      print('Loading initial companies...');
+      print('Loading initial companies with enhanced data...');
 
-      // ✅ Correct snake_case field name
+      // Enhanced query with better filtering
       Query query = FirebaseFirestore.instance
           .collection('companies')
+          .where('market_cap', isGreaterThan: 100) // Filter micro companies
           .orderBy('market_cap', descending: true)
           .limit(50);
 
@@ -90,9 +103,13 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
         try {
           final company = CompanyModel.fromFirestore(doc);
           companies.add(company);
+
+          // Debug enhanced data parsing
+          print('✅ ${company.symbol}: Quality=${company.overallQualityGrade}, '
+              'WCDays=${company.workingCapitalDays}, '
+              'DebtRatio=${company.debtToEquity}');
         } catch (e) {
           print('Error parsing company ${doc.id}: $e');
-          // 🔥 ENHANCED: Continue instead of breaking the entire load
           continue;
         }
       }
@@ -105,7 +122,8 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
       _isLoading = false;
       state = AsyncValue.data(_companies);
 
-      print('Successfully loaded ${companies.length} companies');
+      print(
+          'Successfully loaded ${companies.length} companies with enhanced financial data');
     } catch (error, stackTrace) {
       print('Error loading initial companies: $error');
       _isLoading = false;
@@ -120,6 +138,7 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
     try {
       Query query = FirebaseFirestore.instance
           .collection('companies')
+          .where('market_cap', isGreaterThan: 100)
           .orderBy('market_cap', descending: true)
           .startAfterDocument(_lastDocument!)
           .limit(20);
@@ -151,12 +170,10 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
     } catch (error, stackTrace) {
       _isLoading = false;
       print('Error loading more companies: $error');
-      // 🔥 FIXED: Don't set error state for pagination failures
-      // state = AsyncValue.error(error, stackTrace);
     }
   }
 
-  // 🔥 ENHANCED: Better search with multiple strategies
+  // Enhanced search with quality score consideration
   Future<void> searchCompanies(String query) async {
     if (query.isEmpty || query.trim().isEmpty) {
       await loadInitialCompanies();
@@ -169,8 +186,7 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
     try {
       final searchTerm = query.trim();
       List<CompanyModel> searchResults = [];
-
-      print('Searching for: $searchTerm');
+      print('Enhanced search for: $searchTerm');
 
       // Strategy 1: Exact symbol match
       var symbolQuery = FirebaseFirestore.instance
@@ -179,7 +195,6 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
           .limit(10);
 
       var snapshot = await symbolQuery.get();
-
       for (var doc in snapshot.docs) {
         try {
           final company = CompanyModel.fromFirestore(doc);
@@ -190,7 +205,7 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
         }
       }
 
-      // Strategy 2: Symbol prefix search (if no exact match)
+      // Strategy 2: Symbol prefix search
       if (searchResults.isEmpty && searchTerm.length >= 2) {
         symbolQuery = FirebaseFirestore.instance
             .collection('companies')
@@ -201,7 +216,6 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
             .limit(20);
 
         snapshot = await symbolQuery.get();
-
         for (var doc in snapshot.docs) {
           try {
             final company = CompanyModel.fromFirestore(doc);
@@ -225,7 +239,6 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
             .limit(20);
 
         final nameSnapshot = await nameQuery.get();
-
         for (var doc in nameSnapshot.docs) {
           try {
             final company = CompanyModel.fromFirestore(doc);
@@ -239,23 +252,22 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
         }
       }
 
-      // Strategy 4: Fuzzy client-side search (last resort)
+      // Strategy 4: Enhanced fuzzy search with quality prioritization
       if (searchResults.isEmpty && searchTerm.length >= 3) {
-        print('Trying client-side fuzzy search for: $searchTerm');
-
+        print('Trying enhanced fuzzy search for: $searchTerm');
         final fuzzyQuery = FirebaseFirestore.instance
             .collection('companies')
+            .where('market_cap', isGreaterThan: 500)
             .orderBy('market_cap', descending: true)
-            .limit(200); // Increased limit for better fuzzy search
+            .limit(300);
 
         final fuzzySnapshot = await fuzzyQuery.get();
-
         for (var doc in fuzzySnapshot.docs) {
           try {
             final company = CompanyModel.fromFirestore(doc);
             if (company.matchesSearchQuery(searchTerm)) {
               searchResults.add(company);
-              if (searchResults.length >= 20) break;
+              if (searchResults.length >= 25) break;
             }
           } catch (e) {
             print('Error parsing company ${doc.id}: $e');
@@ -264,13 +276,20 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
         }
       }
 
+      // Enhanced sorting by quality score then market cap
+      searchResults.sort((a, b) {
+        final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
+        if (qualityComparison != 0) return qualityComparison;
+        return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
+      });
+
       _companies = searchResults;
       _hasMore = false;
       _isLoading = false;
       state = AsyncValue.data(_companies);
 
       print(
-          'Search completed. Found ${searchResults.length} companies for "$searchTerm"');
+          'Enhanced search completed. Found ${searchResults.length} companies for "$searchTerm"');
     } catch (error, stackTrace) {
       print('Search error: $error');
       _isLoading = false;
@@ -278,7 +297,7 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
     }
   }
 
-  // 🔥 ENHANCED: Better fundamental filtering with error handling
+  // Enhanced fundamental filtering with new ratios
   Future<void> applyFundamentalFilter(
       filter.FundamentalFilter fundamentalFilter) async {
     state = const AsyncValue.loading();
@@ -287,52 +306,70 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
     try {
       Query query = FirebaseFirestore.instance.collection('companies');
 
-      // Apply database-level filters where possible
+      // Apply enhanced database-level filters
       switch (fundamentalFilter.type) {
+        case filter.FundamentalType.debtFree:
+          query = query
+              .where('debt_to_equity', isLessThan: 0.1)
+              .where('roe', isGreaterThan: 0)
+              .orderBy('debt_to_equity')
+              .orderBy('roe', descending: true);
+          break;
         case filter.FundamentalType.highROE:
-          query = query.where('roe', isGreaterThan: 15.0);
+          query = query
+              .where('roe', isGreaterThan: 15.0)
+              .orderBy('roe', descending: true);
           break;
         case filter.FundamentalType.lowPE:
           query = query
-              .where('stock_pe',
-                  isLessThan: 20.0) // Increased threshold for better results
-              .where('stock_pe', isGreaterThan: 0);
+              .where('stock_pe', isLessThan: 20.0)
+              .where('stock_pe', isGreaterThan: 0)
+              .orderBy('stock_pe');
           break;
         case filter.FundamentalType.largeCap:
-          query = query.where('market_cap', isGreaterThan: 20000);
+          query = query
+              .where('market_cap', isGreaterThan: 20000)
+              .orderBy('market_cap', descending: true);
           break;
         case filter.FundamentalType.midCap:
           query = query
               .where('market_cap', isGreaterThan: 5000)
-              .where('market_cap', isLessThanOrEqualTo: 20000);
+              .where('market_cap', isLessThanOrEqualTo: 20000)
+              .orderBy('market_cap', descending: true);
           break;
         case filter.FundamentalType.smallCap:
           query = query
               .where('market_cap', isLessThan: 5000)
-              .where('market_cap', isGreaterThan: 100); // Exclude micro caps
+              .where('market_cap', isGreaterThan: 100)
+              .orderBy('market_cap', descending: true);
           break;
         case filter.FundamentalType.dividendStocks:
-          query = query.where('dividend_yield', isGreaterThan: 1.0);
+          query = query
+              .where('dividend_yield', isGreaterThan: 1.0)
+              .orderBy('dividend_yield', descending: true);
+          break;
+        case filter.FundamentalType.qualityStocks:
+          // Use enhanced ratios for quality filtering
+          query = query
+              .where('current_ratio', isGreaterThan: 1.5)
+              .where('roe', isGreaterThan: 12.0)
+              .orderBy('current_ratio', descending: true)
+              .orderBy('roe', descending: true);
           break;
         default:
-          // For complex filters, rely on client-side filtering
+          query = query.orderBy('market_cap', descending: true);
           break;
       }
 
-      // Always order by market cap for consistent results
-      if (!query.toString().contains('orderBy')) {
-        query = query.orderBy('market_cap', descending: true);
-      }
-
-      query = query.limit(200); // Increased for better filtering results
-
+      query = query.limit(200);
       final snapshot = await query.get();
 
       List<CompanyModel> companies = [];
       for (var doc in snapshot.docs) {
         try {
           final company = CompanyModel.fromFirestore(doc);
-          // Apply client-side filtering using calculated fields
+
+          // Apply enhanced client-side filtering
           if (company.matchesFundamentalFilter(fundamentalFilter.type)) {
             companies.add(company);
           }
@@ -342,13 +379,20 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
         }
       }
 
+      // Enhanced sorting by quality score
+      companies.sort((a, b) {
+        final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
+        if (qualityComparison != 0) return qualityComparison;
+        return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
+      });
+
       _companies = companies;
       _hasMore = false;
       _isLoading = false;
       state = AsyncValue.data(_companies);
 
       print(
-          'Applied filter ${fundamentalFilter.type.name}. Found ${companies.length} companies');
+          'Applied filter ${fundamentalFilter.type.name}. Found ${companies.length} companies with enhanced scoring');
     } catch (error, stackTrace) {
       print('Filter error: $error');
       _isLoading = false;
@@ -356,26 +400,29 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
     }
   }
 
-  // 🔥 ENHANCED: Better quality stocks filtering
+  // Enhanced quality stocks loading with multiple criteria
   Future<void> loadQualityStocks({int minQualityScore = 3}) async {
     state = const AsyncValue.loading();
     _isLoading = true;
 
     try {
-      // Get companies with good financial metrics
-      final query = FirebaseFirestore.instance
+      // Enhanced query using multiple quality indicators
+      var query = FirebaseFirestore.instance
           .collection('companies')
-          .where('roe', isGreaterThan: 12.0) // Slightly lower threshold
-          .orderBy('roe', descending: true) // Order by ROE first
+          .where('roe', isGreaterThan: 12.0)
+          .where('current_ratio', isGreaterThan: 1.2)
+          .orderBy('roe', descending: true)
+          .orderBy('current_ratio', descending: true)
           .limit(150);
 
-      final snapshot = await query.get();
+      var snapshot = await query.get();
 
       List<CompanyModel> companies = [];
       for (var doc in snapshot.docs) {
         try {
           final company = CompanyModel.fromFirestore(doc);
-          // Use calculated quality score from your CompanyModel
+
+          // Enhanced quality filtering
           if (company.qualityScore >= minQualityScore) {
             companies.add(company);
           }
@@ -385,8 +432,23 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
         }
       }
 
-      // Sort by quality score descending
-      companies.sort((a, b) => b.qualityScore.compareTo(a.qualityScore));
+      // Enhanced sorting by multiple quality metrics
+      companies.sort((a, b) {
+        // Primary: Quality score
+        final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
+        if (qualityComparison != 0) return qualityComparison;
+
+        // Secondary: ROE
+        final roeA = a.roe ?? 0;
+        final roeB = b.roe ?? 0;
+        final roeComparison = roeB.compareTo(roeA);
+        if (roeComparison != 0) return roeComparison;
+
+        // Tertiary: Working capital efficiency
+        final wcA = a.workingCapitalDays ?? double.infinity;
+        final wcB = b.workingCapitalDays ?? double.infinity;
+        return wcA.compareTo(wcB); // Lower is better
+      });
 
       _companies = companies;
       _hasMore = false;
@@ -394,7 +456,7 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
       state = AsyncValue.data(_companies);
 
       print(
-          'Loaded ${companies.length} quality stocks with min score $minQualityScore');
+          'Loaded ${companies.length} enhanced quality stocks with min score $minQualityScore');
     } catch (error, stackTrace) {
       print('Quality stocks error: $error');
       _isLoading = false;
@@ -402,7 +464,7 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
     }
   }
 
-  // 🔥 ENHANCED: Better top performers with error handling
+  // Enhanced top performers with quality consideration
   Future<void> loadTopPerformers() async {
     state = const AsyncValue.loading();
     _isLoading = true;
@@ -410,14 +472,68 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
     try {
       final query = FirebaseFirestore.instance
           .collection('companies')
-          .where('change_percent',
-              isGreaterThan: 2.0) // Lower threshold for more results
+          .where('change_percent', isGreaterThan: 1.0)
+          .where('market_cap', isGreaterThan: 1000)
           .orderBy('change_percent', descending: true)
-          .limit(100); // Increased limit
+          .limit(100);
 
       final snapshot = await query.get();
-
       List<CompanyModel> companies = [];
+
+      for (var doc in snapshot.docs) {
+        try {
+          final company = CompanyModel.fromFirestore(doc);
+          companies.add(company);
+        } catch (e) {
+          print('Error parsing company ${doc.id}: $e');
+          continue;
+        }
+      }
+
+      // Enhanced sorting considering both performance and quality
+      companies.sort((a, b) {
+        // Primary: Change percent
+        final changeComparison = b.changePercent.compareTo(a.changePercent);
+        if (changeComparison.abs() > 1.0) return changeComparison;
+
+        // Secondary: Quality score for similar performers
+        final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
+        if (qualityComparison != 0) return qualityComparison;
+
+        // Tertiary: Market cap
+        return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
+      });
+
+      _companies = companies;
+      _hasMore = false;
+      _isLoading = false;
+      state = AsyncValue.data(_companies);
+
+      print('Loaded ${companies.length} enhanced top performers');
+    } catch (error, stackTrace) {
+      print('Top performers error: $error');
+      _isLoading = false;
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
+  // Enhanced working capital efficient companies
+  Future<void> loadWorkingCapitalEfficient() async {
+    state = const AsyncValue.loading();
+    _isLoading = true;
+
+    try {
+      final query = FirebaseFirestore.instance
+          .collection('companies')
+          .where('working_capital_days', isLessThan: 60)
+          .where('current_ratio', isGreaterThan: 1.5)
+          .orderBy('working_capital_days')
+          .orderBy('current_ratio', descending: true)
+          .limit(100);
+
+      final snapshot = await query.get();
+      List<CompanyModel> companies = [];
+
       for (var doc in snapshot.docs) {
         try {
           final company = CompanyModel.fromFirestore(doc);
@@ -433,15 +549,15 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
       _isLoading = false;
       state = AsyncValue.data(_companies);
 
-      print('Loaded ${companies.length} top performers');
+      print('Loaded ${companies.length} working capital efficient companies');
     } catch (error, stackTrace) {
-      print('Top performers error: $error');
+      print('Working capital efficient error: $error');
       _isLoading = false;
       state = AsyncValue.error(error, stackTrace);
     }
   }
 
-  // 🔥 NEW: Add method to get current state info
+  // Enhanced state management methods
   CompaniesState get currentState {
     return CompaniesState(
       companies: _companies,
@@ -451,7 +567,6 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
     );
   }
 
-  // ✅ Your existing utility methods are good - keep them
   Future<void> applyFilters() async {
     _reset();
     await loadInitialCompanies();
@@ -469,7 +584,6 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
     _isLoading = false;
   }
 
-  // ✅ Keep your debug methods as they are - they're excellent
   Future<void> debugFirestoreData() async {
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -477,18 +591,26 @@ class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
           .limit(5)
           .get();
 
-      print('Total documents in collection: ${snapshot.size}');
+      print(
+          '=== Enhanced Debug: Total documents in collection: ${snapshot.size} ===');
 
       for (var doc in snapshot.docs) {
-        print('Document ${doc.id}: ${doc.data()}');
+        final data = doc.data();
+        print('Document ${doc.id}:');
+        print(
+            '  Basic: name=${data['name']}, market_cap=${data['market_cap']}');
+        print(
+            '  Enhanced: debt_to_equity=${data['debt_to_equity']}, working_capital_days=${data['working_capital_days']}');
+        print(
+            '  Quality: piotroski_score=${data['piotroski_score']}, quality_grade=${data['quality_grade']}');
       }
     } catch (e) {
-      print('Debug error: $e');
+      print('Enhanced debug error: $e');
     }
   }
 }
 
-// 🔥 NEW: Add state class for better state management
+// Enhanced state class
 class CompaniesState {
   final List<CompanyModel> companies;
   final bool isLoading;
@@ -508,7 +630,7 @@ final companiesProvider =
   (ref) => CompaniesNotifier(ref),
 );
 
-// ✅ Your FilterSettings and RangeFilter classes are perfect - keep them as is
+// Enhanced filter settings with new financial ratio filters
 class FilterSettings {
   final RangeFilter marketCap;
   final RangeFilter peRatio;
@@ -516,6 +638,9 @@ class FilterSettings {
   final RangeFilter debtToEquity;
   final RangeFilter dividendYield;
   final RangeFilter qualityScore;
+  final RangeFilter currentRatio; // NEW
+  final RangeFilter workingCapitalDays; // NEW
+  final RangeFilter cashConversionCycle; // NEW
   final List<String> selectedSectors;
   final List<String> marketCapCategories;
   final bool onlyProfitable;
@@ -523,6 +648,7 @@ class FilterSettings {
   final bool onlyDividendPaying;
   final bool onlyGrowthStocks;
   final bool onlyQualityStocks;
+  final bool onlyWorkingCapitalEfficient; // NEW
   final String sortBy;
   final bool sortDescending;
   final int pageSize;
@@ -534,6 +660,9 @@ class FilterSettings {
     required this.debtToEquity,
     required this.dividendYield,
     required this.qualityScore,
+    required this.currentRatio,
+    required this.workingCapitalDays,
+    required this.cashConversionCycle,
     this.selectedSectors = const [],
     this.marketCapCategories = const [],
     this.onlyProfitable = false,
@@ -541,12 +670,12 @@ class FilterSettings {
     this.onlyDividendPaying = false,
     this.onlyGrowthStocks = false,
     this.onlyQualityStocks = false,
-    this.sortBy = 'marketCap',
+    this.onlyWorkingCapitalEfficient = false,
+    this.sortBy = 'qualityScore',
     this.sortDescending = true,
     this.pageSize = 20,
   });
 
-  // ✅ Keep your copyWith method as is
   FilterSettings copyWith({
     RangeFilter? marketCap,
     RangeFilter? peRatio,
@@ -554,6 +683,9 @@ class FilterSettings {
     RangeFilter? debtToEquity,
     RangeFilter? dividendYield,
     RangeFilter? qualityScore,
+    RangeFilter? currentRatio,
+    RangeFilter? workingCapitalDays,
+    RangeFilter? cashConversionCycle,
     List<String>? selectedSectors,
     List<String>? marketCapCategories,
     bool? onlyProfitable,
@@ -561,6 +693,7 @@ class FilterSettings {
     bool? onlyDividendPaying,
     bool? onlyGrowthStocks,
     bool? onlyQualityStocks,
+    bool? onlyWorkingCapitalEfficient,
     String? sortBy,
     bool? sortDescending,
     int? pageSize,
@@ -572,6 +705,9 @@ class FilterSettings {
       debtToEquity: debtToEquity ?? this.debtToEquity,
       dividendYield: dividendYield ?? this.dividendYield,
       qualityScore: qualityScore ?? this.qualityScore,
+      currentRatio: currentRatio ?? this.currentRatio,
+      workingCapitalDays: workingCapitalDays ?? this.workingCapitalDays,
+      cashConversionCycle: cashConversionCycle ?? this.cashConversionCycle,
       selectedSectors: selectedSectors ?? this.selectedSectors,
       marketCapCategories: marketCapCategories ?? this.marketCapCategories,
       onlyProfitable: onlyProfitable ?? this.onlyProfitable,
@@ -579,6 +715,8 @@ class FilterSettings {
       onlyDividendPaying: onlyDividendPaying ?? this.onlyDividendPaying,
       onlyGrowthStocks: onlyGrowthStocks ?? this.onlyGrowthStocks,
       onlyQualityStocks: onlyQualityStocks ?? this.onlyQualityStocks,
+      onlyWorkingCapitalEfficient:
+          onlyWorkingCapitalEfficient ?? this.onlyWorkingCapitalEfficient,
       sortBy: sortBy ?? this.sortBy,
       sortDescending: sortDescending ?? this.sortDescending,
       pageSize: pageSize ?? this.pageSize,
@@ -586,7 +724,6 @@ class FilterSettings {
   }
 }
 
-// ✅ Keep RangeFilter as is
 class RangeFilter {
   final bool isActive;
   final double? min;
@@ -619,5 +756,8 @@ final filterSettingsProvider = StateProvider<FilterSettings>((ref) {
     debtToEquity: RangeFilter(),
     dividendYield: RangeFilter(),
     qualityScore: RangeFilter(),
+    currentRatio: RangeFilter(),
+    workingCapitalDays: RangeFilter(),
+    cashConversionCycle: RangeFilter(),
   );
 });

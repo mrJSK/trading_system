@@ -1,42 +1,44 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:math';
-import 'dart:convert';
 
 part 'financial_data_model.freezed.dart';
 part 'financial_data_model.g.dart';
 
 // ============================================================================
-// FINANCIAL DATA MODELS (FIXED FOR PROPER CODE GENERATION)
+// SIMPLIFIED FINANCIAL DATA MODELS USING FREEZED AUTOMATIC PARSING
 // ============================================================================
 
 @freezed
 class FinancialDataModel with _$FinancialDataModel {
+  const FinancialDataModel._();
+
   const factory FinancialDataModel({
     @Default([]) List<String> headers,
     @Default([]) List<FinancialDataRow> body,
   }) = _FinancialDataModel;
 
-  // 🔥 FIXED: Let Freezed generate this automatically - DO NOT override
+  // Single line - Freezed automatically generates all JSON parsing
   factory FinancialDataModel.fromJson(Map<String, dynamic> json) =>
       _$FinancialDataModelFromJson(json);
 }
 
 @freezed
 class FinancialDataRow with _$FinancialDataRow {
+  const FinancialDataRow._();
+
   const factory FinancialDataRow({
-    @Default('')
-    String description, // 🔥 FIXED: Uses default instead of required
+    @Default('') String description,
     @Default([]) List<String> values,
   }) = _FinancialDataRow;
 
-  // 🔥 FIXED: Let Freezed generate this automatically - DO NOT override
+  // Single line - Freezed automatically generates all JSON parsing
   factory FinancialDataRow.fromJson(Map<String, dynamic> json) =>
       _$FinancialDataRowFromJson(json);
 }
 
 // ============================================================================
-// EXTENSIONS FOR ENHANCED FUNCTIONALITY
+// EXTENSIONS FOR ENHANCED FUNCTIONALITY (SIMPLIFIED)
 // ============================================================================
 
 extension FinancialDataModelX on FinancialDataModel {
@@ -45,97 +47,45 @@ extension FinancialDataModelX on FinancialDataModel {
   int get columnCount => headers.length;
   int get rowCount => body.length;
 
-  /// 🔥 SAFE: Custom parsing method with different name to avoid conflicts
-  static FinancialDataModel fromCloudFunctionJson(dynamic json) {
+  /// Enhanced parsing from Firebase cloud function data
+  static FinancialDataModel fromFirebaseData(dynamic json) {
     try {
       if (json == null) return const FinancialDataModel();
 
+      // If it's already a properly structured Map, use Freezed's automatic parsing
+      if (json is Map<String, dynamic> &&
+          json.containsKey('headers') &&
+          json.containsKey('body')) {
+        return FinancialDataModel.fromJson(json);
+      }
+
+      // Handle alternative formats from your Firebase scraper
       if (json is Map<String, dynamic>) {
-        if (json.containsKey('headers') && json.containsKey('body')) {
-          return FinancialDataModel(
-            headers: (json['headers'] as List<dynamic>? ?? [])
-                .map((e) => e?.toString() ?? '')
-                .toList(),
-            body: (json['body'] as List<dynamic>? ?? [])
-                .map((row) => FinancialDataRowX.fromCloudFunctionJson(row))
-                .where((row) => row.description.isNotEmpty)
-                .toList(),
-          );
-        }
+        final headers = (json['headers'] as List<dynamic>? ?? [])
+            .map((e) => e?.toString() ?? '')
+            .toList();
 
-        // Alternative format where keys are column headers
-        final entries = json.entries.toList();
-        if (entries.isNotEmpty) {
-          final headers = entries.map((e) => e.key).toList();
-          final values = entries.map((e) => e.value?.toString() ?? '').toList();
+        final bodyData = (json['body'] as List<dynamic>? ?? [])
+            .map((item) {
+              if (item is Map<String, dynamic>) {
+                return FinancialDataRow.fromJson(item);
+              }
+              return const FinancialDataRow();
+            })
+            .where((row) => row.description.isNotEmpty)
+            .toList();
 
-          return FinancialDataModel(
-            headers: headers,
-            body: [FinancialDataRow(description: 'Data', values: values)],
-          );
-        }
-      }
-
-      if (json is List && json.isNotEmpty) {
-        if (json.length > 1 && json[0] is List) {
-          final headers =
-              (json[0] as List).map((e) => e?.toString() ?? '').toList();
-
-          final body = json
-              .skip(1)
-              .map((row) => FinancialDataRowX.fromCloudFunctionJson(row))
-              .toList();
-
-          return FinancialDataModel(headers: headers, body: body);
-        }
+        return FinancialDataModel(headers: headers, body: bodyData);
       }
 
       return const FinancialDataModel();
     } catch (e) {
-      debugPrint('Error parsing cloud function JSON: $e');
+      debugPrint('Error parsing Firebase financial data: $e');
       return const FinancialDataModel();
     }
   }
 
-  /// 🔥 SAFE: Enhanced parsing with null safety for Firestore data
-  static FinancialDataModel fromFirestoreData(dynamic data) {
-    try {
-      if (data == null) return const FinancialDataModel();
-
-      if (data is Map<String, dynamic>) {
-        return FinancialDataModel(
-          headers: (data['headers'] as List<dynamic>? ?? [])
-              .map((e) => e?.toString() ?? '')
-              .toList(),
-          body: (data['body'] as List<dynamic>? ?? [])
-              .map((item) {
-                try {
-                  if (item is Map<String, dynamic>) {
-                    return FinancialDataRow(
-                      description: item['description']?.toString() ?? '',
-                      values: (item['values'] as List<dynamic>? ?? [])
-                          .map((e) => e?.toString() ?? '')
-                          .toList(),
-                    );
-                  }
-                  return const FinancialDataRow();
-                } catch (e) {
-                  debugPrint('Error parsing row: $e');
-                  return const FinancialDataRow();
-                }
-              })
-              .where((row) => row.description.isNotEmpty)
-              .toList(),
-        );
-      }
-
-      return const FinancialDataModel();
-    } catch (e) {
-      debugPrint('Error parsing Firestore data: $e');
-      return const FinancialDataModel();
-    }
-  }
-
+  // Safe data access methods
   String getValueAt(int rowIndex, int columnIndex) {
     try {
       if (rowIndex >= 0 &&
@@ -146,7 +96,6 @@ extension FinancialDataModelX on FinancialDataModel {
       }
       return '';
     } catch (e) {
-      debugPrint('Error getting value at [$rowIndex, $columnIndex]: $e');
       return '';
     }
   }
@@ -171,35 +120,8 @@ extension FinancialDataModelX on FinancialDataModel {
         }
       }
 
-      // Enhanced financial term mappings
-      final commonMappings = {
-        'sales': ['revenue', 'total income', 'net sales', 'turnover'],
-        'profit': ['net profit', 'pat', 'profit after tax', 'earnings'],
-        'revenue': ['sales', 'total income', 'turnover'],
-        'expenses': ['total expenses', 'expenditure', 'costs'],
-        'assets': ['total assets', 'current assets', 'fixed assets'],
-        'liabilities': ['total liabilities', 'current liabilities'],
-        'equity': ['shareholders equity', 'net worth'],
-        'debt': ['total debt', 'borrowings', 'loans'],
-        'ebitda': ['ebitda', 'operating profit'],
-        'eps': ['earnings per share', 'basic eps'],
-        'roe': ['return on equity', 'roe'],
-        'roce': ['return on capital employed', 'roce'],
-      };
-
-      if (commonMappings.containsKey(searchTerm)) {
-        for (final synonym in commonMappings[searchTerm]!) {
-          for (final row in body) {
-            if (row.description.toLowerCase().contains(synonym)) {
-              return row;
-            }
-          }
-        }
-      }
-
       return null;
     } catch (e) {
-      debugPrint('Error finding row by description "$description": $e');
       return null;
     }
   }
@@ -217,11 +139,11 @@ extension FinancialDataModelX on FinancialDataModel {
         return '';
       }).toList();
     } catch (e) {
-      debugPrint('Error getting column values for index $columnIndex: $e');
       return [];
     }
   }
 
+  // Generate table data for display
   List<List<String>> get tableData {
     try {
       if (isEmpty) return [];
@@ -231,7 +153,6 @@ extension FinancialDataModelX on FinancialDataModel {
 
       for (final row in body) {
         final rowData = [row.description];
-
         for (int i = 0; i < headers.length; i++) {
           if (i < row.values.length) {
             rowData.add(row.values[i]);
@@ -244,11 +165,11 @@ extension FinancialDataModelX on FinancialDataModel {
 
       return table;
     } catch (e) {
-      debugPrint('Error generating table data: $e');
       return [];
     }
   }
 
+  // Calculate growth rates between periods
   Map<String, List<double?>> get growthRates {
     try {
       if (columnCount < 2) return {};
@@ -278,59 +199,16 @@ extension FinancialDataModelX on FinancialDataModel {
 
       return growth;
     } catch (e) {
-      debugPrint('Error calculating growth rates: $e');
       return {};
     }
   }
 }
 
+// ============================================================================
+// FINANCIAL DATA ROW EXTENSIONS
+// ============================================================================
+
 extension FinancialDataRowX on FinancialDataRow {
-  /// 🔥 SAFE: Custom parsing method with different name to avoid conflicts
-  static FinancialDataRow fromCloudFunctionJson(dynamic json) {
-    try {
-      if (json == null) return const FinancialDataRow();
-
-      // Handle array format: [description, value1, value2, ...]
-      if (json is List && json.isNotEmpty) {
-        return FinancialDataRow(
-          description: json[0]?.toString() ?? '',
-          values: json.skip(1).map((e) => e?.toString() ?? '').toList(),
-        );
-      }
-
-      // Handle object format: {description: "...", values: [...]}
-      if (json is Map<String, dynamic>) {
-        return FinancialDataRow(
-          description: json['description']?.toString() ??
-              json['0']?.toString() ??
-              json['label']?.toString() ??
-              '',
-          values: json['values'] != null
-              ? (json['values'] as List<dynamic>? ?? [])
-                  .map((e) => e?.toString() ?? '')
-                  .toList()
-              : json.entries
-                  .where((entry) =>
-                      entry.key != 'description' &&
-                      entry.key != '0' &&
-                      entry.key != 'label')
-                  .map((entry) => entry.value?.toString() ?? '')
-                  .toList(),
-        );
-      }
-
-      // Handle string (single value)
-      if (json is String) {
-        return FinancialDataRow(description: json);
-      }
-
-      return const FinancialDataRow();
-    } catch (e) {
-      debugPrint('Error parsing FinancialDataRow JSON: $e');
-      return const FinancialDataRow();
-    }
-  }
-
   String get latestValue => values.isEmpty ? '' : values.last;
   String get firstValue => values.isEmpty ? '' : values.first;
   bool get hasNumericData =>
@@ -348,13 +226,16 @@ extension FinancialDataRowX on FinancialDataRow {
   }
 
   List<double?> get numericValues => values.map(_parseNumericValue).toList();
+
   double? get latestNumericValue =>
       values.isEmpty ? null : _parseNumericValue(latestValue);
 
+  // Calculate growth rate between first and last values
   double? get growthRate {
     try {
       final first = _parseNumericValue(firstValue);
       final last = _parseNumericValue(latestValue);
+
       if (first != null && last != null && first != 0) {
         return ((last - first) / first) * 100;
       }
@@ -364,12 +245,15 @@ extension FinancialDataRowX on FinancialDataRow {
     }
   }
 
+  // Calculate Compound Annual Growth Rate (CAGR)
   double? get cagr {
     try {
       if (values.length < 2) return null;
+
       final first = _parseNumericValue(firstValue);
       final last = _parseNumericValue(latestValue);
       final years = values.length - 1;
+
       if (first != null && last != null && first > 0 && years > 0) {
         return (pow(last / first, 1 / years) - 1) * 100;
       }
@@ -379,6 +263,7 @@ extension FinancialDataRowX on FinancialDataRow {
     }
   }
 
+  // Calculate average value
   double? get averageValue {
     try {
       final nums =
@@ -390,6 +275,7 @@ extension FinancialDataRowX on FinancialDataRow {
     }
   }
 
+  // Check if trend is generally growing
   bool get isGrowingTrend {
     try {
       final nums =
@@ -407,6 +293,7 @@ extension FinancialDataRowX on FinancialDataRow {
     }
   }
 
+  // Enhanced numeric value parser for Indian financial data
   double? _parseNumericValue(String value) {
     try {
       if (value.isEmpty) return null;
@@ -435,7 +322,7 @@ extension FinancialDataRowX on FinancialDataRow {
         return null;
       }
 
-      // Handle Crores
+      // Handle Crores (multiply by 100 for conversion to actual number)
       if (cleanValue.toLowerCase().endsWith('cr')) {
         final numPart = cleanValue.toLowerCase().replaceAll('cr', '').trim();
         final parsed = double.tryParse(numPart);
@@ -465,5 +352,46 @@ extension FinancialDataRowX on FinancialDataRow {
     } catch (e) {
       return null;
     }
+  }
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS FOR FINANCIAL ANALYSIS
+// ============================================================================
+
+extension FinancialAnalysisX on FinancialDataModel {
+  /// Get latest financial metric by name (e.g., "Sales", "Net Profit")
+  double? getLatestMetric(String metricName) {
+    final row = findRowByDescription(metricName);
+    return row?.latestNumericValue;
+  }
+
+  /// Get metric growth rate over available periods
+  double? getMetricGrowthRate(String metricName) {
+    final row = findRowByDescription(metricName);
+    return row?.growthRate;
+  }
+
+  /// Get CAGR for a specific metric
+  double? getMetricCAGR(String metricName) {
+    final row = findRowByDescription(metricName);
+    return row?.cagr;
+  }
+
+  /// Check if a metric is trending upward
+  bool isMetricTrendingUp(String metricName) {
+    final row = findRowByDescription(metricName);
+    return row?.isGrowingTrend ?? false;
+  }
+
+  /// Get all available metrics as a summary map
+  Map<String, double?> get latestMetricsSummary {
+    Map<String, double?> summary = {};
+    for (final row in body) {
+      if (row.hasNumericData) {
+        summary[row.description] = row.latestNumericValue;
+      }
+    }
+    return summary;
   }
 }

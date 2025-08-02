@@ -17,7 +17,7 @@ final selectedFilterCategoryProvider =
 final searchQueryProvider = StateProvider<String>((ref) => '');
 
 // ============================================================================
-// MAIN COMPANIES STREAM PROVIDER
+// MAIN COMPANIES STREAM PROVIDER - ENHANCED WITH NEW RATIOS
 // ============================================================================
 
 final fundamentalCompaniesProvider =
@@ -26,8 +26,8 @@ final fundamentalCompaniesProvider =
     if (filterParam == null) return Stream.value([]);
 
     try {
-      return _buildFirestoreQuery(filterParam)
-          .limit(100)
+      return _buildEnhancedFirestoreQuery(filterParam)
+          .limit(150) // Increased for better filtering results
           .snapshots()
           .map((snapshot) {
         List<CompanyModel> companies = [];
@@ -36,7 +36,7 @@ final fundamentalCompaniesProvider =
           try {
             final company = CompanyModel.fromFirestore(doc);
 
-            if (_matchesComplexCriteria(company, filterParam)) {
+            if (_matchesEnhancedComplexCriteria(company, filterParam)) {
               companies.add(company);
             }
           } catch (e) {
@@ -45,54 +45,67 @@ final fundamentalCompaniesProvider =
           }
         }
 
+        // Enhanced sorting with quality score prioritization
+        companies.sort((a, b) {
+          final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
+          if (qualityComparison != 0) return qualityComparison;
+
+          final roeComparison = (b.roe ?? 0).compareTo(a.roe ?? 0);
+          if (roeComparison != 0) return roeComparison;
+
+          return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
+        });
+
         print(
-            'Found ${companies.length} companies for filter ${filterParam.type.name}');
+            'Found ${companies.length} enhanced companies for filter ${filterParam.type.name}');
         return companies;
       });
     } catch (e) {
-      print('Error in fundamentalCompaniesProvider: $e');
+      print('Error in enhanced fundamentalCompaniesProvider: $e');
       return Stream.value([]);
     }
   },
 );
 
 // ============================================================================
-// FIRESTORE QUERY BUILDER (🔥 FIXED WITH PROPER ORDERBY)
+// ENHANCED FIRESTORE QUERY BUILDER WITH NEW RATIOS
 // ============================================================================
 
-Query<Map<String, dynamic>> _buildFirestoreQuery(
+Query<Map<String, dynamic>> _buildEnhancedFirestoreQuery(
     filter.FundamentalFilter filterParam) {
   var query = FirebaseFirestore.instance.collection('companies');
 
   try {
     switch (filterParam.type) {
       // ========================================================================
-      // SAFETY & QUALITY FILTERS
+      // ENHANCED SAFETY & QUALITY FILTERS USING NEW RATIOS
       // ========================================================================
 
       case filter.FundamentalType.debtFree:
         return query
+            .where('debt_to_equity', isLessThan: 0.1)
             .where('roe', isGreaterThan: 0)
-            .where('roe',
-                isLessThan: 100) // 🔥 FIXED: Exclude unrealistic values
+            .orderBy('debt_to_equity')
             .orderBy('roe', descending: true);
 
       case filter.FundamentalType.qualityStocks:
+        // Use enhanced ratios for quality filtering
         return query
+            .where('current_ratio', isGreaterThan: 1.5)
             .where('roe', isGreaterThan: 15.0)
-            .where('roe',
-                isLessThan: 100) // 🔥 FIXED: Exclude unrealistic values
+            .orderBy('current_ratio', descending: true)
             .orderBy('roe', descending: true);
 
       case filter.FundamentalType.strongBalance:
-        // 🔥 FIXED: Use single field to avoid compound index requirement
+        // Use working capital efficiency
         return query
-            .where('roe', isGreaterThan: 12.0)
-            .where('roe', isLessThan: 100)
-            .orderBy('roe', descending: true);
+            .where('working_capital_days', isLessThan: 60)
+            .where('current_ratio', isGreaterThan: 1.5)
+            .orderBy('working_capital_days')
+            .orderBy('current_ratio', descending: true);
 
       // ========================================================================
-      // PROFITABILITY FILTERS
+      // ENHANCED PROFITABILITY FILTERS
       // ========================================================================
 
       case filter.FundamentalType.highROE:
@@ -104,18 +117,18 @@ Query<Map<String, dynamic>> _buildFirestoreQuery(
       case filter.FundamentalType.profitableStocks:
         return query
             .where('roe', isGreaterThan: 0)
-            .where('roe', isLessThan: 100)
-            .orderBy('roe', descending: true);
+            .where('current_ratio', isGreaterThan: 1.0)
+            .orderBy('roe', descending: true)
+            .orderBy('current_ratio', descending: true);
 
       case filter.FundamentalType.consistentProfits:
-        // 🔥 FIXED: Use single field to avoid compound index requirement
         return query
-            .where('roe', isGreaterThan: 10.0)
+            .where('roe', isGreaterThan: 12.0)
             .where('roe', isLessThan: 100)
             .orderBy('roe', descending: true);
 
       // ========================================================================
-      // GROWTH FILTERS
+      // ENHANCED GROWTH FILTERS
       // ========================================================================
 
       case filter.FundamentalType.growthStocks:
@@ -137,7 +150,7 @@ Query<Map<String, dynamic>> _buildFirestoreQuery(
             .orderBy('Compounded Profit Growth', descending: true);
 
       // ========================================================================
-      // VALUE FILTERS
+      // ENHANCED VALUE FILTERS
       // ========================================================================
 
       case filter.FundamentalType.lowPE:
@@ -147,7 +160,6 @@ Query<Map<String, dynamic>> _buildFirestoreQuery(
             .orderBy('stock_pe');
 
       case filter.FundamentalType.valueStocks:
-        // 🔥 FIXED: Simplified to avoid compound index requirement
         return query
             .where('stock_pe', isLessThan: 12.0)
             .where('stock_pe', isGreaterThan: 0)
@@ -160,13 +172,12 @@ Query<Map<String, dynamic>> _buildFirestoreQuery(
             .orderBy('stock_pe');
 
       // ========================================================================
-      // DIVIDEND & INCOME FILTERS
+      // ENHANCED DIVIDEND & INCOME FILTERS
       // ========================================================================
 
       case filter.FundamentalType.dividendStocks:
         return query
-            .where('dividend_yield',
-                isGreaterThan: 1.0) // 🔥 FIXED: Lower threshold
+            .where('dividend_yield', isGreaterThan: 1.0)
             .where('dividend_yield', isLessThan: 50)
             .orderBy('dividend_yield', descending: true);
 
@@ -177,7 +188,7 @@ Query<Map<String, dynamic>> _buildFirestoreQuery(
             .orderBy('dividend_yield', descending: true);
 
       // ========================================================================
-      // MARKET CAPITALIZATION FILTERS (🔥 FIXED WITH ORDERBY)
+      // ENHANCED MARKET CAPITALIZATION FILTERS
       // ========================================================================
 
       case filter.FundamentalType.largeCap:
@@ -186,21 +197,37 @@ Query<Map<String, dynamic>> _buildFirestoreQuery(
             .orderBy('market_cap', descending: true);
 
       case filter.FundamentalType.midCap:
-        // 🔥 FIXED: Added required orderBy
         return query
             .where('market_cap', isGreaterThan: 5000)
             .where('market_cap', isLessThanOrEqualTo: 20000)
             .orderBy('market_cap', descending: true);
 
       case filter.FundamentalType.smallCap:
-        // 🔥 FIXED: Added required orderBy
         return query
             .where('market_cap', isLessThan: 5000)
-            .where('market_cap', isGreaterThan: 100) // Exclude micro caps
+            .where('market_cap', isGreaterThan: 100)
             .orderBy('market_cap', descending: true);
 
       // ========================================================================
-      // RISK & VOLATILITY FILTERS
+      // NEW ENHANCED FILTERS USING WORKING CAPITAL ANALYSIS
+      // ========================================================================
+
+      case filter.FundamentalType.workingCapitalEfficient:
+        return query
+            .where('working_capital_days', isLessThan: 45)
+            .where('current_ratio', isGreaterThan: 1.5)
+            .orderBy('working_capital_days')
+            .orderBy('current_ratio', descending: true);
+
+      case filter.FundamentalType.cashEfficientStocks:
+        return query
+            .where('cash_conversion_cycle', isLessThan: 60)
+            .where('current_ratio', isGreaterThan: 1.2)
+            .orderBy('cash_conversion_cycle')
+            .orderBy('current_ratio', descending: true);
+
+      // ========================================================================
+      // ENHANCED RISK & VOLATILITY FILTERS
       // ========================================================================
 
       case filter.FundamentalType.lowVolatility:
@@ -211,7 +238,7 @@ Query<Map<String, dynamic>> _buildFirestoreQuery(
 
       case filter.FundamentalType.contrarian:
         return query
-            .where('change_percent', isLessThan: -5.0) // 🔥 FIXED: Less strict
+            .where('change_percent', isLessThan: -5.0)
             .where('change_percent', isGreaterThan: -50.0)
             .orderBy('change_percent');
 
@@ -220,59 +247,88 @@ Query<Map<String, dynamic>> _buildFirestoreQuery(
       // ========================================================================
 
       default:
-        return query.orderBy('market_cap', descending: true);
+        return query
+            .where('market_cap', isGreaterThan: 100)
+            .orderBy('market_cap', descending: true);
     }
   } catch (e) {
-    print('Error building Firestore query for ${filterParam.type.name}: $e');
-    return query.orderBy('market_cap', descending: true);
+    print(
+        'Error building enhanced Firestore query for ${filterParam.type.name}: $e');
+    return query
+        .where('market_cap', isGreaterThan: 100)
+        .orderBy('market_cap', descending: true);
   }
 }
 
 // ============================================================================
-// CLIENT-SIDE FILTERING HELPER (🔥 ENHANCED)
+// ENHANCED CLIENT-SIDE FILTERING WITH NEW FINANCIAL RATIOS
 // ============================================================================
 
-bool _matchesComplexCriteria(
+bool _matchesEnhancedComplexCriteria(
     CompanyModel company, filter.FundamentalFilter filterParam) {
   try {
     switch (filterParam.type) {
       case filter.FundamentalType.qualityStocks:
         return company.qualityScore >= 3 &&
             (company.roe ?? 0) > 12.0 &&
-            (company.debtToEquity ?? double.infinity) < 0.5;
+            (company.debtToEquity ?? double.infinity) < 0.5 &&
+            (company.currentRatio ?? 0) > 1.5;
 
       case filter.FundamentalType.strongBalance:
-        // 🔥 ENHANCED: Check ROCE here since we can't in Firestore query
         return (company.currentRatio ?? 0) > 1.5 &&
             (company.debtToEquity ?? double.infinity) < 0.3 &&
             (company.interestCoverage ?? 0) > 5.0 &&
-            (company.roce ?? 0) > 12.0; // Check ROCE client-side
+            (company.workingCapitalDays ?? double.infinity) < 60 &&
+            company.qualityScore >= 2;
 
       case filter.FundamentalType.valueStocks:
-        // 🔥 ENHANCED: Check ROE here since we can't in Firestore query
         return (company.stockPe ?? double.infinity) < 12.0 &&
             (company.priceToBook ?? double.infinity) < 1.5 &&
-            (company.roe ?? 0) > 10.0;
+            (company.roe ?? 0) > 10.0 &&
+            (company.currentRatio ?? 0) > 1.0;
 
       case filter.FundamentalType.consistentProfits:
-        // 🔥 ENHANCED: Check ROCE here since we can't in Firestore query
         return company.hasConsistentProfits &&
             (company.roe ?? 0) > 10.0 &&
-            (company.roce ?? 0) > 10.0;
+            (company.roce ?? 0) > 10.0 &&
+            (company.currentRatio ?? 0) > 1.2;
+
+      case filter.FundamentalType.workingCapitalEfficient:
+        return (company.workingCapitalDays ?? double.infinity) < 45 &&
+            (company.currentRatio ?? 0) > 1.5 &&
+            (company.cashConversionCycle ?? double.infinity) < 60;
+
+      case filter.FundamentalType.cashEfficientStocks:
+        return (company.cashConversionCycle ?? double.infinity) < 60 &&
+            (company.debtorDays ?? double.infinity) < 60 &&
+            (company.inventoryDays ?? double.infinity) < 90 &&
+            (company.currentRatio ?? 0) > 1.2;
 
       case filter.FundamentalType.contrarian:
         return company.changePercent < -5.0 &&
             company.changePercent > -50.0 &&
             (company.roe ?? 0) > 10.0 &&
-            company.qualityScore >= 2;
+            company.qualityScore >= 2 &&
+            (company.currentRatio ?? 0) > 1.0;
 
-      case filter.FundamentalType.midCap:
-        return (company.marketCap ?? 0) > 5000 &&
-            (company.marketCap ?? 0) <= 20000;
+      case filter.FundamentalType.debtFree:
+        return company.isDebtFree ||
+            (company.debtToEquity ?? double.infinity) < 0.1;
 
-      case filter.FundamentalType.lowVolatility:
-        return (company.volatility1Y ?? double.infinity) < 25.0 &&
-            (company.betaValue ?? double.infinity) < 1.2;
+      case filter.FundamentalType.highROE:
+        return (company.roe ?? 0) > 15.0 &&
+            (company.roe ?? 0) < 100 &&
+            (company.currentRatio ?? 0) > 1.0;
+
+      case filter.FundamentalType.lowPE:
+        return (company.stockPe ?? double.infinity) < 15.0 &&
+            (company.stockPe ?? 0) > 0 &&
+            (company.roe ?? 0) > 5.0;
+
+      case filter.FundamentalType.profitableStocks:
+        return company.isProfitable &&
+            (company.roe ?? 0) > 0 &&
+            (company.currentRatio ?? 0) > 1.0;
 
       case filter.FundamentalType.growthStocks:
         return company.isGrowthStock ||
@@ -280,27 +336,21 @@ bool _matchesComplexCriteria(
                 (company.profitGrowth3Y ?? 0) > 15.0);
 
       case filter.FundamentalType.dividendStocks:
-        return company.paysDividends && (company.dividendYield ?? 0) > 1.0;
+        return company.paysDividends &&
+            (company.dividendYield ?? 0) > 1.0 &&
+            (company.currentRatio ?? 0) > 1.2;
 
       case filter.FundamentalType.highDividendYield:
-        return company.paysDividends && (company.dividendYield ?? 0) > 4.0;
-
-      case filter.FundamentalType.debtFree:
-        return company.isDebtFree ||
-            (company.debtToEquity ?? double.infinity) < 0.1;
-
-      case filter.FundamentalType.highROE:
-        return (company.roe ?? 0) > 15.0 && (company.roe ?? 0) < 100;
-
-      case filter.FundamentalType.lowPE:
-        return (company.stockPe ?? double.infinity) < 15.0 &&
-            (company.stockPe ?? 0) > 0;
-
-      case filter.FundamentalType.profitableStocks:
-        return company.isProfitable && (company.roe ?? 0) > 0;
+        return company.paysDividends &&
+            (company.dividendYield ?? 0) > 4.0 &&
+            (company.debtToEquity ?? double.infinity) < 0.6;
 
       case filter.FundamentalType.largeCap:
         return (company.marketCap ?? 0) > 20000;
+
+      case filter.FundamentalType.midCap:
+        return (company.marketCap ?? 0) > 5000 &&
+            (company.marketCap ?? 0) <= 20000;
 
       case filter.FundamentalType.smallCap:
         return (company.marketCap ?? 0) < 5000 &&
@@ -317,19 +367,26 @@ bool _matchesComplexCriteria(
       case filter.FundamentalType.undervalued:
         return (company.stockPe ?? double.infinity) < 10.0 &&
             (company.stockPe ?? 0) > 0 &&
-            (company.roe ?? 0) > 5.0;
+            (company.roe ?? 0) > 5.0 &&
+            company.qualityScore >= 2;
+
+      case filter.FundamentalType.lowVolatility:
+        return (company.volatility1Y ?? double.infinity) < 25.0 &&
+            (company.betaValue ?? double.infinity) < 1.2 &&
+            (company.currentRatio ?? 0) > 1.5;
 
       default:
         return true;
     }
   } catch (e) {
-    print('Error in _matchesComplexCriteria for ${company.symbol}: $e');
+    print(
+        'Error in enhanced _matchesComplexCriteria for ${company.symbol}: $e');
     return false;
   }
 }
 
 // ============================================================================
-// FILTERED COMPANIES PROVIDER (🔥 ENHANCED)
+// ENHANCED FILTERED COMPANIES PROVIDER
 // ============================================================================
 
 final filteredCompaniesProvider =
@@ -343,7 +400,7 @@ final filteredCompaniesProvider =
       try {
         var filteredData = data;
 
-        // 🔥 FIXED: Add minimum length check for search
+        // Enhanced search with minimum length check
         if (searchQuery.isNotEmpty && searchQuery.trim().length >= 2) {
           filteredData = data
               .where(
@@ -351,16 +408,25 @@ final filteredCompaniesProvider =
               .toList();
         }
 
-        // 🔥 ENHANCED: Multi-criteria sorting
+        // Enhanced multi-criteria sorting
         filteredData.sort((a, b) {
+          // Primary: Quality score (enhanced)
           final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
           if (qualityComparison != 0) return qualityComparison;
 
+          // Secondary: Working capital efficiency
+          final wcA = a.workingCapitalDays ?? double.infinity;
+          final wcB = b.workingCapitalDays ?? double.infinity;
+          final wcComparison = wcA.compareTo(wcB); // Lower is better
+          if (wcComparison != 0) return wcComparison;
+
+          // Tertiary: ROE
           final roeA = a.roe ?? 0;
           final roeB = b.roe ?? 0;
           final roeComparison = roeB.compareTo(roeA);
           if (roeComparison != 0) return roeComparison;
 
+          // Final: Market cap
           final marketCapA = a.marketCap ?? 0;
           final marketCapB = b.marketCap ?? 0;
           return marketCapB.compareTo(marketCapA);
@@ -368,7 +434,7 @@ final filteredCompaniesProvider =
 
         return AsyncValue.data(filteredData);
       } catch (e) {
-        print('Error in filteredCompaniesProvider: $e');
+        print('Error in enhanced filteredCompaniesProvider: $e');
         return AsyncValue.error(e, StackTrace.current);
       }
     },
@@ -378,16 +444,16 @@ final filteredCompaniesProvider =
 });
 
 // ============================================================================
-// WATCHLIST MANAGEMENT (🔥 ENHANCED WITH SYMBOL NORMALIZATION)
+// ENHANCED WATCHLIST MANAGEMENT
 // ============================================================================
 
 final watchlistProvider =
-    StateNotifierProvider<WatchlistNotifier, List<String>>((ref) {
-  return WatchlistNotifier();
+    StateNotifierProvider<EnhancedWatchlistNotifier, List<String>>((ref) {
+  return EnhancedWatchlistNotifier();
 });
 
-class WatchlistNotifier extends StateNotifier<List<String>> {
-  WatchlistNotifier() : super([]) {
+class EnhancedWatchlistNotifier extends StateNotifier<List<String>> {
+  EnhancedWatchlistNotifier() : super([]) {
     _loadWatchlist();
   }
 
@@ -404,13 +470,12 @@ class WatchlistNotifier extends StateNotifier<List<String>> {
   Future<void> _saveWatchlist() async {
     try {
       // TODO: Implement persistence
-      print('Watchlist updated: ${state.length} items');
+      print('Enhanced watchlist updated: ${state.length} items');
     } catch (e) {
       print('Error saving watchlist: $e');
     }
   }
 
-  // 🔥 FIXED: Symbol normalization to prevent duplicates
   void addToWatchlist(String symbol) {
     final normalizedSymbol = symbol.trim().toUpperCase();
     if (!state.contains(normalizedSymbol)) {
@@ -443,13 +508,13 @@ class WatchlistNotifier extends StateNotifier<List<String>> {
     _saveWatchlist();
   }
 
-  // 🔥 NEW: Get watchlist companies as stream
-  Stream<List<CompanyModel>> getWatchlistCompanies() {
+  // Enhanced watchlist companies with quality sorting
+  Stream<List<CompanyModel>> getEnhancedWatchlistCompanies() {
     if (state.isEmpty) return Stream.value([]);
 
     return FirebaseFirestore.instance
         .collection('companies')
-        .where('symbol', whereIn: state.take(10).toList()) // Firestore limit
+        .where('symbol', whereIn: state.take(10).toList())
         .snapshots()
         .map((snapshot) {
       List<CompanyModel> companies = [];
@@ -457,23 +522,20 @@ class WatchlistNotifier extends StateNotifier<List<String>> {
         try {
           companies.add(CompanyModel.fromFirestore(doc));
         } catch (e) {
-          print('Error parsing watchlist company ${doc.id}: $e');
+          print('Error parsing enhanced watchlist company ${doc.id}: $e');
         }
       }
+
+      // Enhanced sorting by quality score
+      companies.sort((a, b) => b.qualityScore.compareTo(a.qualityScore));
       return companies;
     });
   }
 }
 
 // ============================================================================
-// REST OF YOUR CODE (Keep as is - it's excellent)
+// ENHANCED CATEGORY PROVIDER WITH NEW FILTERS
 // ============================================================================
-
-// Keep all your other providers exactly as they are:
-// - companiesByCategoryProvider
-// - popularStocksProvider
-// - filterStatsProvider
-// - FilterStats class
 
 final companiesByCategoryProvider =
     StreamProvider.family<List<CompanyModel>, filter.FilterCategory>(
@@ -484,9 +546,9 @@ final companiesByCategoryProvider =
 
       return FirebaseFirestore.instance
           .collection('companies')
-          .where('market_cap', isGreaterThan: 500) // Filter small companies
+          .where('market_cap', isGreaterThan: 500)
           .orderBy('market_cap', descending: true)
-          .limit(300)
+          .limit(400) // Increased for better results
           .snapshots()
           .map((snapshot) {
         List<CompanyModel> companies = [];
@@ -498,7 +560,7 @@ final companiesByCategoryProvider =
             final matchesAnyFilter = filters.any((filterItem) {
               try {
                 return company.matchesFundamentalFilter(filterItem.type) &&
-                    _matchesComplexCriteria(company, filterItem);
+                    _matchesEnhancedComplexCriteria(company, filterItem);
               } catch (e) {
                 return false;
               }
@@ -512,29 +574,41 @@ final companiesByCategoryProvider =
           }
         }
 
+        // Enhanced sorting with quality score and working capital efficiency
         companies.sort((a, b) {
           final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
           if (qualityComparison != 0) return qualityComparison;
+
+          final wcA = a.workingCapitalDays ?? double.infinity;
+          final wcB = b.workingCapitalDays ?? double.infinity;
+          final wcComparison = wcA.compareTo(wcB);
+          if (wcComparison != 0) return wcComparison;
+
           return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
         });
 
-        return companies.take(50).toList();
+        return companies.take(60).toList();
       });
     } catch (e) {
-      print('Error in companiesByCategoryProvider: $e');
+      print('Error in enhanced companiesByCategoryProvider: $e');
       return Stream.value([]);
     }
   },
 );
+
+// ============================================================================
+// ENHANCED POPULAR STOCKS PROVIDER
+// ============================================================================
 
 final popularStocksProvider = StreamProvider<List<CompanyModel>>((ref) {
   return FirebaseFirestore.instance
       .collection('companies')
       .where('roe', isGreaterThan: 15.0)
       .where('roe', isLessThan: 100)
-      .where('market_cap', isGreaterThan: 1000)
+      .where('current_ratio', isGreaterThan: 1.5)
       .orderBy('roe', descending: true)
-      .limit(100)
+      .orderBy('current_ratio', descending: true)
+      .limit(120)
       .snapshots()
       .map((snapshot) {
     List<CompanyModel> companies = [];
@@ -542,12 +616,16 @@ final popularStocksProvider = StreamProvider<List<CompanyModel>>((ref) {
     for (var doc in snapshot.docs) {
       try {
         final company = CompanyModel.fromFirestore(doc);
-        companies.add(company);
+        // Additional quality filtering
+        if (company.qualityScore >= 3) {
+          companies.add(company);
+        }
       } catch (e) {
         continue;
       }
     }
 
+    // Enhanced sorting with multiple criteria
     companies.sort((a, b) {
       final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
       if (qualityComparison != 0) return qualityComparison;
@@ -557,25 +635,33 @@ final popularStocksProvider = StreamProvider<List<CompanyModel>>((ref) {
       final roeComparison = roeB.compareTo(roeA);
       if (roeComparison != 0) return roeComparison;
 
+      final wcA = a.workingCapitalDays ?? double.infinity;
+      final wcB = b.workingCapitalDays ?? double.infinity;
+      final wcComparison = wcA.compareTo(wcB);
+      if (wcComparison != 0) return wcComparison;
+
       return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
     });
 
-    return companies.take(30).toList();
+    return companies.take(40).toList();
   });
 });
 
+// ============================================================================
+// ENHANCED FILTER STATS WITH NEW METRICS
+// ============================================================================
+
 final filterStatsProvider =
-    StreamProvider.family<FilterStats, filter.FundamentalFilter?>(
+    StreamProvider.family<EnhancedFilterStats, filter.FundamentalFilter?>(
   (ref, filterParam) {
     if (filterParam == null) {
-      return Stream.value(
-          FilterStats(totalCount: 0, avgMarketCap: 0, avgROE: 0));
+      return Stream.value(EnhancedFilterStats.empty());
     }
 
     return FirebaseFirestore.instance
         .collection('companies')
         .where('market_cap', isGreaterThan: 100)
-        .limit(500)
+        .limit(600)
         .snapshots()
         .map((snapshot) {
       try {
@@ -593,58 +679,103 @@ final filterStatsProvider =
         final filteredCompanies = allCompanies.where((company) {
           try {
             return company.matchesFundamentalFilter(filterParam.type) &&
-                _matchesComplexCriteria(company, filterParam);
+                _matchesEnhancedComplexCriteria(company, filterParam);
           } catch (e) {
             return false;
           }
         }).toList();
 
-        final totalCount = filteredCompanies.length;
-
-        final validMarketCaps = filteredCompanies
-            .where((c) =>
-                c.marketCap != null &&
-                c.marketCap! > 0 &&
-                c.marketCap! < 1000000)
-            .map((c) => c.marketCap!)
-            .toList();
-
-        final avgMarketCap = validMarketCaps.isEmpty
-            ? 0.0
-            : validMarketCaps.reduce((a, b) => a + b) / validMarketCaps.length;
-
-        final validROEs = filteredCompanies
-            .where((c) => c.roe != null && c.roe! > 0 && c.roe! < 100)
-            .map((c) => c.roe!)
-            .toList();
-
-        final avgROE = validROEs.isEmpty
-            ? 0.0
-            : validROEs.reduce((a, b) => a + b) / validROEs.length;
-
-        return FilterStats(
-          totalCount: totalCount,
-          avgMarketCap: avgMarketCap,
-          avgROE: avgROE,
-        );
+        return EnhancedFilterStats.fromCompanies(filteredCompanies);
       } catch (e) {
-        print('Error calculating filter stats: $e');
-        return FilterStats(totalCount: 0, avgMarketCap: 0, avgROE: 0);
+        print('Error calculating enhanced filter stats: $e');
+        return EnhancedFilterStats.empty();
       }
     });
   },
 );
 
-class FilterStats {
+class EnhancedFilterStats {
   final int totalCount;
   final double avgMarketCap;
   final double avgROE;
+  final double avgQualityScore;
+  final double avgWorkingCapitalDays;
+  final double avgCurrentRatio;
+  final int qualityStocksCount;
 
-  FilterStats({
+  EnhancedFilterStats({
     required this.totalCount,
     required this.avgMarketCap,
     required this.avgROE,
+    required this.avgQualityScore,
+    required this.avgWorkingCapitalDays,
+    required this.avgCurrentRatio,
+    required this.qualityStocksCount,
   });
+
+  factory EnhancedFilterStats.empty() {
+    return EnhancedFilterStats(
+      totalCount: 0,
+      avgMarketCap: 0,
+      avgROE: 0,
+      avgQualityScore: 0,
+      avgWorkingCapitalDays: 0,
+      avgCurrentRatio: 0,
+      qualityStocksCount: 0,
+    );
+  }
+
+  factory EnhancedFilterStats.fromCompanies(List<CompanyModel> companies) {
+    if (companies.isEmpty) return EnhancedFilterStats.empty();
+
+    final validMarketCaps = companies
+        .where((c) =>
+            c.marketCap != null && c.marketCap! > 0 && c.marketCap! < 1000000)
+        .map((c) => c.marketCap!)
+        .toList();
+
+    final validROEs = companies
+        .where((c) => c.roe != null && c.roe! > 0 && c.roe! < 100)
+        .map((c) => c.roe!)
+        .toList();
+
+    final qualityScores =
+        companies.map((c) => c.qualityScore.toDouble()).toList();
+
+    final validWCDays = companies
+        .where((c) => c.workingCapitalDays != null && c.workingCapitalDays! > 0)
+        .map((c) => c.workingCapitalDays!)
+        .toList();
+
+    final validCurrentRatios = companies
+        .where((c) => c.currentRatio != null && c.currentRatio! > 0)
+        .map((c) => c.currentRatio!)
+        .toList();
+
+    final qualityStocksCount =
+        companies.where((c) => c.qualityScore >= 3).length;
+
+    return EnhancedFilterStats(
+      totalCount: companies.length,
+      avgMarketCap: validMarketCaps.isEmpty
+          ? 0.0
+          : validMarketCaps.reduce((a, b) => a + b) / validMarketCaps.length,
+      avgROE: validROEs.isEmpty
+          ? 0.0
+          : validROEs.reduce((a, b) => a + b) / validROEs.length,
+      avgQualityScore: qualityScores.isEmpty
+          ? 0.0
+          : qualityScores.reduce((a, b) => a + b) / qualityScores.length,
+      avgWorkingCapitalDays: validWCDays.isEmpty
+          ? 0.0
+          : validWCDays.reduce((a, b) => a + b) / validWCDays.length,
+      avgCurrentRatio: validCurrentRatios.isEmpty
+          ? 0.0
+          : validCurrentRatios.reduce((a, b) => a + b) /
+              validCurrentRatios.length,
+      qualityStocksCount: qualityStocksCount,
+    );
+  }
 
   String get formattedAvgMarketCap {
     if (avgMarketCap >= 100000) {
@@ -655,9 +786,11 @@ class FilterStats {
     return '₹${avgMarketCap.toStringAsFixed(0)} Cr';
   }
 
-  String get formattedAvgROE {
-    return '${avgROE.toStringAsFixed(1)}%';
-  }
+  String get formattedAvgROE => '${avgROE.toStringAsFixed(1)}%';
+  String get formattedAvgQualityScore => avgQualityScore.toStringAsFixed(1);
+  String get formattedAvgWorkingCapitalDays =>
+      '${avgWorkingCapitalDays.toStringAsFixed(0)} days';
+  String get formattedAvgCurrentRatio => avgCurrentRatio.toStringAsFixed(1);
 
   String get countText {
     if (totalCount == 0) return 'No companies found';
@@ -669,9 +802,17 @@ class FilterStats {
 
   String get qualityAssessment {
     if (totalCount == 0) return 'No data';
-    if (avgROE > 20) return 'Excellent';
-    if (avgROE > 15) return 'Good';
-    if (avgROE > 10) return 'Average';
+    if (avgQualityScore >= 4) return 'Excellent';
+    if (avgQualityScore >= 3) return 'Good';
+    if (avgQualityScore >= 2) return 'Average';
     return 'Below Average';
+  }
+
+  String get workingCapitalEfficiency {
+    if (avgWorkingCapitalDays == 0) return 'No data';
+    if (avgWorkingCapitalDays < 30) return 'Excellent';
+    if (avgWorkingCapitalDays < 60) return 'Good';
+    if (avgWorkingCapitalDays < 90) return 'Average';
+    return 'Needs Improvement';
   }
 }
