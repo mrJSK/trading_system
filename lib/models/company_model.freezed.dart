@@ -37,18 +37,15 @@ mixin _$CompanyModel {
   double? get roe => throw _privateConstructorUsedError;
   double? get faceValue => throw _privateConstructorUsedError;
   List<String> get pros => throw _privateConstructorUsedError;
-  List<String> get cons =>
-      throw _privateConstructorUsedError; // Firebase document timestamps
+  List<String> get cons => throw _privateConstructorUsedError;
   @TimestampConverter()
   DateTime? get createdAt => throw _privateConstructorUsedError;
   @TimestampConverter()
-  DateTime? get updatedAt =>
-      throw _privateConstructorUsedError; // API data timestamp
+  DateTime? get updatedAt => throw _privateConstructorUsedError;
   String get lastUpdated => throw _privateConstructorUsedError;
   double get changePercent => throw _privateConstructorUsedError;
   double get changeAmount => throw _privateConstructorUsedError;
-  double get previousClose =>
-      throw _privateConstructorUsedError; // Enhanced Financial statements with JsonConverter annotations
+  double get previousClose => throw _privateConstructorUsedError;
   @FinancialDataModelConverter()
   FinancialDataModel? get quarterlyResults =>
       throw _privateConstructorUsedError;
@@ -61,22 +58,16 @@ mixin _$CompanyModel {
   FinancialDataModel? get cashFlowStatement =>
       throw _privateConstructorUsedError;
   @FinancialDataModelConverter()
-  FinancialDataModel? get ratios =>
-      throw _privateConstructorUsedError; // **ENHANCED RATIOS FROM UPDATED SCRAPER** - All new fields
+  FinancialDataModel? get ratios => throw _privateConstructorUsedError;
   double? get debtToEquity => throw _privateConstructorUsedError;
   double? get currentRatio => throw _privateConstructorUsedError;
   double? get quickRatio => throw _privateConstructorUsedError;
-  double? get workingCapitalDays =>
-      throw _privateConstructorUsedError; // NEW: Working Capital Days
-  double? get debtorDays =>
-      throw _privateConstructorUsedError; // NEW: Debtor Days
-  double? get inventoryDays =>
-      throw _privateConstructorUsedError; // NEW: Inventory Days
-  double? get cashConversionCycle =>
-      throw _privateConstructorUsedError; // NEW: Cash Conversion Cycle
+  double? get workingCapitalDays => throw _privateConstructorUsedError;
+  double? get debtorDays => throw _privateConstructorUsedError;
+  double? get inventoryDays => throw _privateConstructorUsedError;
+  double? get cashConversionCycle => throw _privateConstructorUsedError;
   double? get interestCoverage => throw _privateConstructorUsedError;
-  double? get assetTurnover =>
-      throw _privateConstructorUsedError; // Additional financial metrics (keeping existing ones)
+  double? get assetTurnover => throw _privateConstructorUsedError;
   double? get inventoryTurnover => throw _privateConstructorUsedError;
   double? get receivablesTurnover => throw _privateConstructorUsedError;
   double? get payablesTurnover => throw _privateConstructorUsedError;
@@ -86,8 +77,7 @@ mixin _$CompanyModel {
   double? get priceToBook => throw _privateConstructorUsedError;
   double? get priceToSales => throw _privateConstructorUsedError;
   double? get pegRatio => throw _privateConstructorUsedError;
-  double? get betaValue =>
-      throw _privateConstructorUsedError; // Growth metrics - using exact field names from scraper
+  double? get betaValue => throw _privateConstructorUsedError;
   double? get salesGrowth1Y => throw _privateConstructorUsedError;
   double? get salesGrowth3Y => throw _privateConstructorUsedError;
   double? get salesGrowth5Y => throw _privateConstructorUsedError;
@@ -97,8 +87,15 @@ mixin _$CompanyModel {
   double? get salesCAGR3Y => throw _privateConstructorUsedError;
   double? get salesCAGR5Y => throw _privateConstructorUsedError;
   double? get profitCAGR3Y => throw _privateConstructorUsedError;
-  double? get profitCAGR5Y =>
-      throw _privateConstructorUsedError; // **NEW: KEY POINTS AND COMPANY INSIGHTS FROM ENHANCED SCRAPER**
+  double? get profitCAGR5Y => throw _privateConstructorUsedError;
+  @RawFinancialTablesConverter()
+  RawFinancialTables? get rawFinancialTables =>
+      throw _privateConstructorUsedError;
+  @CompanyKeyPointsConverter()
+  CompanyKeyPoints? get companyKeyPoints => throw _privateConstructorUsedError;
+  @CalculatedMetricsConverter()
+  CalculatedMetrics? get calculatedMetrics =>
+      throw _privateConstructorUsedError;
   String get businessOverview => throw _privateConstructorUsedError;
   String? get sector => throw _privateConstructorUsedError;
   String? get industry => throw _privateConstructorUsedError;
@@ -112,61 +109,57 @@ mixin _$CompanyModel {
       throw _privateConstructorUsedError;
   @FinancialSummaryListConverter()
   List<FinancialSummary> get financialSummary =>
-      throw _privateConstructorUsedError; // **NEW: ENHANCED QUALITY AND EFFICIENCY METRICS**
-  int get qualityScore =>
-      throw _privateConstructorUsedError; // 1-5 score from scraper
-  String get overallQualityGrade =>
-      throw _privateConstructorUsedError; // A, B, C, D grade
-  String get workingCapitalEfficiency =>
-      throw _privateConstructorUsedError; // Excellent, Good, Average, Poor
+      throw _privateConstructorUsedError;
+  int get qualityScore => throw _privateConstructorUsedError;
+  String get overallQualityGrade => throw _privateConstructorUsedError;
+  String get workingCapitalEfficiency => throw _privateConstructorUsedError;
   String get cashCycleEfficiency => throw _privateConstructorUsedError;
   String get liquidityStatus => throw _privateConstructorUsedError;
   String get debtStatus => throw _privateConstructorUsedError;
-  String get riskLevel =>
-      throw _privateConstructorUsedError; // Low, Medium, High
-// Quality scores (if available from scraper)
+  String get riskLevel => throw _privateConstructorUsedError;
   double? get piotroskiScore => throw _privateConstructorUsedError;
   double? get altmanZScore => throw _privateConstructorUsedError;
   String? get qualityGrade => throw _privateConstructorUsedError;
-  String? get creditRating =>
-      throw _privateConstructorUsedError; // Shareholding data
+  String? get creditRating => throw _privateConstructorUsedError;
+  double? get grahamNumber => throw _privateConstructorUsedError;
+  double? get roic => throw _privateConstructorUsedError;
+  double? get fcfYield => throw _privateConstructorUsedError;
+  double? get debtServiceCoverage => throw _privateConstructorUsedError;
+  double? get comprehensiveScore => throw _privateConstructorUsedError;
+  String? get investmentRecommendation => throw _privateConstructorUsedError;
   @ShareholdingPatternConverter()
   ShareholdingPattern? get shareholdingPattern =>
       throw _privateConstructorUsedError;
   Map<String, dynamic> get ratiosData => throw _privateConstructorUsedError;
   Map<String, Map<String, String>> get growthTables =>
-      throw _privateConstructorUsedError; // Historical data
+      throw _privateConstructorUsedError;
   List<QuarterlyData> get quarterlyDataHistory =>
       throw _privateConstructorUsedError;
-  List<AnnualData> get annualDataHistory =>
-      throw _privateConstructorUsedError; // Peer comparison
+  List<AnnualData> get annualDataHistory => throw _privateConstructorUsedError;
   List<String> get peerCompanies => throw _privateConstructorUsedError;
   double? get sectorPE => throw _privateConstructorUsedError;
   double? get sectorROE => throw _privateConstructorUsedError;
-  double? get sectorDebtToEquity =>
-      throw _privateConstructorUsedError; // Dividend information
+  double? get sectorDebtToEquity => throw _privateConstructorUsedError;
   double? get dividendPerShare => throw _privateConstructorUsedError;
   String? get dividendFrequency => throw _privateConstructorUsedError;
   List<DividendHistory> get dividendHistory =>
-      throw _privateConstructorUsedError; // Management and governance
+      throw _privateConstructorUsedError;
   List<String> get keyManagement => throw _privateConstructorUsedError;
   double? get promoterHolding => throw _privateConstructorUsedError;
   double? get institutionalHolding => throw _privateConstructorUsedError;
-  double? get publicHolding =>
-      throw _privateConstructorUsedError; // Risk metrics
+  double? get publicHolding => throw _privateConstructorUsedError;
   double? get volatility30D => throw _privateConstructorUsedError;
   double? get volatility1Y => throw _privateConstructorUsedError;
   double? get maxDrawdown => throw _privateConstructorUsedError;
-  double? get sharpeRatio => throw _privateConstructorUsedError; // Market data
+  double? get sharpeRatio => throw _privateConstructorUsedError;
   double? get marketCapCategory => throw _privateConstructorUsedError;
   bool? get isIndexConstituent => throw _privateConstructorUsedError;
-  List<String> get indices =>
-      throw _privateConstructorUsedError; // Technical indicators
+  List<String> get indices => throw _privateConstructorUsedError;
   double? get rsi => throw _privateConstructorUsedError;
   double? get sma50 => throw _privateConstructorUsedError;
   double? get sma200 => throw _privateConstructorUsedError;
   double? get ema12 => throw _privateConstructorUsedError;
-  double? get ema26 => throw _privateConstructorUsedError; // Fundamental flags
+  double? get ema26 => throw _privateConstructorUsedError;
   bool get isDebtFree => throw _privateConstructorUsedError;
   bool get isProfitable => throw _privateConstructorUsedError;
   bool get hasConsistentProfits => throw _privateConstructorUsedError;
@@ -246,6 +239,9 @@ abstract class $CompanyModelCopyWith<$Res> {
       double? salesCAGR5Y,
       double? profitCAGR3Y,
       double? profitCAGR5Y,
+      @RawFinancialTablesConverter() RawFinancialTables? rawFinancialTables,
+      @CompanyKeyPointsConverter() CompanyKeyPoints? companyKeyPoints,
+      @CalculatedMetricsConverter() CalculatedMetrics? calculatedMetrics,
       String businessOverview,
       String? sector,
       String? industry,
@@ -266,6 +262,12 @@ abstract class $CompanyModelCopyWith<$Res> {
       double? altmanZScore,
       String? qualityGrade,
       String? creditRating,
+      double? grahamNumber,
+      double? roic,
+      double? fcfYield,
+      double? debtServiceCoverage,
+      double? comprehensiveScore,
+      String? investmentRecommendation,
       @ShareholdingPatternConverter() ShareholdingPattern? shareholdingPattern,
       Map<String, dynamic> ratiosData,
       Map<String, Map<String, String>> growthTables,
@@ -307,6 +309,9 @@ abstract class $CompanyModelCopyWith<$Res> {
   $FinancialDataModelCopyWith<$Res>? get balanceSheet;
   $FinancialDataModelCopyWith<$Res>? get cashFlowStatement;
   $FinancialDataModelCopyWith<$Res>? get ratios;
+  $RawFinancialTablesCopyWith<$Res>? get rawFinancialTables;
+  $CompanyKeyPointsCopyWith<$Res>? get companyKeyPoints;
+  $CalculatedMetricsCopyWith<$Res>? get calculatedMetrics;
   $ShareholdingPatternCopyWith<$Res>? get shareholdingPattern;
 }
 
@@ -381,6 +386,9 @@ class _$CompanyModelCopyWithImpl<$Res, $Val extends CompanyModel>
     Object? salesCAGR5Y = freezed,
     Object? profitCAGR3Y = freezed,
     Object? profitCAGR5Y = freezed,
+    Object? rawFinancialTables = freezed,
+    Object? companyKeyPoints = freezed,
+    Object? calculatedMetrics = freezed,
     Object? businessOverview = null,
     Object? sector = freezed,
     Object? industry = freezed,
@@ -400,6 +408,12 @@ class _$CompanyModelCopyWithImpl<$Res, $Val extends CompanyModel>
     Object? altmanZScore = freezed,
     Object? qualityGrade = freezed,
     Object? creditRating = freezed,
+    Object? grahamNumber = freezed,
+    Object? roic = freezed,
+    Object? fcfYield = freezed,
+    Object? debtServiceCoverage = freezed,
+    Object? comprehensiveScore = freezed,
+    Object? investmentRecommendation = freezed,
     Object? shareholdingPattern = freezed,
     Object? ratiosData = null,
     Object? growthTables = null,
@@ -669,6 +683,18 @@ class _$CompanyModelCopyWithImpl<$Res, $Val extends CompanyModel>
           ? _value.profitCAGR5Y
           : profitCAGR5Y // ignore: cast_nullable_to_non_nullable
               as double?,
+      rawFinancialTables: freezed == rawFinancialTables
+          ? _value.rawFinancialTables
+          : rawFinancialTables // ignore: cast_nullable_to_non_nullable
+              as RawFinancialTables?,
+      companyKeyPoints: freezed == companyKeyPoints
+          ? _value.companyKeyPoints
+          : companyKeyPoints // ignore: cast_nullable_to_non_nullable
+              as CompanyKeyPoints?,
+      calculatedMetrics: freezed == calculatedMetrics
+          ? _value.calculatedMetrics
+          : calculatedMetrics // ignore: cast_nullable_to_non_nullable
+              as CalculatedMetrics?,
       businessOverview: null == businessOverview
           ? _value.businessOverview
           : businessOverview // ignore: cast_nullable_to_non_nullable
@@ -744,6 +770,30 @@ class _$CompanyModelCopyWithImpl<$Res, $Val extends CompanyModel>
       creditRating: freezed == creditRating
           ? _value.creditRating
           : creditRating // ignore: cast_nullable_to_non_nullable
+              as String?,
+      grahamNumber: freezed == grahamNumber
+          ? _value.grahamNumber
+          : grahamNumber // ignore: cast_nullable_to_non_nullable
+              as double?,
+      roic: freezed == roic
+          ? _value.roic
+          : roic // ignore: cast_nullable_to_non_nullable
+              as double?,
+      fcfYield: freezed == fcfYield
+          ? _value.fcfYield
+          : fcfYield // ignore: cast_nullable_to_non_nullable
+              as double?,
+      debtServiceCoverage: freezed == debtServiceCoverage
+          ? _value.debtServiceCoverage
+          : debtServiceCoverage // ignore: cast_nullable_to_non_nullable
+              as double?,
+      comprehensiveScore: freezed == comprehensiveScore
+          ? _value.comprehensiveScore
+          : comprehensiveScore // ignore: cast_nullable_to_non_nullable
+              as double?,
+      investmentRecommendation: freezed == investmentRecommendation
+          ? _value.investmentRecommendation
+          : investmentRecommendation // ignore: cast_nullable_to_non_nullable
               as String?,
       shareholdingPattern: freezed == shareholdingPattern
           ? _value.shareholdingPattern
@@ -952,6 +1002,43 @@ class _$CompanyModelCopyWithImpl<$Res, $Val extends CompanyModel>
 
   @override
   @pragma('vm:prefer-inline')
+  $RawFinancialTablesCopyWith<$Res>? get rawFinancialTables {
+    if (_value.rawFinancialTables == null) {
+      return null;
+    }
+
+    return $RawFinancialTablesCopyWith<$Res>(_value.rawFinancialTables!,
+        (value) {
+      return _then(_value.copyWith(rawFinancialTables: value) as $Val);
+    });
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $CompanyKeyPointsCopyWith<$Res>? get companyKeyPoints {
+    if (_value.companyKeyPoints == null) {
+      return null;
+    }
+
+    return $CompanyKeyPointsCopyWith<$Res>(_value.companyKeyPoints!, (value) {
+      return _then(_value.copyWith(companyKeyPoints: value) as $Val);
+    });
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $CalculatedMetricsCopyWith<$Res>? get calculatedMetrics {
+    if (_value.calculatedMetrics == null) {
+      return null;
+    }
+
+    return $CalculatedMetricsCopyWith<$Res>(_value.calculatedMetrics!, (value) {
+      return _then(_value.copyWith(calculatedMetrics: value) as $Val);
+    });
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
   $ShareholdingPatternCopyWith<$Res>? get shareholdingPattern {
     if (_value.shareholdingPattern == null) {
       return null;
@@ -1031,6 +1118,9 @@ abstract class _$$CompanyModelImplCopyWith<$Res>
       double? salesCAGR5Y,
       double? profitCAGR3Y,
       double? profitCAGR5Y,
+      @RawFinancialTablesConverter() RawFinancialTables? rawFinancialTables,
+      @CompanyKeyPointsConverter() CompanyKeyPoints? companyKeyPoints,
+      @CalculatedMetricsConverter() CalculatedMetrics? calculatedMetrics,
       String businessOverview,
       String? sector,
       String? industry,
@@ -1051,6 +1141,12 @@ abstract class _$$CompanyModelImplCopyWith<$Res>
       double? altmanZScore,
       String? qualityGrade,
       String? creditRating,
+      double? grahamNumber,
+      double? roic,
+      double? fcfYield,
+      double? debtServiceCoverage,
+      double? comprehensiveScore,
+      String? investmentRecommendation,
       @ShareholdingPatternConverter() ShareholdingPattern? shareholdingPattern,
       Map<String, dynamic> ratiosData,
       Map<String, Map<String, String>> growthTables,
@@ -1097,6 +1193,12 @@ abstract class _$$CompanyModelImplCopyWith<$Res>
   $FinancialDataModelCopyWith<$Res>? get cashFlowStatement;
   @override
   $FinancialDataModelCopyWith<$Res>? get ratios;
+  @override
+  $RawFinancialTablesCopyWith<$Res>? get rawFinancialTables;
+  @override
+  $CompanyKeyPointsCopyWith<$Res>? get companyKeyPoints;
+  @override
+  $CalculatedMetricsCopyWith<$Res>? get calculatedMetrics;
   @override
   $ShareholdingPatternCopyWith<$Res>? get shareholdingPattern;
 }
@@ -1170,6 +1272,9 @@ class __$$CompanyModelImplCopyWithImpl<$Res>
     Object? salesCAGR5Y = freezed,
     Object? profitCAGR3Y = freezed,
     Object? profitCAGR5Y = freezed,
+    Object? rawFinancialTables = freezed,
+    Object? companyKeyPoints = freezed,
+    Object? calculatedMetrics = freezed,
     Object? businessOverview = null,
     Object? sector = freezed,
     Object? industry = freezed,
@@ -1189,6 +1294,12 @@ class __$$CompanyModelImplCopyWithImpl<$Res>
     Object? altmanZScore = freezed,
     Object? qualityGrade = freezed,
     Object? creditRating = freezed,
+    Object? grahamNumber = freezed,
+    Object? roic = freezed,
+    Object? fcfYield = freezed,
+    Object? debtServiceCoverage = freezed,
+    Object? comprehensiveScore = freezed,
+    Object? investmentRecommendation = freezed,
     Object? shareholdingPattern = freezed,
     Object? ratiosData = null,
     Object? growthTables = null,
@@ -1458,6 +1569,18 @@ class __$$CompanyModelImplCopyWithImpl<$Res>
           ? _value.profitCAGR5Y
           : profitCAGR5Y // ignore: cast_nullable_to_non_nullable
               as double?,
+      rawFinancialTables: freezed == rawFinancialTables
+          ? _value.rawFinancialTables
+          : rawFinancialTables // ignore: cast_nullable_to_non_nullable
+              as RawFinancialTables?,
+      companyKeyPoints: freezed == companyKeyPoints
+          ? _value.companyKeyPoints
+          : companyKeyPoints // ignore: cast_nullable_to_non_nullable
+              as CompanyKeyPoints?,
+      calculatedMetrics: freezed == calculatedMetrics
+          ? _value.calculatedMetrics
+          : calculatedMetrics // ignore: cast_nullable_to_non_nullable
+              as CalculatedMetrics?,
       businessOverview: null == businessOverview
           ? _value.businessOverview
           : businessOverview // ignore: cast_nullable_to_non_nullable
@@ -1533,6 +1656,30 @@ class __$$CompanyModelImplCopyWithImpl<$Res>
       creditRating: freezed == creditRating
           ? _value.creditRating
           : creditRating // ignore: cast_nullable_to_non_nullable
+              as String?,
+      grahamNumber: freezed == grahamNumber
+          ? _value.grahamNumber
+          : grahamNumber // ignore: cast_nullable_to_non_nullable
+              as double?,
+      roic: freezed == roic
+          ? _value.roic
+          : roic // ignore: cast_nullable_to_non_nullable
+              as double?,
+      fcfYield: freezed == fcfYield
+          ? _value.fcfYield
+          : fcfYield // ignore: cast_nullable_to_non_nullable
+              as double?,
+      debtServiceCoverage: freezed == debtServiceCoverage
+          ? _value.debtServiceCoverage
+          : debtServiceCoverage // ignore: cast_nullable_to_non_nullable
+              as double?,
+      comprehensiveScore: freezed == comprehensiveScore
+          ? _value.comprehensiveScore
+          : comprehensiveScore // ignore: cast_nullable_to_non_nullable
+              as double?,
+      investmentRecommendation: freezed == investmentRecommendation
+          ? _value.investmentRecommendation
+          : investmentRecommendation // ignore: cast_nullable_to_non_nullable
               as String?,
       shareholdingPattern: freezed == shareholdingPattern
           ? _value.shareholdingPattern
@@ -1740,6 +1887,9 @@ class _$CompanyModelImpl extends _CompanyModel {
       this.salesCAGR5Y,
       this.profitCAGR3Y,
       this.profitCAGR5Y,
+      @RawFinancialTablesConverter() this.rawFinancialTables,
+      @CompanyKeyPointsConverter() this.companyKeyPoints,
+      @CalculatedMetricsConverter() this.calculatedMetrics,
       this.businessOverview = '',
       this.sector,
       this.industry,
@@ -1762,6 +1912,12 @@ class _$CompanyModelImpl extends _CompanyModel {
       this.altmanZScore,
       this.qualityGrade,
       this.creditRating,
+      this.grahamNumber,
+      this.roic,
+      this.fcfYield,
+      this.debtServiceCoverage,
+      this.comprehensiveScore,
+      this.investmentRecommendation,
       @ShareholdingPatternConverter() this.shareholdingPattern,
       final Map<String, dynamic> ratiosData = const {},
       final Map<String, Map<String, String>> growthTables = const {},
@@ -1867,14 +2023,12 @@ class _$CompanyModelImpl extends _CompanyModel {
     return EqualUnmodifiableListView(_cons);
   }
 
-// Firebase document timestamps
   @override
   @TimestampConverter()
   final DateTime? createdAt;
   @override
   @TimestampConverter()
   final DateTime? updatedAt;
-// API data timestamp
   @override
   final String lastUpdated;
   @override
@@ -1886,7 +2040,6 @@ class _$CompanyModelImpl extends _CompanyModel {
   @override
   @JsonKey()
   final double previousClose;
-// Enhanced Financial statements with JsonConverter annotations
   @override
   @FinancialDataModelConverter()
   final FinancialDataModel? quarterlyResults;
@@ -1902,7 +2055,6 @@ class _$CompanyModelImpl extends _CompanyModel {
   @override
   @FinancialDataModelConverter()
   final FinancialDataModel? ratios;
-// **ENHANCED RATIOS FROM UPDATED SCRAPER** - All new fields
   @override
   final double? debtToEquity;
   @override
@@ -1911,21 +2063,16 @@ class _$CompanyModelImpl extends _CompanyModel {
   final double? quickRatio;
   @override
   final double? workingCapitalDays;
-// NEW: Working Capital Days
   @override
   final double? debtorDays;
-// NEW: Debtor Days
   @override
   final double? inventoryDays;
-// NEW: Inventory Days
   @override
   final double? cashConversionCycle;
-// NEW: Cash Conversion Cycle
   @override
   final double? interestCoverage;
   @override
   final double? assetTurnover;
-// Additional financial metrics (keeping existing ones)
   @override
   final double? inventoryTurnover;
   @override
@@ -1946,7 +2093,6 @@ class _$CompanyModelImpl extends _CompanyModel {
   final double? pegRatio;
   @override
   final double? betaValue;
-// Growth metrics - using exact field names from scraper
   @override
   final double? salesGrowth1Y;
   @override
@@ -1967,7 +2113,15 @@ class _$CompanyModelImpl extends _CompanyModel {
   final double? profitCAGR3Y;
   @override
   final double? profitCAGR5Y;
-// **NEW: KEY POINTS AND COMPANY INSIGHTS FROM ENHANCED SCRAPER**
+  @override
+  @RawFinancialTablesConverter()
+  final RawFinancialTables? rawFinancialTables;
+  @override
+  @CompanyKeyPointsConverter()
+  final CompanyKeyPoints? companyKeyPoints;
+  @override
+  @CalculatedMetricsConverter()
+  final CalculatedMetrics? calculatedMetrics;
   @override
   @JsonKey()
   final String businessOverview;
@@ -2027,19 +2181,15 @@ class _$CompanyModelImpl extends _CompanyModel {
     return EqualUnmodifiableListView(_financialSummary);
   }
 
-// **NEW: ENHANCED QUALITY AND EFFICIENCY METRICS**
   @override
   @JsonKey()
   final int qualityScore;
-// 1-5 score from scraper
   @override
   @JsonKey()
   final String overallQualityGrade;
-// A, B, C, D grade
   @override
   @JsonKey()
   final String workingCapitalEfficiency;
-// Excellent, Good, Average, Poor
   @override
   @JsonKey()
   final String cashCycleEfficiency;
@@ -2052,8 +2202,6 @@ class _$CompanyModelImpl extends _CompanyModel {
   @override
   @JsonKey()
   final String riskLevel;
-// Low, Medium, High
-// Quality scores (if available from scraper)
   @override
   final double? piotroskiScore;
   @override
@@ -2062,7 +2210,18 @@ class _$CompanyModelImpl extends _CompanyModel {
   final String? qualityGrade;
   @override
   final String? creditRating;
-// Shareholding data
+  @override
+  final double? grahamNumber;
+  @override
+  final double? roic;
+  @override
+  final double? fcfYield;
+  @override
+  final double? debtServiceCoverage;
+  @override
+  final double? comprehensiveScore;
+  @override
+  final String? investmentRecommendation;
   @override
   @ShareholdingPatternConverter()
   final ShareholdingPattern? shareholdingPattern;
@@ -2084,9 +2243,7 @@ class _$CompanyModelImpl extends _CompanyModel {
     return EqualUnmodifiableMapView(_growthTables);
   }
 
-// Historical data
   final List<QuarterlyData> _quarterlyDataHistory;
-// Historical data
   @override
   @JsonKey()
   List<QuarterlyData> get quarterlyDataHistory {
@@ -2106,9 +2263,7 @@ class _$CompanyModelImpl extends _CompanyModel {
     return EqualUnmodifiableListView(_annualDataHistory);
   }
 
-// Peer comparison
   final List<String> _peerCompanies;
-// Peer comparison
   @override
   @JsonKey()
   List<String> get peerCompanies {
@@ -2123,7 +2278,6 @@ class _$CompanyModelImpl extends _CompanyModel {
   final double? sectorROE;
   @override
   final double? sectorDebtToEquity;
-// Dividend information
   @override
   final double? dividendPerShare;
   @override
@@ -2137,9 +2291,7 @@ class _$CompanyModelImpl extends _CompanyModel {
     return EqualUnmodifiableListView(_dividendHistory);
   }
 
-// Management and governance
   final List<String> _keyManagement;
-// Management and governance
   @override
   @JsonKey()
   List<String> get keyManagement {
@@ -2154,7 +2306,6 @@ class _$CompanyModelImpl extends _CompanyModel {
   final double? institutionalHolding;
   @override
   final double? publicHolding;
-// Risk metrics
   @override
   final double? volatility30D;
   @override
@@ -2163,7 +2314,6 @@ class _$CompanyModelImpl extends _CompanyModel {
   final double? maxDrawdown;
   @override
   final double? sharpeRatio;
-// Market data
   @override
   final double? marketCapCategory;
   @override
@@ -2177,7 +2327,6 @@ class _$CompanyModelImpl extends _CompanyModel {
     return EqualUnmodifiableListView(_indices);
   }
 
-// Technical indicators
   @override
   final double? rsi;
   @override
@@ -2188,7 +2337,6 @@ class _$CompanyModelImpl extends _CompanyModel {
   final double? ema12;
   @override
   final double? ema26;
-// Fundamental flags
   @override
   @JsonKey()
   final bool isDebtFree;
@@ -2213,7 +2361,7 @@ class _$CompanyModelImpl extends _CompanyModel {
 
   @override
   String toString() {
-    return 'CompanyModel(symbol: $symbol, name: $name, displayName: $displayName, about: $about, website: $website, bseCode: $bseCode, nseCode: $nseCode, marketCap: $marketCap, currentPrice: $currentPrice, highLow: $highLow, stockPe: $stockPe, bookValue: $bookValue, dividendYield: $dividendYield, roce: $roce, roe: $roe, faceValue: $faceValue, pros: $pros, cons: $cons, createdAt: $createdAt, updatedAt: $updatedAt, lastUpdated: $lastUpdated, changePercent: $changePercent, changeAmount: $changeAmount, previousClose: $previousClose, quarterlyResults: $quarterlyResults, profitLossStatement: $profitLossStatement, balanceSheet: $balanceSheet, cashFlowStatement: $cashFlowStatement, ratios: $ratios, debtToEquity: $debtToEquity, currentRatio: $currentRatio, quickRatio: $quickRatio, workingCapitalDays: $workingCapitalDays, debtorDays: $debtorDays, inventoryDays: $inventoryDays, cashConversionCycle: $cashConversionCycle, interestCoverage: $interestCoverage, assetTurnover: $assetTurnover, inventoryTurnover: $inventoryTurnover, receivablesTurnover: $receivablesTurnover, payablesTurnover: $payablesTurnover, workingCapital: $workingCapital, enterpriseValue: $enterpriseValue, evEbitda: $evEbitda, priceToBook: $priceToBook, priceToSales: $priceToSales, pegRatio: $pegRatio, betaValue: $betaValue, salesGrowth1Y: $salesGrowth1Y, salesGrowth3Y: $salesGrowth3Y, salesGrowth5Y: $salesGrowth5Y, profitGrowth1Y: $profitGrowth1Y, profitGrowth3Y: $profitGrowth3Y, profitGrowth5Y: $profitGrowth5Y, salesCAGR3Y: $salesCAGR3Y, salesCAGR5Y: $salesCAGR5Y, profitCAGR3Y: $profitCAGR3Y, profitCAGR5Y: $profitCAGR5Y, businessOverview: $businessOverview, sector: $sector, industry: $industry, industryClassification: $industryClassification, recentPerformance: $recentPerformance, keyMilestones: $keyMilestones, investmentHighlights: $investmentHighlights, financialSummary: $financialSummary, qualityScore: $qualityScore, overallQualityGrade: $overallQualityGrade, workingCapitalEfficiency: $workingCapitalEfficiency, cashCycleEfficiency: $cashCycleEfficiency, liquidityStatus: $liquidityStatus, debtStatus: $debtStatus, riskLevel: $riskLevel, piotroskiScore: $piotroskiScore, altmanZScore: $altmanZScore, qualityGrade: $qualityGrade, creditRating: $creditRating, shareholdingPattern: $shareholdingPattern, ratiosData: $ratiosData, growthTables: $growthTables, quarterlyDataHistory: $quarterlyDataHistory, annualDataHistory: $annualDataHistory, peerCompanies: $peerCompanies, sectorPE: $sectorPE, sectorROE: $sectorROE, sectorDebtToEquity: $sectorDebtToEquity, dividendPerShare: $dividendPerShare, dividendFrequency: $dividendFrequency, dividendHistory: $dividendHistory, keyManagement: $keyManagement, promoterHolding: $promoterHolding, institutionalHolding: $institutionalHolding, publicHolding: $publicHolding, volatility30D: $volatility30D, volatility1Y: $volatility1Y, maxDrawdown: $maxDrawdown, sharpeRatio: $sharpeRatio, marketCapCategory: $marketCapCategory, isIndexConstituent: $isIndexConstituent, indices: $indices, rsi: $rsi, sma50: $sma50, sma200: $sma200, ema12: $ema12, ema26: $ema26, isDebtFree: $isDebtFree, isProfitable: $isProfitable, hasConsistentProfits: $hasConsistentProfits, paysDividends: $paysDividends, isGrowthStock: $isGrowthStock, isValueStock: $isValueStock, isQualityStock: $isQualityStock)';
+    return 'CompanyModel(symbol: $symbol, name: $name, displayName: $displayName, about: $about, website: $website, bseCode: $bseCode, nseCode: $nseCode, marketCap: $marketCap, currentPrice: $currentPrice, highLow: $highLow, stockPe: $stockPe, bookValue: $bookValue, dividendYield: $dividendYield, roce: $roce, roe: $roe, faceValue: $faceValue, pros: $pros, cons: $cons, createdAt: $createdAt, updatedAt: $updatedAt, lastUpdated: $lastUpdated, changePercent: $changePercent, changeAmount: $changeAmount, previousClose: $previousClose, quarterlyResults: $quarterlyResults, profitLossStatement: $profitLossStatement, balanceSheet: $balanceSheet, cashFlowStatement: $cashFlowStatement, ratios: $ratios, debtToEquity: $debtToEquity, currentRatio: $currentRatio, quickRatio: $quickRatio, workingCapitalDays: $workingCapitalDays, debtorDays: $debtorDays, inventoryDays: $inventoryDays, cashConversionCycle: $cashConversionCycle, interestCoverage: $interestCoverage, assetTurnover: $assetTurnover, inventoryTurnover: $inventoryTurnover, receivablesTurnover: $receivablesTurnover, payablesTurnover: $payablesTurnover, workingCapital: $workingCapital, enterpriseValue: $enterpriseValue, evEbitda: $evEbitda, priceToBook: $priceToBook, priceToSales: $priceToSales, pegRatio: $pegRatio, betaValue: $betaValue, salesGrowth1Y: $salesGrowth1Y, salesGrowth3Y: $salesGrowth3Y, salesGrowth5Y: $salesGrowth5Y, profitGrowth1Y: $profitGrowth1Y, profitGrowth3Y: $profitGrowth3Y, profitGrowth5Y: $profitGrowth5Y, salesCAGR3Y: $salesCAGR3Y, salesCAGR5Y: $salesCAGR5Y, profitCAGR3Y: $profitCAGR3Y, profitCAGR5Y: $profitCAGR5Y, rawFinancialTables: $rawFinancialTables, companyKeyPoints: $companyKeyPoints, calculatedMetrics: $calculatedMetrics, businessOverview: $businessOverview, sector: $sector, industry: $industry, industryClassification: $industryClassification, recentPerformance: $recentPerformance, keyMilestones: $keyMilestones, investmentHighlights: $investmentHighlights, financialSummary: $financialSummary, qualityScore: $qualityScore, overallQualityGrade: $overallQualityGrade, workingCapitalEfficiency: $workingCapitalEfficiency, cashCycleEfficiency: $cashCycleEfficiency, liquidityStatus: $liquidityStatus, debtStatus: $debtStatus, riskLevel: $riskLevel, piotroskiScore: $piotroskiScore, altmanZScore: $altmanZScore, qualityGrade: $qualityGrade, creditRating: $creditRating, grahamNumber: $grahamNumber, roic: $roic, fcfYield: $fcfYield, debtServiceCoverage: $debtServiceCoverage, comprehensiveScore: $comprehensiveScore, investmentRecommendation: $investmentRecommendation, shareholdingPattern: $shareholdingPattern, ratiosData: $ratiosData, growthTables: $growthTables, quarterlyDataHistory: $quarterlyDataHistory, annualDataHistory: $annualDataHistory, peerCompanies: $peerCompanies, sectorPE: $sectorPE, sectorROE: $sectorROE, sectorDebtToEquity: $sectorDebtToEquity, dividendPerShare: $dividendPerShare, dividendFrequency: $dividendFrequency, dividendHistory: $dividendHistory, keyManagement: $keyManagement, promoterHolding: $promoterHolding, institutionalHolding: $institutionalHolding, publicHolding: $publicHolding, volatility30D: $volatility30D, volatility1Y: $volatility1Y, maxDrawdown: $maxDrawdown, sharpeRatio: $sharpeRatio, marketCapCategory: $marketCapCategory, isIndexConstituent: $isIndexConstituent, indices: $indices, rsi: $rsi, sma50: $sma50, sma200: $sma200, ema12: $ema12, ema26: $ema26, isDebtFree: $isDebtFree, isProfitable: $isProfitable, hasConsistentProfits: $hasConsistentProfits, paysDividends: $paysDividends, isGrowthStock: $isGrowthStock, isValueStock: $isValueStock, isQualityStock: $isQualityStock)';
   }
 
   @override
@@ -2322,6 +2470,9 @@ class _$CompanyModelImpl extends _CompanyModel {
                 other.salesCAGR5Y == salesCAGR5Y) &&
             (identical(other.profitCAGR3Y, profitCAGR3Y) || other.profitCAGR3Y == profitCAGR3Y) &&
             (identical(other.profitCAGR5Y, profitCAGR5Y) || other.profitCAGR5Y == profitCAGR5Y) &&
+            (identical(other.rawFinancialTables, rawFinancialTables) || other.rawFinancialTables == rawFinancialTables) &&
+            (identical(other.companyKeyPoints, companyKeyPoints) || other.companyKeyPoints == companyKeyPoints) &&
+            (identical(other.calculatedMetrics, calculatedMetrics) || other.calculatedMetrics == calculatedMetrics) &&
             (identical(other.businessOverview, businessOverview) || other.businessOverview == businessOverview) &&
             (identical(other.sector, sector) || other.sector == sector) &&
             (identical(other.industry, industry) || other.industry == industry) &&
@@ -2341,6 +2492,12 @@ class _$CompanyModelImpl extends _CompanyModel {
             (identical(other.altmanZScore, altmanZScore) || other.altmanZScore == altmanZScore) &&
             (identical(other.qualityGrade, qualityGrade) || other.qualityGrade == qualityGrade) &&
             (identical(other.creditRating, creditRating) || other.creditRating == creditRating) &&
+            (identical(other.grahamNumber, grahamNumber) || other.grahamNumber == grahamNumber) &&
+            (identical(other.roic, roic) || other.roic == roic) &&
+            (identical(other.fcfYield, fcfYield) || other.fcfYield == fcfYield) &&
+            (identical(other.debtServiceCoverage, debtServiceCoverage) || other.debtServiceCoverage == debtServiceCoverage) &&
+            (identical(other.comprehensiveScore, comprehensiveScore) || other.comprehensiveScore == comprehensiveScore) &&
+            (identical(other.investmentRecommendation, investmentRecommendation) || other.investmentRecommendation == investmentRecommendation) &&
             (identical(other.shareholdingPattern, shareholdingPattern) || other.shareholdingPattern == shareholdingPattern) &&
             const DeepCollectionEquality().equals(other._ratiosData, _ratiosData) &&
             const DeepCollectionEquality().equals(other._growthTables, _growthTables) &&
@@ -2440,6 +2597,9 @@ class _$CompanyModelImpl extends _CompanyModel {
         salesCAGR5Y,
         profitCAGR3Y,
         profitCAGR5Y,
+        rawFinancialTables,
+        companyKeyPoints,
+        calculatedMetrics,
         businessOverview,
         sector,
         industry,
@@ -2459,6 +2619,12 @@ class _$CompanyModelImpl extends _CompanyModel {
         altmanZScore,
         qualityGrade,
         creditRating,
+        grahamNumber,
+        roic,
+        fcfYield,
+        debtServiceCoverage,
+        comprehensiveScore,
+        investmentRecommendation,
         shareholdingPattern,
         const DeepCollectionEquality().hash(_ratiosData),
         const DeepCollectionEquality().hash(_growthTables),
@@ -2572,6 +2738,10 @@ abstract class _CompanyModel extends CompanyModel {
       final double? salesCAGR5Y,
       final double? profitCAGR3Y,
       final double? profitCAGR5Y,
+      @RawFinancialTablesConverter()
+      final RawFinancialTables? rawFinancialTables,
+      @CompanyKeyPointsConverter() final CompanyKeyPoints? companyKeyPoints,
+      @CalculatedMetricsConverter() final CalculatedMetrics? calculatedMetrics,
       final String businessOverview,
       final String? sector,
       final String? industry,
@@ -2593,6 +2763,12 @@ abstract class _CompanyModel extends CompanyModel {
       final double? altmanZScore,
       final String? qualityGrade,
       final String? creditRating,
+      final double? grahamNumber,
+      final double? roic,
+      final double? fcfYield,
+      final double? debtServiceCoverage,
+      final double? comprehensiveScore,
+      final String? investmentRecommendation,
       @ShareholdingPatternConverter()
       final ShareholdingPattern? shareholdingPattern,
       final Map<String, dynamic> ratiosData,
@@ -2670,13 +2846,13 @@ abstract class _CompanyModel extends CompanyModel {
   List<String> get pros;
   @override
   List<String> get cons;
-  @override // Firebase document timestamps
+  @override
   @TimestampConverter()
   DateTime? get createdAt;
   @override
   @TimestampConverter()
   DateTime? get updatedAt;
-  @override // API data timestamp
+  @override
   String get lastUpdated;
   @override
   double get changePercent;
@@ -2684,7 +2860,7 @@ abstract class _CompanyModel extends CompanyModel {
   double get changeAmount;
   @override
   double get previousClose;
-  @override // Enhanced Financial statements with JsonConverter annotations
+  @override
   @FinancialDataModelConverter()
   FinancialDataModel? get quarterlyResults;
   @override
@@ -2699,7 +2875,7 @@ abstract class _CompanyModel extends CompanyModel {
   @override
   @FinancialDataModelConverter()
   FinancialDataModel? get ratios;
-  @override // **ENHANCED RATIOS FROM UPDATED SCRAPER** - All new fields
+  @override
   double? get debtToEquity;
   @override
   double? get currentRatio;
@@ -2707,17 +2883,17 @@ abstract class _CompanyModel extends CompanyModel {
   double? get quickRatio;
   @override
   double? get workingCapitalDays;
-  @override // NEW: Working Capital Days
+  @override
   double? get debtorDays;
-  @override // NEW: Debtor Days
+  @override
   double? get inventoryDays;
-  @override // NEW: Inventory Days
+  @override
   double? get cashConversionCycle;
-  @override // NEW: Cash Conversion Cycle
+  @override
   double? get interestCoverage;
   @override
   double? get assetTurnover;
-  @override // Additional financial metrics (keeping existing ones)
+  @override
   double? get inventoryTurnover;
   @override
   double? get receivablesTurnover;
@@ -2737,7 +2913,7 @@ abstract class _CompanyModel extends CompanyModel {
   double? get pegRatio;
   @override
   double? get betaValue;
-  @override // Growth metrics - using exact field names from scraper
+  @override
   double? get salesGrowth1Y;
   @override
   double? get salesGrowth3Y;
@@ -2757,7 +2933,16 @@ abstract class _CompanyModel extends CompanyModel {
   double? get profitCAGR3Y;
   @override
   double? get profitCAGR5Y;
-  @override // **NEW: KEY POINTS AND COMPANY INSIGHTS FROM ENHANCED SCRAPER**
+  @override
+  @RawFinancialTablesConverter()
+  RawFinancialTables? get rawFinancialTables;
+  @override
+  @CompanyKeyPointsConverter()
+  CompanyKeyPoints? get companyKeyPoints;
+  @override
+  @CalculatedMetricsConverter()
+  CalculatedMetrics? get calculatedMetrics;
+  @override
   String get businessOverview;
   @override
   String? get sector;
@@ -2776,13 +2961,13 @@ abstract class _CompanyModel extends CompanyModel {
   @override
   @FinancialSummaryListConverter()
   List<FinancialSummary> get financialSummary;
-  @override // **NEW: ENHANCED QUALITY AND EFFICIENCY METRICS**
+  @override
   int get qualityScore;
-  @override // 1-5 score from scraper
+  @override
   String get overallQualityGrade;
-  @override // A, B, C, D grade
+  @override
   String get workingCapitalEfficiency;
-  @override // Excellent, Good, Average, Poor
+  @override
   String get cashCycleEfficiency;
   @override
   String get liquidityStatus;
@@ -2790,8 +2975,7 @@ abstract class _CompanyModel extends CompanyModel {
   String get debtStatus;
   @override
   String get riskLevel;
-  @override // Low, Medium, High
-// Quality scores (if available from scraper)
+  @override
   double? get piotroskiScore;
   @override
   double? get altmanZScore;
@@ -2799,18 +2983,30 @@ abstract class _CompanyModel extends CompanyModel {
   String? get qualityGrade;
   @override
   String? get creditRating;
-  @override // Shareholding data
+  @override
+  double? get grahamNumber;
+  @override
+  double? get roic;
+  @override
+  double? get fcfYield;
+  @override
+  double? get debtServiceCoverage;
+  @override
+  double? get comprehensiveScore;
+  @override
+  String? get investmentRecommendation;
+  @override
   @ShareholdingPatternConverter()
   ShareholdingPattern? get shareholdingPattern;
   @override
   Map<String, dynamic> get ratiosData;
   @override
   Map<String, Map<String, String>> get growthTables;
-  @override // Historical data
+  @override
   List<QuarterlyData> get quarterlyDataHistory;
   @override
   List<AnnualData> get annualDataHistory;
-  @override // Peer comparison
+  @override
   List<String> get peerCompanies;
   @override
   double? get sectorPE;
@@ -2818,13 +3014,13 @@ abstract class _CompanyModel extends CompanyModel {
   double? get sectorROE;
   @override
   double? get sectorDebtToEquity;
-  @override // Dividend information
+  @override
   double? get dividendPerShare;
   @override
   String? get dividendFrequency;
   @override
   List<DividendHistory> get dividendHistory;
-  @override // Management and governance
+  @override
   List<String> get keyManagement;
   @override
   double? get promoterHolding;
@@ -2832,7 +3028,7 @@ abstract class _CompanyModel extends CompanyModel {
   double? get institutionalHolding;
   @override
   double? get publicHolding;
-  @override // Risk metrics
+  @override
   double? get volatility30D;
   @override
   double? get volatility1Y;
@@ -2840,13 +3036,13 @@ abstract class _CompanyModel extends CompanyModel {
   double? get maxDrawdown;
   @override
   double? get sharpeRatio;
-  @override // Market data
+  @override
   double? get marketCapCategory;
   @override
   bool? get isIndexConstituent;
   @override
   List<String> get indices;
-  @override // Technical indicators
+  @override
   double? get rsi;
   @override
   double? get sma50;
@@ -2856,7 +3052,7 @@ abstract class _CompanyModel extends CompanyModel {
   double? get ema12;
   @override
   double? get ema26;
-  @override // Fundamental flags
+  @override
   bool get isDebtFree;
   @override
   bool get isProfitable;
@@ -2873,6 +3069,2461 @@ abstract class _CompanyModel extends CompanyModel {
   @override
   @JsonKey(ignore: true)
   _$$CompanyModelImplCopyWith<_$CompanyModelImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+RawFinancialTables _$RawFinancialTablesFromJson(Map<String, dynamic> json) {
+  return _RawFinancialTables.fromJson(json);
+}
+
+/// @nodoc
+mixin _$RawFinancialTables {
+  Map<String, dynamic> get quarterlyResults =>
+      throw _privateConstructorUsedError;
+  Map<String, dynamic> get profitLossStatement =>
+      throw _privateConstructorUsedError;
+  Map<String, dynamic> get balanceSheet => throw _privateConstructorUsedError;
+  Map<String, dynamic> get cashFlowStatement =>
+      throw _privateConstructorUsedError;
+  Map<String, dynamic> get ratiosTable => throw _privateConstructorUsedError;
+  Map<String, dynamic> get shareholdingTable =>
+      throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $RawFinancialTablesCopyWith<RawFinancialTables> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $RawFinancialTablesCopyWith<$Res> {
+  factory $RawFinancialTablesCopyWith(
+          RawFinancialTables value, $Res Function(RawFinancialTables) then) =
+      _$RawFinancialTablesCopyWithImpl<$Res, RawFinancialTables>;
+  @useResult
+  $Res call(
+      {Map<String, dynamic> quarterlyResults,
+      Map<String, dynamic> profitLossStatement,
+      Map<String, dynamic> balanceSheet,
+      Map<String, dynamic> cashFlowStatement,
+      Map<String, dynamic> ratiosTable,
+      Map<String, dynamic> shareholdingTable});
+}
+
+/// @nodoc
+class _$RawFinancialTablesCopyWithImpl<$Res, $Val extends RawFinancialTables>
+    implements $RawFinancialTablesCopyWith<$Res> {
+  _$RawFinancialTablesCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? quarterlyResults = null,
+    Object? profitLossStatement = null,
+    Object? balanceSheet = null,
+    Object? cashFlowStatement = null,
+    Object? ratiosTable = null,
+    Object? shareholdingTable = null,
+  }) {
+    return _then(_value.copyWith(
+      quarterlyResults: null == quarterlyResults
+          ? _value.quarterlyResults
+          : quarterlyResults // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      profitLossStatement: null == profitLossStatement
+          ? _value.profitLossStatement
+          : profitLossStatement // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      balanceSheet: null == balanceSheet
+          ? _value.balanceSheet
+          : balanceSheet // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      cashFlowStatement: null == cashFlowStatement
+          ? _value.cashFlowStatement
+          : cashFlowStatement // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      ratiosTable: null == ratiosTable
+          ? _value.ratiosTable
+          : ratiosTable // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      shareholdingTable: null == shareholdingTable
+          ? _value.shareholdingTable
+          : shareholdingTable // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$RawFinancialTablesImplCopyWith<$Res>
+    implements $RawFinancialTablesCopyWith<$Res> {
+  factory _$$RawFinancialTablesImplCopyWith(_$RawFinancialTablesImpl value,
+          $Res Function(_$RawFinancialTablesImpl) then) =
+      __$$RawFinancialTablesImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {Map<String, dynamic> quarterlyResults,
+      Map<String, dynamic> profitLossStatement,
+      Map<String, dynamic> balanceSheet,
+      Map<String, dynamic> cashFlowStatement,
+      Map<String, dynamic> ratiosTable,
+      Map<String, dynamic> shareholdingTable});
+}
+
+/// @nodoc
+class __$$RawFinancialTablesImplCopyWithImpl<$Res>
+    extends _$RawFinancialTablesCopyWithImpl<$Res, _$RawFinancialTablesImpl>
+    implements _$$RawFinancialTablesImplCopyWith<$Res> {
+  __$$RawFinancialTablesImplCopyWithImpl(_$RawFinancialTablesImpl _value,
+      $Res Function(_$RawFinancialTablesImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? quarterlyResults = null,
+    Object? profitLossStatement = null,
+    Object? balanceSheet = null,
+    Object? cashFlowStatement = null,
+    Object? ratiosTable = null,
+    Object? shareholdingTable = null,
+  }) {
+    return _then(_$RawFinancialTablesImpl(
+      quarterlyResults: null == quarterlyResults
+          ? _value._quarterlyResults
+          : quarterlyResults // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      profitLossStatement: null == profitLossStatement
+          ? _value._profitLossStatement
+          : profitLossStatement // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      balanceSheet: null == balanceSheet
+          ? _value._balanceSheet
+          : balanceSheet // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      cashFlowStatement: null == cashFlowStatement
+          ? _value._cashFlowStatement
+          : cashFlowStatement // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      ratiosTable: null == ratiosTable
+          ? _value._ratiosTable
+          : ratiosTable // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+      shareholdingTable: null == shareholdingTable
+          ? _value._shareholdingTable
+          : shareholdingTable // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$RawFinancialTablesImpl implements _RawFinancialTables {
+  const _$RawFinancialTablesImpl(
+      {final Map<String, dynamic> quarterlyResults = const {},
+      final Map<String, dynamic> profitLossStatement = const {},
+      final Map<String, dynamic> balanceSheet = const {},
+      final Map<String, dynamic> cashFlowStatement = const {},
+      final Map<String, dynamic> ratiosTable = const {},
+      final Map<String, dynamic> shareholdingTable = const {}})
+      : _quarterlyResults = quarterlyResults,
+        _profitLossStatement = profitLossStatement,
+        _balanceSheet = balanceSheet,
+        _cashFlowStatement = cashFlowStatement,
+        _ratiosTable = ratiosTable,
+        _shareholdingTable = shareholdingTable;
+
+  factory _$RawFinancialTablesImpl.fromJson(Map<String, dynamic> json) =>
+      _$$RawFinancialTablesImplFromJson(json);
+
+  final Map<String, dynamic> _quarterlyResults;
+  @override
+  @JsonKey()
+  Map<String, dynamic> get quarterlyResults {
+    if (_quarterlyResults is EqualUnmodifiableMapView) return _quarterlyResults;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_quarterlyResults);
+  }
+
+  final Map<String, dynamic> _profitLossStatement;
+  @override
+  @JsonKey()
+  Map<String, dynamic> get profitLossStatement {
+    if (_profitLossStatement is EqualUnmodifiableMapView)
+      return _profitLossStatement;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_profitLossStatement);
+  }
+
+  final Map<String, dynamic> _balanceSheet;
+  @override
+  @JsonKey()
+  Map<String, dynamic> get balanceSheet {
+    if (_balanceSheet is EqualUnmodifiableMapView) return _balanceSheet;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_balanceSheet);
+  }
+
+  final Map<String, dynamic> _cashFlowStatement;
+  @override
+  @JsonKey()
+  Map<String, dynamic> get cashFlowStatement {
+    if (_cashFlowStatement is EqualUnmodifiableMapView)
+      return _cashFlowStatement;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_cashFlowStatement);
+  }
+
+  final Map<String, dynamic> _ratiosTable;
+  @override
+  @JsonKey()
+  Map<String, dynamic> get ratiosTable {
+    if (_ratiosTable is EqualUnmodifiableMapView) return _ratiosTable;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_ratiosTable);
+  }
+
+  final Map<String, dynamic> _shareholdingTable;
+  @override
+  @JsonKey()
+  Map<String, dynamic> get shareholdingTable {
+    if (_shareholdingTable is EqualUnmodifiableMapView)
+      return _shareholdingTable;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_shareholdingTable);
+  }
+
+  @override
+  String toString() {
+    return 'RawFinancialTables(quarterlyResults: $quarterlyResults, profitLossStatement: $profitLossStatement, balanceSheet: $balanceSheet, cashFlowStatement: $cashFlowStatement, ratiosTable: $ratiosTable, shareholdingTable: $shareholdingTable)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$RawFinancialTablesImpl &&
+            const DeepCollectionEquality()
+                .equals(other._quarterlyResults, _quarterlyResults) &&
+            const DeepCollectionEquality()
+                .equals(other._profitLossStatement, _profitLossStatement) &&
+            const DeepCollectionEquality()
+                .equals(other._balanceSheet, _balanceSheet) &&
+            const DeepCollectionEquality()
+                .equals(other._cashFlowStatement, _cashFlowStatement) &&
+            const DeepCollectionEquality()
+                .equals(other._ratiosTable, _ratiosTable) &&
+            const DeepCollectionEquality()
+                .equals(other._shareholdingTable, _shareholdingTable));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(_quarterlyResults),
+      const DeepCollectionEquality().hash(_profitLossStatement),
+      const DeepCollectionEquality().hash(_balanceSheet),
+      const DeepCollectionEquality().hash(_cashFlowStatement),
+      const DeepCollectionEquality().hash(_ratiosTable),
+      const DeepCollectionEquality().hash(_shareholdingTable));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$RawFinancialTablesImplCopyWith<_$RawFinancialTablesImpl> get copyWith =>
+      __$$RawFinancialTablesImplCopyWithImpl<_$RawFinancialTablesImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$RawFinancialTablesImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _RawFinancialTables implements RawFinancialTables {
+  const factory _RawFinancialTables(
+      {final Map<String, dynamic> quarterlyResults,
+      final Map<String, dynamic> profitLossStatement,
+      final Map<String, dynamic> balanceSheet,
+      final Map<String, dynamic> cashFlowStatement,
+      final Map<String, dynamic> ratiosTable,
+      final Map<String, dynamic> shareholdingTable}) = _$RawFinancialTablesImpl;
+
+  factory _RawFinancialTables.fromJson(Map<String, dynamic> json) =
+      _$RawFinancialTablesImpl.fromJson;
+
+  @override
+  Map<String, dynamic> get quarterlyResults;
+  @override
+  Map<String, dynamic> get profitLossStatement;
+  @override
+  Map<String, dynamic> get balanceSheet;
+  @override
+  Map<String, dynamic> get cashFlowStatement;
+  @override
+  Map<String, dynamic> get ratiosTable;
+  @override
+  Map<String, dynamic> get shareholdingTable;
+  @override
+  @JsonKey(ignore: true)
+  _$$RawFinancialTablesImplCopyWith<_$RawFinancialTablesImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+CompanyKeyPoints _$CompanyKeyPointsFromJson(Map<String, dynamic> json) {
+  return _CompanyKeyPoints.fromJson(json);
+}
+
+/// @nodoc
+mixin _$CompanyKeyPoints {
+  List<BusinessHighlight> get businessHighlights =>
+      throw _privateConstructorUsedError;
+  List<FinancialStrength> get financialStrengths =>
+      throw _privateConstructorUsedError;
+  List<RiskFactor> get riskFactors => throw _privateConstructorUsedError;
+  List<CompetitiveAdvantage> get competitiveAdvantages =>
+      throw _privateConstructorUsedError;
+  List<RecentDevelopment> get recentDevelopments =>
+      throw _privateConstructorUsedError;
+  List<ManagementInsight> get managementInsights =>
+      throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $CompanyKeyPointsCopyWith<CompanyKeyPoints> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $CompanyKeyPointsCopyWith<$Res> {
+  factory $CompanyKeyPointsCopyWith(
+          CompanyKeyPoints value, $Res Function(CompanyKeyPoints) then) =
+      _$CompanyKeyPointsCopyWithImpl<$Res, CompanyKeyPoints>;
+  @useResult
+  $Res call(
+      {List<BusinessHighlight> businessHighlights,
+      List<FinancialStrength> financialStrengths,
+      List<RiskFactor> riskFactors,
+      List<CompetitiveAdvantage> competitiveAdvantages,
+      List<RecentDevelopment> recentDevelopments,
+      List<ManagementInsight> managementInsights});
+}
+
+/// @nodoc
+class _$CompanyKeyPointsCopyWithImpl<$Res, $Val extends CompanyKeyPoints>
+    implements $CompanyKeyPointsCopyWith<$Res> {
+  _$CompanyKeyPointsCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? businessHighlights = null,
+    Object? financialStrengths = null,
+    Object? riskFactors = null,
+    Object? competitiveAdvantages = null,
+    Object? recentDevelopments = null,
+    Object? managementInsights = null,
+  }) {
+    return _then(_value.copyWith(
+      businessHighlights: null == businessHighlights
+          ? _value.businessHighlights
+          : businessHighlights // ignore: cast_nullable_to_non_nullable
+              as List<BusinessHighlight>,
+      financialStrengths: null == financialStrengths
+          ? _value.financialStrengths
+          : financialStrengths // ignore: cast_nullable_to_non_nullable
+              as List<FinancialStrength>,
+      riskFactors: null == riskFactors
+          ? _value.riskFactors
+          : riskFactors // ignore: cast_nullable_to_non_nullable
+              as List<RiskFactor>,
+      competitiveAdvantages: null == competitiveAdvantages
+          ? _value.competitiveAdvantages
+          : competitiveAdvantages // ignore: cast_nullable_to_non_nullable
+              as List<CompetitiveAdvantage>,
+      recentDevelopments: null == recentDevelopments
+          ? _value.recentDevelopments
+          : recentDevelopments // ignore: cast_nullable_to_non_nullable
+              as List<RecentDevelopment>,
+      managementInsights: null == managementInsights
+          ? _value.managementInsights
+          : managementInsights // ignore: cast_nullable_to_non_nullable
+              as List<ManagementInsight>,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$CompanyKeyPointsImplCopyWith<$Res>
+    implements $CompanyKeyPointsCopyWith<$Res> {
+  factory _$$CompanyKeyPointsImplCopyWith(_$CompanyKeyPointsImpl value,
+          $Res Function(_$CompanyKeyPointsImpl) then) =
+      __$$CompanyKeyPointsImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {List<BusinessHighlight> businessHighlights,
+      List<FinancialStrength> financialStrengths,
+      List<RiskFactor> riskFactors,
+      List<CompetitiveAdvantage> competitiveAdvantages,
+      List<RecentDevelopment> recentDevelopments,
+      List<ManagementInsight> managementInsights});
+}
+
+/// @nodoc
+class __$$CompanyKeyPointsImplCopyWithImpl<$Res>
+    extends _$CompanyKeyPointsCopyWithImpl<$Res, _$CompanyKeyPointsImpl>
+    implements _$$CompanyKeyPointsImplCopyWith<$Res> {
+  __$$CompanyKeyPointsImplCopyWithImpl(_$CompanyKeyPointsImpl _value,
+      $Res Function(_$CompanyKeyPointsImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? businessHighlights = null,
+    Object? financialStrengths = null,
+    Object? riskFactors = null,
+    Object? competitiveAdvantages = null,
+    Object? recentDevelopments = null,
+    Object? managementInsights = null,
+  }) {
+    return _then(_$CompanyKeyPointsImpl(
+      businessHighlights: null == businessHighlights
+          ? _value._businessHighlights
+          : businessHighlights // ignore: cast_nullable_to_non_nullable
+              as List<BusinessHighlight>,
+      financialStrengths: null == financialStrengths
+          ? _value._financialStrengths
+          : financialStrengths // ignore: cast_nullable_to_non_nullable
+              as List<FinancialStrength>,
+      riskFactors: null == riskFactors
+          ? _value._riskFactors
+          : riskFactors // ignore: cast_nullable_to_non_nullable
+              as List<RiskFactor>,
+      competitiveAdvantages: null == competitiveAdvantages
+          ? _value._competitiveAdvantages
+          : competitiveAdvantages // ignore: cast_nullable_to_non_nullable
+              as List<CompetitiveAdvantage>,
+      recentDevelopments: null == recentDevelopments
+          ? _value._recentDevelopments
+          : recentDevelopments // ignore: cast_nullable_to_non_nullable
+              as List<RecentDevelopment>,
+      managementInsights: null == managementInsights
+          ? _value._managementInsights
+          : managementInsights // ignore: cast_nullable_to_non_nullable
+              as List<ManagementInsight>,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$CompanyKeyPointsImpl implements _CompanyKeyPoints {
+  const _$CompanyKeyPointsImpl(
+      {final List<BusinessHighlight> businessHighlights = const [],
+      final List<FinancialStrength> financialStrengths = const [],
+      final List<RiskFactor> riskFactors = const [],
+      final List<CompetitiveAdvantage> competitiveAdvantages = const [],
+      final List<RecentDevelopment> recentDevelopments = const [],
+      final List<ManagementInsight> managementInsights = const []})
+      : _businessHighlights = businessHighlights,
+        _financialStrengths = financialStrengths,
+        _riskFactors = riskFactors,
+        _competitiveAdvantages = competitiveAdvantages,
+        _recentDevelopments = recentDevelopments,
+        _managementInsights = managementInsights;
+
+  factory _$CompanyKeyPointsImpl.fromJson(Map<String, dynamic> json) =>
+      _$$CompanyKeyPointsImplFromJson(json);
+
+  final List<BusinessHighlight> _businessHighlights;
+  @override
+  @JsonKey()
+  List<BusinessHighlight> get businessHighlights {
+    if (_businessHighlights is EqualUnmodifiableListView)
+      return _businessHighlights;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_businessHighlights);
+  }
+
+  final List<FinancialStrength> _financialStrengths;
+  @override
+  @JsonKey()
+  List<FinancialStrength> get financialStrengths {
+    if (_financialStrengths is EqualUnmodifiableListView)
+      return _financialStrengths;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_financialStrengths);
+  }
+
+  final List<RiskFactor> _riskFactors;
+  @override
+  @JsonKey()
+  List<RiskFactor> get riskFactors {
+    if (_riskFactors is EqualUnmodifiableListView) return _riskFactors;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_riskFactors);
+  }
+
+  final List<CompetitiveAdvantage> _competitiveAdvantages;
+  @override
+  @JsonKey()
+  List<CompetitiveAdvantage> get competitiveAdvantages {
+    if (_competitiveAdvantages is EqualUnmodifiableListView)
+      return _competitiveAdvantages;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_competitiveAdvantages);
+  }
+
+  final List<RecentDevelopment> _recentDevelopments;
+  @override
+  @JsonKey()
+  List<RecentDevelopment> get recentDevelopments {
+    if (_recentDevelopments is EqualUnmodifiableListView)
+      return _recentDevelopments;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_recentDevelopments);
+  }
+
+  final List<ManagementInsight> _managementInsights;
+  @override
+  @JsonKey()
+  List<ManagementInsight> get managementInsights {
+    if (_managementInsights is EqualUnmodifiableListView)
+      return _managementInsights;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_managementInsights);
+  }
+
+  @override
+  String toString() {
+    return 'CompanyKeyPoints(businessHighlights: $businessHighlights, financialStrengths: $financialStrengths, riskFactors: $riskFactors, competitiveAdvantages: $competitiveAdvantages, recentDevelopments: $recentDevelopments, managementInsights: $managementInsights)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$CompanyKeyPointsImpl &&
+            const DeepCollectionEquality()
+                .equals(other._businessHighlights, _businessHighlights) &&
+            const DeepCollectionEquality()
+                .equals(other._financialStrengths, _financialStrengths) &&
+            const DeepCollectionEquality()
+                .equals(other._riskFactors, _riskFactors) &&
+            const DeepCollectionEquality()
+                .equals(other._competitiveAdvantages, _competitiveAdvantages) &&
+            const DeepCollectionEquality()
+                .equals(other._recentDevelopments, _recentDevelopments) &&
+            const DeepCollectionEquality()
+                .equals(other._managementInsights, _managementInsights));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(_businessHighlights),
+      const DeepCollectionEquality().hash(_financialStrengths),
+      const DeepCollectionEquality().hash(_riskFactors),
+      const DeepCollectionEquality().hash(_competitiveAdvantages),
+      const DeepCollectionEquality().hash(_recentDevelopments),
+      const DeepCollectionEquality().hash(_managementInsights));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$CompanyKeyPointsImplCopyWith<_$CompanyKeyPointsImpl> get copyWith =>
+      __$$CompanyKeyPointsImplCopyWithImpl<_$CompanyKeyPointsImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$CompanyKeyPointsImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _CompanyKeyPoints implements CompanyKeyPoints {
+  const factory _CompanyKeyPoints(
+          {final List<BusinessHighlight> businessHighlights,
+          final List<FinancialStrength> financialStrengths,
+          final List<RiskFactor> riskFactors,
+          final List<CompetitiveAdvantage> competitiveAdvantages,
+          final List<RecentDevelopment> recentDevelopments,
+          final List<ManagementInsight> managementInsights}) =
+      _$CompanyKeyPointsImpl;
+
+  factory _CompanyKeyPoints.fromJson(Map<String, dynamic> json) =
+      _$CompanyKeyPointsImpl.fromJson;
+
+  @override
+  List<BusinessHighlight> get businessHighlights;
+  @override
+  List<FinancialStrength> get financialStrengths;
+  @override
+  List<RiskFactor> get riskFactors;
+  @override
+  List<CompetitiveAdvantage> get competitiveAdvantages;
+  @override
+  List<RecentDevelopment> get recentDevelopments;
+  @override
+  List<ManagementInsight> get managementInsights;
+  @override
+  @JsonKey(ignore: true)
+  _$$CompanyKeyPointsImplCopyWith<_$CompanyKeyPointsImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+BusinessHighlight _$BusinessHighlightFromJson(Map<String, dynamic> json) {
+  return _BusinessHighlight.fromJson(json);
+}
+
+/// @nodoc
+mixin _$BusinessHighlight {
+  String get type => throw _privateConstructorUsedError;
+  String get description => throw _privateConstructorUsedError;
+  String get impact => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $BusinessHighlightCopyWith<BusinessHighlight> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $BusinessHighlightCopyWith<$Res> {
+  factory $BusinessHighlightCopyWith(
+          BusinessHighlight value, $Res Function(BusinessHighlight) then) =
+      _$BusinessHighlightCopyWithImpl<$Res, BusinessHighlight>;
+  @useResult
+  $Res call({String type, String description, String impact});
+}
+
+/// @nodoc
+class _$BusinessHighlightCopyWithImpl<$Res, $Val extends BusinessHighlight>
+    implements $BusinessHighlightCopyWith<$Res> {
+  _$BusinessHighlightCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+  }) {
+    return _then(_value.copyWith(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$BusinessHighlightImplCopyWith<$Res>
+    implements $BusinessHighlightCopyWith<$Res> {
+  factory _$$BusinessHighlightImplCopyWith(_$BusinessHighlightImpl value,
+          $Res Function(_$BusinessHighlightImpl) then) =
+      __$$BusinessHighlightImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String type, String description, String impact});
+}
+
+/// @nodoc
+class __$$BusinessHighlightImplCopyWithImpl<$Res>
+    extends _$BusinessHighlightCopyWithImpl<$Res, _$BusinessHighlightImpl>
+    implements _$$BusinessHighlightImplCopyWith<$Res> {
+  __$$BusinessHighlightImplCopyWithImpl(_$BusinessHighlightImpl _value,
+      $Res Function(_$BusinessHighlightImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+  }) {
+    return _then(_$BusinessHighlightImpl(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$BusinessHighlightImpl implements _BusinessHighlight {
+  const _$BusinessHighlightImpl(
+      {required this.type, required this.description, required this.impact});
+
+  factory _$BusinessHighlightImpl.fromJson(Map<String, dynamic> json) =>
+      _$$BusinessHighlightImplFromJson(json);
+
+  @override
+  final String type;
+  @override
+  final String description;
+  @override
+  final String impact;
+
+  @override
+  String toString() {
+    return 'BusinessHighlight(type: $type, description: $description, impact: $impact)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BusinessHighlightImpl &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.impact, impact) || other.impact == impact));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, type, description, impact);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BusinessHighlightImplCopyWith<_$BusinessHighlightImpl> get copyWith =>
+      __$$BusinessHighlightImplCopyWithImpl<_$BusinessHighlightImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$BusinessHighlightImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _BusinessHighlight implements BusinessHighlight {
+  const factory _BusinessHighlight(
+      {required final String type,
+      required final String description,
+      required final String impact}) = _$BusinessHighlightImpl;
+
+  factory _BusinessHighlight.fromJson(Map<String, dynamic> json) =
+      _$BusinessHighlightImpl.fromJson;
+
+  @override
+  String get type;
+  @override
+  String get description;
+  @override
+  String get impact;
+  @override
+  @JsonKey(ignore: true)
+  _$$BusinessHighlightImplCopyWith<_$BusinessHighlightImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+FinancialStrength _$FinancialStrengthFromJson(Map<String, dynamic> json) {
+  return _FinancialStrength.fromJson(json);
+}
+
+/// @nodoc
+mixin _$FinancialStrength {
+  String get type => throw _privateConstructorUsedError;
+  String get description => throw _privateConstructorUsedError;
+  String get impact => throw _privateConstructorUsedError;
+  double? get value => throw _privateConstructorUsedError;
+  String? get trend => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $FinancialStrengthCopyWith<FinancialStrength> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $FinancialStrengthCopyWith<$Res> {
+  factory $FinancialStrengthCopyWith(
+          FinancialStrength value, $Res Function(FinancialStrength) then) =
+      _$FinancialStrengthCopyWithImpl<$Res, FinancialStrength>;
+  @useResult
+  $Res call(
+      {String type,
+      String description,
+      String impact,
+      double? value,
+      String? trend});
+}
+
+/// @nodoc
+class _$FinancialStrengthCopyWithImpl<$Res, $Val extends FinancialStrength>
+    implements $FinancialStrengthCopyWith<$Res> {
+  _$FinancialStrengthCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+    Object? value = freezed,
+    Object? trend = freezed,
+  }) {
+    return _then(_value.copyWith(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+      value: freezed == value
+          ? _value.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as double?,
+      trend: freezed == trend
+          ? _value.trend
+          : trend // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$FinancialStrengthImplCopyWith<$Res>
+    implements $FinancialStrengthCopyWith<$Res> {
+  factory _$$FinancialStrengthImplCopyWith(_$FinancialStrengthImpl value,
+          $Res Function(_$FinancialStrengthImpl) then) =
+      __$$FinancialStrengthImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String type,
+      String description,
+      String impact,
+      double? value,
+      String? trend});
+}
+
+/// @nodoc
+class __$$FinancialStrengthImplCopyWithImpl<$Res>
+    extends _$FinancialStrengthCopyWithImpl<$Res, _$FinancialStrengthImpl>
+    implements _$$FinancialStrengthImplCopyWith<$Res> {
+  __$$FinancialStrengthImplCopyWithImpl(_$FinancialStrengthImpl _value,
+      $Res Function(_$FinancialStrengthImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+    Object? value = freezed,
+    Object? trend = freezed,
+  }) {
+    return _then(_$FinancialStrengthImpl(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+      value: freezed == value
+          ? _value.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as double?,
+      trend: freezed == trend
+          ? _value.trend
+          : trend // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$FinancialStrengthImpl implements _FinancialStrength {
+  const _$FinancialStrengthImpl(
+      {required this.type,
+      required this.description,
+      required this.impact,
+      this.value,
+      this.trend});
+
+  factory _$FinancialStrengthImpl.fromJson(Map<String, dynamic> json) =>
+      _$$FinancialStrengthImplFromJson(json);
+
+  @override
+  final String type;
+  @override
+  final String description;
+  @override
+  final String impact;
+  @override
+  final double? value;
+  @override
+  final String? trend;
+
+  @override
+  String toString() {
+    return 'FinancialStrength(type: $type, description: $description, impact: $impact, value: $value, trend: $trend)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$FinancialStrengthImpl &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.impact, impact) || other.impact == impact) &&
+            (identical(other.value, value) || other.value == value) &&
+            (identical(other.trend, trend) || other.trend == trend));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, type, description, impact, value, trend);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$FinancialStrengthImplCopyWith<_$FinancialStrengthImpl> get copyWith =>
+      __$$FinancialStrengthImplCopyWithImpl<_$FinancialStrengthImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$FinancialStrengthImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _FinancialStrength implements FinancialStrength {
+  const factory _FinancialStrength(
+      {required final String type,
+      required final String description,
+      required final String impact,
+      final double? value,
+      final String? trend}) = _$FinancialStrengthImpl;
+
+  factory _FinancialStrength.fromJson(Map<String, dynamic> json) =
+      _$FinancialStrengthImpl.fromJson;
+
+  @override
+  String get type;
+  @override
+  String get description;
+  @override
+  String get impact;
+  @override
+  double? get value;
+  @override
+  String? get trend;
+  @override
+  @JsonKey(ignore: true)
+  _$$FinancialStrengthImplCopyWith<_$FinancialStrengthImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+RiskFactor _$RiskFactorFromJson(Map<String, dynamic> json) {
+  return _RiskFactor.fromJson(json);
+}
+
+/// @nodoc
+mixin _$RiskFactor {
+  String get type => throw _privateConstructorUsedError;
+  String get description => throw _privateConstructorUsedError;
+  String get impact => throw _privateConstructorUsedError;
+  String get severity => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $RiskFactorCopyWith<RiskFactor> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $RiskFactorCopyWith<$Res> {
+  factory $RiskFactorCopyWith(
+          RiskFactor value, $Res Function(RiskFactor) then) =
+      _$RiskFactorCopyWithImpl<$Res, RiskFactor>;
+  @useResult
+  $Res call({String type, String description, String impact, String severity});
+}
+
+/// @nodoc
+class _$RiskFactorCopyWithImpl<$Res, $Val extends RiskFactor>
+    implements $RiskFactorCopyWith<$Res> {
+  _$RiskFactorCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+    Object? severity = null,
+  }) {
+    return _then(_value.copyWith(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+      severity: null == severity
+          ? _value.severity
+          : severity // ignore: cast_nullable_to_non_nullable
+              as String,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$RiskFactorImplCopyWith<$Res>
+    implements $RiskFactorCopyWith<$Res> {
+  factory _$$RiskFactorImplCopyWith(
+          _$RiskFactorImpl value, $Res Function(_$RiskFactorImpl) then) =
+      __$$RiskFactorImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String type, String description, String impact, String severity});
+}
+
+/// @nodoc
+class __$$RiskFactorImplCopyWithImpl<$Res>
+    extends _$RiskFactorCopyWithImpl<$Res, _$RiskFactorImpl>
+    implements _$$RiskFactorImplCopyWith<$Res> {
+  __$$RiskFactorImplCopyWithImpl(
+      _$RiskFactorImpl _value, $Res Function(_$RiskFactorImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+    Object? severity = null,
+  }) {
+    return _then(_$RiskFactorImpl(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+      severity: null == severity
+          ? _value.severity
+          : severity // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$RiskFactorImpl implements _RiskFactor {
+  const _$RiskFactorImpl(
+      {required this.type,
+      required this.description,
+      required this.impact,
+      required this.severity});
+
+  factory _$RiskFactorImpl.fromJson(Map<String, dynamic> json) =>
+      _$$RiskFactorImplFromJson(json);
+
+  @override
+  final String type;
+  @override
+  final String description;
+  @override
+  final String impact;
+  @override
+  final String severity;
+
+  @override
+  String toString() {
+    return 'RiskFactor(type: $type, description: $description, impact: $impact, severity: $severity)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$RiskFactorImpl &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.impact, impact) || other.impact == impact) &&
+            (identical(other.severity, severity) ||
+                other.severity == severity));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, type, description, impact, severity);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$RiskFactorImplCopyWith<_$RiskFactorImpl> get copyWith =>
+      __$$RiskFactorImplCopyWithImpl<_$RiskFactorImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$RiskFactorImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _RiskFactor implements RiskFactor {
+  const factory _RiskFactor(
+      {required final String type,
+      required final String description,
+      required final String impact,
+      required final String severity}) = _$RiskFactorImpl;
+
+  factory _RiskFactor.fromJson(Map<String, dynamic> json) =
+      _$RiskFactorImpl.fromJson;
+
+  @override
+  String get type;
+  @override
+  String get description;
+  @override
+  String get impact;
+  @override
+  String get severity;
+  @override
+  @JsonKey(ignore: true)
+  _$$RiskFactorImplCopyWith<_$RiskFactorImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+CompetitiveAdvantage _$CompetitiveAdvantageFromJson(Map<String, dynamic> json) {
+  return _CompetitiveAdvantage.fromJson(json);
+}
+
+/// @nodoc
+mixin _$CompetitiveAdvantage {
+  String get type => throw _privateConstructorUsedError;
+  String get description => throw _privateConstructorUsedError;
+  String get impact => throw _privateConstructorUsedError;
+  String? get sustainability => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $CompetitiveAdvantageCopyWith<CompetitiveAdvantage> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $CompetitiveAdvantageCopyWith<$Res> {
+  factory $CompetitiveAdvantageCopyWith(CompetitiveAdvantage value,
+          $Res Function(CompetitiveAdvantage) then) =
+      _$CompetitiveAdvantageCopyWithImpl<$Res, CompetitiveAdvantage>;
+  @useResult
+  $Res call(
+      {String type, String description, String impact, String? sustainability});
+}
+
+/// @nodoc
+class _$CompetitiveAdvantageCopyWithImpl<$Res,
+        $Val extends CompetitiveAdvantage>
+    implements $CompetitiveAdvantageCopyWith<$Res> {
+  _$CompetitiveAdvantageCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+    Object? sustainability = freezed,
+  }) {
+    return _then(_value.copyWith(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+      sustainability: freezed == sustainability
+          ? _value.sustainability
+          : sustainability // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$CompetitiveAdvantageImplCopyWith<$Res>
+    implements $CompetitiveAdvantageCopyWith<$Res> {
+  factory _$$CompetitiveAdvantageImplCopyWith(_$CompetitiveAdvantageImpl value,
+          $Res Function(_$CompetitiveAdvantageImpl) then) =
+      __$$CompetitiveAdvantageImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String type, String description, String impact, String? sustainability});
+}
+
+/// @nodoc
+class __$$CompetitiveAdvantageImplCopyWithImpl<$Res>
+    extends _$CompetitiveAdvantageCopyWithImpl<$Res, _$CompetitiveAdvantageImpl>
+    implements _$$CompetitiveAdvantageImplCopyWith<$Res> {
+  __$$CompetitiveAdvantageImplCopyWithImpl(_$CompetitiveAdvantageImpl _value,
+      $Res Function(_$CompetitiveAdvantageImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+    Object? sustainability = freezed,
+  }) {
+    return _then(_$CompetitiveAdvantageImpl(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+      sustainability: freezed == sustainability
+          ? _value.sustainability
+          : sustainability // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$CompetitiveAdvantageImpl implements _CompetitiveAdvantage {
+  const _$CompetitiveAdvantageImpl(
+      {required this.type,
+      required this.description,
+      required this.impact,
+      this.sustainability});
+
+  factory _$CompetitiveAdvantageImpl.fromJson(Map<String, dynamic> json) =>
+      _$$CompetitiveAdvantageImplFromJson(json);
+
+  @override
+  final String type;
+  @override
+  final String description;
+  @override
+  final String impact;
+  @override
+  final String? sustainability;
+
+  @override
+  String toString() {
+    return 'CompetitiveAdvantage(type: $type, description: $description, impact: $impact, sustainability: $sustainability)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$CompetitiveAdvantageImpl &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.impact, impact) || other.impact == impact) &&
+            (identical(other.sustainability, sustainability) ||
+                other.sustainability == sustainability));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, type, description, impact, sustainability);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$CompetitiveAdvantageImplCopyWith<_$CompetitiveAdvantageImpl>
+      get copyWith =>
+          __$$CompetitiveAdvantageImplCopyWithImpl<_$CompetitiveAdvantageImpl>(
+              this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$CompetitiveAdvantageImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _CompetitiveAdvantage implements CompetitiveAdvantage {
+  const factory _CompetitiveAdvantage(
+      {required final String type,
+      required final String description,
+      required final String impact,
+      final String? sustainability}) = _$CompetitiveAdvantageImpl;
+
+  factory _CompetitiveAdvantage.fromJson(Map<String, dynamic> json) =
+      _$CompetitiveAdvantageImpl.fromJson;
+
+  @override
+  String get type;
+  @override
+  String get description;
+  @override
+  String get impact;
+  @override
+  String? get sustainability;
+  @override
+  @JsonKey(ignore: true)
+  _$$CompetitiveAdvantageImplCopyWith<_$CompetitiveAdvantageImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+RecentDevelopment _$RecentDevelopmentFromJson(Map<String, dynamic> json) {
+  return _RecentDevelopment.fromJson(json);
+}
+
+/// @nodoc
+mixin _$RecentDevelopment {
+  String get type => throw _privateConstructorUsedError;
+  String get description => throw _privateConstructorUsedError;
+  String get impact => throw _privateConstructorUsedError;
+  DateTime? get date => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $RecentDevelopmentCopyWith<RecentDevelopment> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $RecentDevelopmentCopyWith<$Res> {
+  factory $RecentDevelopmentCopyWith(
+          RecentDevelopment value, $Res Function(RecentDevelopment) then) =
+      _$RecentDevelopmentCopyWithImpl<$Res, RecentDevelopment>;
+  @useResult
+  $Res call({String type, String description, String impact, DateTime? date});
+}
+
+/// @nodoc
+class _$RecentDevelopmentCopyWithImpl<$Res, $Val extends RecentDevelopment>
+    implements $RecentDevelopmentCopyWith<$Res> {
+  _$RecentDevelopmentCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+    Object? date = freezed,
+  }) {
+    return _then(_value.copyWith(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+      date: freezed == date
+          ? _value.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$RecentDevelopmentImplCopyWith<$Res>
+    implements $RecentDevelopmentCopyWith<$Res> {
+  factory _$$RecentDevelopmentImplCopyWith(_$RecentDevelopmentImpl value,
+          $Res Function(_$RecentDevelopmentImpl) then) =
+      __$$RecentDevelopmentImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String type, String description, String impact, DateTime? date});
+}
+
+/// @nodoc
+class __$$RecentDevelopmentImplCopyWithImpl<$Res>
+    extends _$RecentDevelopmentCopyWithImpl<$Res, _$RecentDevelopmentImpl>
+    implements _$$RecentDevelopmentImplCopyWith<$Res> {
+  __$$RecentDevelopmentImplCopyWithImpl(_$RecentDevelopmentImpl _value,
+      $Res Function(_$RecentDevelopmentImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+    Object? date = freezed,
+  }) {
+    return _then(_$RecentDevelopmentImpl(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+      date: freezed == date
+          ? _value.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$RecentDevelopmentImpl implements _RecentDevelopment {
+  const _$RecentDevelopmentImpl(
+      {required this.type,
+      required this.description,
+      required this.impact,
+      this.date});
+
+  factory _$RecentDevelopmentImpl.fromJson(Map<String, dynamic> json) =>
+      _$$RecentDevelopmentImplFromJson(json);
+
+  @override
+  final String type;
+  @override
+  final String description;
+  @override
+  final String impact;
+  @override
+  final DateTime? date;
+
+  @override
+  String toString() {
+    return 'RecentDevelopment(type: $type, description: $description, impact: $impact, date: $date)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$RecentDevelopmentImpl &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.impact, impact) || other.impact == impact) &&
+            (identical(other.date, date) || other.date == date));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, type, description, impact, date);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$RecentDevelopmentImplCopyWith<_$RecentDevelopmentImpl> get copyWith =>
+      __$$RecentDevelopmentImplCopyWithImpl<_$RecentDevelopmentImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$RecentDevelopmentImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _RecentDevelopment implements RecentDevelopment {
+  const factory _RecentDevelopment(
+      {required final String type,
+      required final String description,
+      required final String impact,
+      final DateTime? date}) = _$RecentDevelopmentImpl;
+
+  factory _RecentDevelopment.fromJson(Map<String, dynamic> json) =
+      _$RecentDevelopmentImpl.fromJson;
+
+  @override
+  String get type;
+  @override
+  String get description;
+  @override
+  String get impact;
+  @override
+  DateTime? get date;
+  @override
+  @JsonKey(ignore: true)
+  _$$RecentDevelopmentImplCopyWith<_$RecentDevelopmentImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+ManagementInsight _$ManagementInsightFromJson(Map<String, dynamic> json) {
+  return _ManagementInsight.fromJson(json);
+}
+
+/// @nodoc
+mixin _$ManagementInsight {
+  String get type => throw _privateConstructorUsedError;
+  String get description => throw _privateConstructorUsedError;
+  String get impact => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $ManagementInsightCopyWith<ManagementInsight> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ManagementInsightCopyWith<$Res> {
+  factory $ManagementInsightCopyWith(
+          ManagementInsight value, $Res Function(ManagementInsight) then) =
+      _$ManagementInsightCopyWithImpl<$Res, ManagementInsight>;
+  @useResult
+  $Res call({String type, String description, String impact});
+}
+
+/// @nodoc
+class _$ManagementInsightCopyWithImpl<$Res, $Val extends ManagementInsight>
+    implements $ManagementInsightCopyWith<$Res> {
+  _$ManagementInsightCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+  }) {
+    return _then(_value.copyWith(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$ManagementInsightImplCopyWith<$Res>
+    implements $ManagementInsightCopyWith<$Res> {
+  factory _$$ManagementInsightImplCopyWith(_$ManagementInsightImpl value,
+          $Res Function(_$ManagementInsightImpl) then) =
+      __$$ManagementInsightImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String type, String description, String impact});
+}
+
+/// @nodoc
+class __$$ManagementInsightImplCopyWithImpl<$Res>
+    extends _$ManagementInsightCopyWithImpl<$Res, _$ManagementInsightImpl>
+    implements _$$ManagementInsightImplCopyWith<$Res> {
+  __$$ManagementInsightImplCopyWithImpl(_$ManagementInsightImpl _value,
+      $Res Function(_$ManagementInsightImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? type = null,
+    Object? description = null,
+    Object? impact = null,
+  }) {
+    return _then(_$ManagementInsightImpl(
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: null == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
+      impact: null == impact
+          ? _value.impact
+          : impact // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$ManagementInsightImpl implements _ManagementInsight {
+  const _$ManagementInsightImpl(
+      {required this.type, required this.description, required this.impact});
+
+  factory _$ManagementInsightImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ManagementInsightImplFromJson(json);
+
+  @override
+  final String type;
+  @override
+  final String description;
+  @override
+  final String impact;
+
+  @override
+  String toString() {
+    return 'ManagementInsight(type: $type, description: $description, impact: $impact)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ManagementInsightImpl &&
+            (identical(other.type, type) || other.type == type) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.impact, impact) || other.impact == impact));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, type, description, impact);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ManagementInsightImplCopyWith<_$ManagementInsightImpl> get copyWith =>
+      __$$ManagementInsightImplCopyWithImpl<_$ManagementInsightImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ManagementInsightImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _ManagementInsight implements ManagementInsight {
+  const factory _ManagementInsight(
+      {required final String type,
+      required final String description,
+      required final String impact}) = _$ManagementInsightImpl;
+
+  factory _ManagementInsight.fromJson(Map<String, dynamic> json) =
+      _$ManagementInsightImpl.fromJson;
+
+  @override
+  String get type;
+  @override
+  String get description;
+  @override
+  String get impact;
+  @override
+  @JsonKey(ignore: true)
+  _$$ManagementInsightImplCopyWith<_$ManagementInsightImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+CalculatedMetrics _$CalculatedMetricsFromJson(Map<String, dynamic> json) {
+  return _CalculatedMetrics.fromJson(json);
+}
+
+/// @nodoc
+mixin _$CalculatedMetrics {
+  double? get piotroskiScore => throw _privateConstructorUsedError;
+  double? get altmanZScore => throw _privateConstructorUsedError;
+  double? get grahamNumber => throw _privateConstructorUsedError;
+  double? get pegRatio => throw _privateConstructorUsedError;
+  double? get roic => throw _privateConstructorUsedError;
+  double? get fcfYield => throw _privateConstructorUsedError;
+  double? get comprehensiveScore => throw _privateConstructorUsedError;
+  String? get riskAssessment => throw _privateConstructorUsedError;
+  String? get investmentGrade => throw _privateConstructorUsedError;
+  String? get investmentRecommendation => throw _privateConstructorUsedError;
+  double? get safetyMargin => throw _privateConstructorUsedError;
+  double? get debtServiceCoverage => throw _privateConstructorUsedError;
+  double? get workingCapitalTurnover => throw _privateConstructorUsedError;
+  double? get returnOnAssets => throw _privateConstructorUsedError;
+  double? get returnOnCapital => throw _privateConstructorUsedError;
+  double? get evToEbitda => throw _privateConstructorUsedError;
+  double? get priceToFreeCashFlow => throw _privateConstructorUsedError;
+  double? get enterpriseValueToSales => throw _privateConstructorUsedError;
+  Map<String, double>? get sectorComparison =>
+      throw _privateConstructorUsedError;
+  Map<String, String>? get qualityMetrics => throw _privateConstructorUsedError;
+  List<String>? get strengthFactors => throw _privateConstructorUsedError;
+  List<String>? get weaknessFactors => throw _privateConstructorUsedError;
+  Map<String, dynamic>? get valuationMetrics =>
+      throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $CalculatedMetricsCopyWith<CalculatedMetrics> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $CalculatedMetricsCopyWith<$Res> {
+  factory $CalculatedMetricsCopyWith(
+          CalculatedMetrics value, $Res Function(CalculatedMetrics) then) =
+      _$CalculatedMetricsCopyWithImpl<$Res, CalculatedMetrics>;
+  @useResult
+  $Res call(
+      {double? piotroskiScore,
+      double? altmanZScore,
+      double? grahamNumber,
+      double? pegRatio,
+      double? roic,
+      double? fcfYield,
+      double? comprehensiveScore,
+      String? riskAssessment,
+      String? investmentGrade,
+      String? investmentRecommendation,
+      double? safetyMargin,
+      double? debtServiceCoverage,
+      double? workingCapitalTurnover,
+      double? returnOnAssets,
+      double? returnOnCapital,
+      double? evToEbitda,
+      double? priceToFreeCashFlow,
+      double? enterpriseValueToSales,
+      Map<String, double>? sectorComparison,
+      Map<String, String>? qualityMetrics,
+      List<String>? strengthFactors,
+      List<String>? weaknessFactors,
+      Map<String, dynamic>? valuationMetrics});
+}
+
+/// @nodoc
+class _$CalculatedMetricsCopyWithImpl<$Res, $Val extends CalculatedMetrics>
+    implements $CalculatedMetricsCopyWith<$Res> {
+  _$CalculatedMetricsCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? piotroskiScore = freezed,
+    Object? altmanZScore = freezed,
+    Object? grahamNumber = freezed,
+    Object? pegRatio = freezed,
+    Object? roic = freezed,
+    Object? fcfYield = freezed,
+    Object? comprehensiveScore = freezed,
+    Object? riskAssessment = freezed,
+    Object? investmentGrade = freezed,
+    Object? investmentRecommendation = freezed,
+    Object? safetyMargin = freezed,
+    Object? debtServiceCoverage = freezed,
+    Object? workingCapitalTurnover = freezed,
+    Object? returnOnAssets = freezed,
+    Object? returnOnCapital = freezed,
+    Object? evToEbitda = freezed,
+    Object? priceToFreeCashFlow = freezed,
+    Object? enterpriseValueToSales = freezed,
+    Object? sectorComparison = freezed,
+    Object? qualityMetrics = freezed,
+    Object? strengthFactors = freezed,
+    Object? weaknessFactors = freezed,
+    Object? valuationMetrics = freezed,
+  }) {
+    return _then(_value.copyWith(
+      piotroskiScore: freezed == piotroskiScore
+          ? _value.piotroskiScore
+          : piotroskiScore // ignore: cast_nullable_to_non_nullable
+              as double?,
+      altmanZScore: freezed == altmanZScore
+          ? _value.altmanZScore
+          : altmanZScore // ignore: cast_nullable_to_non_nullable
+              as double?,
+      grahamNumber: freezed == grahamNumber
+          ? _value.grahamNumber
+          : grahamNumber // ignore: cast_nullable_to_non_nullable
+              as double?,
+      pegRatio: freezed == pegRatio
+          ? _value.pegRatio
+          : pegRatio // ignore: cast_nullable_to_non_nullable
+              as double?,
+      roic: freezed == roic
+          ? _value.roic
+          : roic // ignore: cast_nullable_to_non_nullable
+              as double?,
+      fcfYield: freezed == fcfYield
+          ? _value.fcfYield
+          : fcfYield // ignore: cast_nullable_to_non_nullable
+              as double?,
+      comprehensiveScore: freezed == comprehensiveScore
+          ? _value.comprehensiveScore
+          : comprehensiveScore // ignore: cast_nullable_to_non_nullable
+              as double?,
+      riskAssessment: freezed == riskAssessment
+          ? _value.riskAssessment
+          : riskAssessment // ignore: cast_nullable_to_non_nullable
+              as String?,
+      investmentGrade: freezed == investmentGrade
+          ? _value.investmentGrade
+          : investmentGrade // ignore: cast_nullable_to_non_nullable
+              as String?,
+      investmentRecommendation: freezed == investmentRecommendation
+          ? _value.investmentRecommendation
+          : investmentRecommendation // ignore: cast_nullable_to_non_nullable
+              as String?,
+      safetyMargin: freezed == safetyMargin
+          ? _value.safetyMargin
+          : safetyMargin // ignore: cast_nullable_to_non_nullable
+              as double?,
+      debtServiceCoverage: freezed == debtServiceCoverage
+          ? _value.debtServiceCoverage
+          : debtServiceCoverage // ignore: cast_nullable_to_non_nullable
+              as double?,
+      workingCapitalTurnover: freezed == workingCapitalTurnover
+          ? _value.workingCapitalTurnover
+          : workingCapitalTurnover // ignore: cast_nullable_to_non_nullable
+              as double?,
+      returnOnAssets: freezed == returnOnAssets
+          ? _value.returnOnAssets
+          : returnOnAssets // ignore: cast_nullable_to_non_nullable
+              as double?,
+      returnOnCapital: freezed == returnOnCapital
+          ? _value.returnOnCapital
+          : returnOnCapital // ignore: cast_nullable_to_non_nullable
+              as double?,
+      evToEbitda: freezed == evToEbitda
+          ? _value.evToEbitda
+          : evToEbitda // ignore: cast_nullable_to_non_nullable
+              as double?,
+      priceToFreeCashFlow: freezed == priceToFreeCashFlow
+          ? _value.priceToFreeCashFlow
+          : priceToFreeCashFlow // ignore: cast_nullable_to_non_nullable
+              as double?,
+      enterpriseValueToSales: freezed == enterpriseValueToSales
+          ? _value.enterpriseValueToSales
+          : enterpriseValueToSales // ignore: cast_nullable_to_non_nullable
+              as double?,
+      sectorComparison: freezed == sectorComparison
+          ? _value.sectorComparison
+          : sectorComparison // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>?,
+      qualityMetrics: freezed == qualityMetrics
+          ? _value.qualityMetrics
+          : qualityMetrics // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>?,
+      strengthFactors: freezed == strengthFactors
+          ? _value.strengthFactors
+          : strengthFactors // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      weaknessFactors: freezed == weaknessFactors
+          ? _value.weaknessFactors
+          : weaknessFactors // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      valuationMetrics: freezed == valuationMetrics
+          ? _value.valuationMetrics
+          : valuationMetrics // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$CalculatedMetricsImplCopyWith<$Res>
+    implements $CalculatedMetricsCopyWith<$Res> {
+  factory _$$CalculatedMetricsImplCopyWith(_$CalculatedMetricsImpl value,
+          $Res Function(_$CalculatedMetricsImpl) then) =
+      __$$CalculatedMetricsImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {double? piotroskiScore,
+      double? altmanZScore,
+      double? grahamNumber,
+      double? pegRatio,
+      double? roic,
+      double? fcfYield,
+      double? comprehensiveScore,
+      String? riskAssessment,
+      String? investmentGrade,
+      String? investmentRecommendation,
+      double? safetyMargin,
+      double? debtServiceCoverage,
+      double? workingCapitalTurnover,
+      double? returnOnAssets,
+      double? returnOnCapital,
+      double? evToEbitda,
+      double? priceToFreeCashFlow,
+      double? enterpriseValueToSales,
+      Map<String, double>? sectorComparison,
+      Map<String, String>? qualityMetrics,
+      List<String>? strengthFactors,
+      List<String>? weaknessFactors,
+      Map<String, dynamic>? valuationMetrics});
+}
+
+/// @nodoc
+class __$$CalculatedMetricsImplCopyWithImpl<$Res>
+    extends _$CalculatedMetricsCopyWithImpl<$Res, _$CalculatedMetricsImpl>
+    implements _$$CalculatedMetricsImplCopyWith<$Res> {
+  __$$CalculatedMetricsImplCopyWithImpl(_$CalculatedMetricsImpl _value,
+      $Res Function(_$CalculatedMetricsImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? piotroskiScore = freezed,
+    Object? altmanZScore = freezed,
+    Object? grahamNumber = freezed,
+    Object? pegRatio = freezed,
+    Object? roic = freezed,
+    Object? fcfYield = freezed,
+    Object? comprehensiveScore = freezed,
+    Object? riskAssessment = freezed,
+    Object? investmentGrade = freezed,
+    Object? investmentRecommendation = freezed,
+    Object? safetyMargin = freezed,
+    Object? debtServiceCoverage = freezed,
+    Object? workingCapitalTurnover = freezed,
+    Object? returnOnAssets = freezed,
+    Object? returnOnCapital = freezed,
+    Object? evToEbitda = freezed,
+    Object? priceToFreeCashFlow = freezed,
+    Object? enterpriseValueToSales = freezed,
+    Object? sectorComparison = freezed,
+    Object? qualityMetrics = freezed,
+    Object? strengthFactors = freezed,
+    Object? weaknessFactors = freezed,
+    Object? valuationMetrics = freezed,
+  }) {
+    return _then(_$CalculatedMetricsImpl(
+      piotroskiScore: freezed == piotroskiScore
+          ? _value.piotroskiScore
+          : piotroskiScore // ignore: cast_nullable_to_non_nullable
+              as double?,
+      altmanZScore: freezed == altmanZScore
+          ? _value.altmanZScore
+          : altmanZScore // ignore: cast_nullable_to_non_nullable
+              as double?,
+      grahamNumber: freezed == grahamNumber
+          ? _value.grahamNumber
+          : grahamNumber // ignore: cast_nullable_to_non_nullable
+              as double?,
+      pegRatio: freezed == pegRatio
+          ? _value.pegRatio
+          : pegRatio // ignore: cast_nullable_to_non_nullable
+              as double?,
+      roic: freezed == roic
+          ? _value.roic
+          : roic // ignore: cast_nullable_to_non_nullable
+              as double?,
+      fcfYield: freezed == fcfYield
+          ? _value.fcfYield
+          : fcfYield // ignore: cast_nullable_to_non_nullable
+              as double?,
+      comprehensiveScore: freezed == comprehensiveScore
+          ? _value.comprehensiveScore
+          : comprehensiveScore // ignore: cast_nullable_to_non_nullable
+              as double?,
+      riskAssessment: freezed == riskAssessment
+          ? _value.riskAssessment
+          : riskAssessment // ignore: cast_nullable_to_non_nullable
+              as String?,
+      investmentGrade: freezed == investmentGrade
+          ? _value.investmentGrade
+          : investmentGrade // ignore: cast_nullable_to_non_nullable
+              as String?,
+      investmentRecommendation: freezed == investmentRecommendation
+          ? _value.investmentRecommendation
+          : investmentRecommendation // ignore: cast_nullable_to_non_nullable
+              as String?,
+      safetyMargin: freezed == safetyMargin
+          ? _value.safetyMargin
+          : safetyMargin // ignore: cast_nullable_to_non_nullable
+              as double?,
+      debtServiceCoverage: freezed == debtServiceCoverage
+          ? _value.debtServiceCoverage
+          : debtServiceCoverage // ignore: cast_nullable_to_non_nullable
+              as double?,
+      workingCapitalTurnover: freezed == workingCapitalTurnover
+          ? _value.workingCapitalTurnover
+          : workingCapitalTurnover // ignore: cast_nullable_to_non_nullable
+              as double?,
+      returnOnAssets: freezed == returnOnAssets
+          ? _value.returnOnAssets
+          : returnOnAssets // ignore: cast_nullable_to_non_nullable
+              as double?,
+      returnOnCapital: freezed == returnOnCapital
+          ? _value.returnOnCapital
+          : returnOnCapital // ignore: cast_nullable_to_non_nullable
+              as double?,
+      evToEbitda: freezed == evToEbitda
+          ? _value.evToEbitda
+          : evToEbitda // ignore: cast_nullable_to_non_nullable
+              as double?,
+      priceToFreeCashFlow: freezed == priceToFreeCashFlow
+          ? _value.priceToFreeCashFlow
+          : priceToFreeCashFlow // ignore: cast_nullable_to_non_nullable
+              as double?,
+      enterpriseValueToSales: freezed == enterpriseValueToSales
+          ? _value.enterpriseValueToSales
+          : enterpriseValueToSales // ignore: cast_nullable_to_non_nullable
+              as double?,
+      sectorComparison: freezed == sectorComparison
+          ? _value._sectorComparison
+          : sectorComparison // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>?,
+      qualityMetrics: freezed == qualityMetrics
+          ? _value._qualityMetrics
+          : qualityMetrics // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>?,
+      strengthFactors: freezed == strengthFactors
+          ? _value._strengthFactors
+          : strengthFactors // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      weaknessFactors: freezed == weaknessFactors
+          ? _value._weaknessFactors
+          : weaknessFactors // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
+      valuationMetrics: freezed == valuationMetrics
+          ? _value._valuationMetrics
+          : valuationMetrics // ignore: cast_nullable_to_non_nullable
+              as Map<String, dynamic>?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$CalculatedMetricsImpl implements _CalculatedMetrics {
+  const _$CalculatedMetricsImpl(
+      {this.piotroskiScore,
+      this.altmanZScore,
+      this.grahamNumber,
+      this.pegRatio,
+      this.roic,
+      this.fcfYield,
+      this.comprehensiveScore,
+      this.riskAssessment,
+      this.investmentGrade,
+      this.investmentRecommendation,
+      this.safetyMargin,
+      this.debtServiceCoverage,
+      this.workingCapitalTurnover,
+      this.returnOnAssets,
+      this.returnOnCapital,
+      this.evToEbitda,
+      this.priceToFreeCashFlow,
+      this.enterpriseValueToSales,
+      final Map<String, double>? sectorComparison,
+      final Map<String, String>? qualityMetrics,
+      final List<String>? strengthFactors,
+      final List<String>? weaknessFactors,
+      final Map<String, dynamic>? valuationMetrics})
+      : _sectorComparison = sectorComparison,
+        _qualityMetrics = qualityMetrics,
+        _strengthFactors = strengthFactors,
+        _weaknessFactors = weaknessFactors,
+        _valuationMetrics = valuationMetrics;
+
+  factory _$CalculatedMetricsImpl.fromJson(Map<String, dynamic> json) =>
+      _$$CalculatedMetricsImplFromJson(json);
+
+  @override
+  final double? piotroskiScore;
+  @override
+  final double? altmanZScore;
+  @override
+  final double? grahamNumber;
+  @override
+  final double? pegRatio;
+  @override
+  final double? roic;
+  @override
+  final double? fcfYield;
+  @override
+  final double? comprehensiveScore;
+  @override
+  final String? riskAssessment;
+  @override
+  final String? investmentGrade;
+  @override
+  final String? investmentRecommendation;
+  @override
+  final double? safetyMargin;
+  @override
+  final double? debtServiceCoverage;
+  @override
+  final double? workingCapitalTurnover;
+  @override
+  final double? returnOnAssets;
+  @override
+  final double? returnOnCapital;
+  @override
+  final double? evToEbitda;
+  @override
+  final double? priceToFreeCashFlow;
+  @override
+  final double? enterpriseValueToSales;
+  final Map<String, double>? _sectorComparison;
+  @override
+  Map<String, double>? get sectorComparison {
+    final value = _sectorComparison;
+    if (value == null) return null;
+    if (_sectorComparison is EqualUnmodifiableMapView) return _sectorComparison;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  final Map<String, String>? _qualityMetrics;
+  @override
+  Map<String, String>? get qualityMetrics {
+    final value = _qualityMetrics;
+    if (value == null) return null;
+    if (_qualityMetrics is EqualUnmodifiableMapView) return _qualityMetrics;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  final List<String>? _strengthFactors;
+  @override
+  List<String>? get strengthFactors {
+    final value = _strengthFactors;
+    if (value == null) return null;
+    if (_strengthFactors is EqualUnmodifiableListView) return _strengthFactors;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  final List<String>? _weaknessFactors;
+  @override
+  List<String>? get weaknessFactors {
+    final value = _weaknessFactors;
+    if (value == null) return null;
+    if (_weaknessFactors is EqualUnmodifiableListView) return _weaknessFactors;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  final Map<String, dynamic>? _valuationMetrics;
+  @override
+  Map<String, dynamic>? get valuationMetrics {
+    final value = _valuationMetrics;
+    if (value == null) return null;
+    if (_valuationMetrics is EqualUnmodifiableMapView) return _valuationMetrics;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  @override
+  String toString() {
+    return 'CalculatedMetrics(piotroskiScore: $piotroskiScore, altmanZScore: $altmanZScore, grahamNumber: $grahamNumber, pegRatio: $pegRatio, roic: $roic, fcfYield: $fcfYield, comprehensiveScore: $comprehensiveScore, riskAssessment: $riskAssessment, investmentGrade: $investmentGrade, investmentRecommendation: $investmentRecommendation, safetyMargin: $safetyMargin, debtServiceCoverage: $debtServiceCoverage, workingCapitalTurnover: $workingCapitalTurnover, returnOnAssets: $returnOnAssets, returnOnCapital: $returnOnCapital, evToEbitda: $evToEbitda, priceToFreeCashFlow: $priceToFreeCashFlow, enterpriseValueToSales: $enterpriseValueToSales, sectorComparison: $sectorComparison, qualityMetrics: $qualityMetrics, strengthFactors: $strengthFactors, weaknessFactors: $weaknessFactors, valuationMetrics: $valuationMetrics)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$CalculatedMetricsImpl &&
+            (identical(other.piotroskiScore, piotroskiScore) ||
+                other.piotroskiScore == piotroskiScore) &&
+            (identical(other.altmanZScore, altmanZScore) ||
+                other.altmanZScore == altmanZScore) &&
+            (identical(other.grahamNumber, grahamNumber) ||
+                other.grahamNumber == grahamNumber) &&
+            (identical(other.pegRatio, pegRatio) ||
+                other.pegRatio == pegRatio) &&
+            (identical(other.roic, roic) || other.roic == roic) &&
+            (identical(other.fcfYield, fcfYield) ||
+                other.fcfYield == fcfYield) &&
+            (identical(other.comprehensiveScore, comprehensiveScore) ||
+                other.comprehensiveScore == comprehensiveScore) &&
+            (identical(other.riskAssessment, riskAssessment) ||
+                other.riskAssessment == riskAssessment) &&
+            (identical(other.investmentGrade, investmentGrade) ||
+                other.investmentGrade == investmentGrade) &&
+            (identical(
+                    other.investmentRecommendation, investmentRecommendation) ||
+                other.investmentRecommendation == investmentRecommendation) &&
+            (identical(other.safetyMargin, safetyMargin) ||
+                other.safetyMargin == safetyMargin) &&
+            (identical(other.debtServiceCoverage, debtServiceCoverage) ||
+                other.debtServiceCoverage == debtServiceCoverage) &&
+            (identical(other.workingCapitalTurnover, workingCapitalTurnover) ||
+                other.workingCapitalTurnover == workingCapitalTurnover) &&
+            (identical(other.returnOnAssets, returnOnAssets) ||
+                other.returnOnAssets == returnOnAssets) &&
+            (identical(other.returnOnCapital, returnOnCapital) ||
+                other.returnOnCapital == returnOnCapital) &&
+            (identical(other.evToEbitda, evToEbitda) ||
+                other.evToEbitda == evToEbitda) &&
+            (identical(other.priceToFreeCashFlow, priceToFreeCashFlow) ||
+                other.priceToFreeCashFlow == priceToFreeCashFlow) &&
+            (identical(other.enterpriseValueToSales, enterpriseValueToSales) ||
+                other.enterpriseValueToSales == enterpriseValueToSales) &&
+            const DeepCollectionEquality()
+                .equals(other._sectorComparison, _sectorComparison) &&
+            const DeepCollectionEquality()
+                .equals(other._qualityMetrics, _qualityMetrics) &&
+            const DeepCollectionEquality()
+                .equals(other._strengthFactors, _strengthFactors) &&
+            const DeepCollectionEquality()
+                .equals(other._weaknessFactors, _weaknessFactors) &&
+            const DeepCollectionEquality()
+                .equals(other._valuationMetrics, _valuationMetrics));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        piotroskiScore,
+        altmanZScore,
+        grahamNumber,
+        pegRatio,
+        roic,
+        fcfYield,
+        comprehensiveScore,
+        riskAssessment,
+        investmentGrade,
+        investmentRecommendation,
+        safetyMargin,
+        debtServiceCoverage,
+        workingCapitalTurnover,
+        returnOnAssets,
+        returnOnCapital,
+        evToEbitda,
+        priceToFreeCashFlow,
+        enterpriseValueToSales,
+        const DeepCollectionEquality().hash(_sectorComparison),
+        const DeepCollectionEquality().hash(_qualityMetrics),
+        const DeepCollectionEquality().hash(_strengthFactors),
+        const DeepCollectionEquality().hash(_weaknessFactors),
+        const DeepCollectionEquality().hash(_valuationMetrics)
+      ]);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$CalculatedMetricsImplCopyWith<_$CalculatedMetricsImpl> get copyWith =>
+      __$$CalculatedMetricsImplCopyWithImpl<_$CalculatedMetricsImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$CalculatedMetricsImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _CalculatedMetrics implements CalculatedMetrics {
+  const factory _CalculatedMetrics(
+      {final double? piotroskiScore,
+      final double? altmanZScore,
+      final double? grahamNumber,
+      final double? pegRatio,
+      final double? roic,
+      final double? fcfYield,
+      final double? comprehensiveScore,
+      final String? riskAssessment,
+      final String? investmentGrade,
+      final String? investmentRecommendation,
+      final double? safetyMargin,
+      final double? debtServiceCoverage,
+      final double? workingCapitalTurnover,
+      final double? returnOnAssets,
+      final double? returnOnCapital,
+      final double? evToEbitda,
+      final double? priceToFreeCashFlow,
+      final double? enterpriseValueToSales,
+      final Map<String, double>? sectorComparison,
+      final Map<String, String>? qualityMetrics,
+      final List<String>? strengthFactors,
+      final List<String>? weaknessFactors,
+      final Map<String, dynamic>? valuationMetrics}) = _$CalculatedMetricsImpl;
+
+  factory _CalculatedMetrics.fromJson(Map<String, dynamic> json) =
+      _$CalculatedMetricsImpl.fromJson;
+
+  @override
+  double? get piotroskiScore;
+  @override
+  double? get altmanZScore;
+  @override
+  double? get grahamNumber;
+  @override
+  double? get pegRatio;
+  @override
+  double? get roic;
+  @override
+  double? get fcfYield;
+  @override
+  double? get comprehensiveScore;
+  @override
+  String? get riskAssessment;
+  @override
+  String? get investmentGrade;
+  @override
+  String? get investmentRecommendation;
+  @override
+  double? get safetyMargin;
+  @override
+  double? get debtServiceCoverage;
+  @override
+  double? get workingCapitalTurnover;
+  @override
+  double? get returnOnAssets;
+  @override
+  double? get returnOnCapital;
+  @override
+  double? get evToEbitda;
+  @override
+  double? get priceToFreeCashFlow;
+  @override
+  double? get enterpriseValueToSales;
+  @override
+  Map<String, double>? get sectorComparison;
+  @override
+  Map<String, String>? get qualityMetrics;
+  @override
+  List<String>? get strengthFactors;
+  @override
+  List<String>? get weaknessFactors;
+  @override
+  Map<String, dynamic>? get valuationMetrics;
+  @override
+  @JsonKey(ignore: true)
+  _$$CalculatedMetricsImplCopyWith<_$CalculatedMetricsImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -3112,8 +5763,7 @@ InvestmentHighlight _$InvestmentHighlightFromJson(Map<String, dynamic> json) {
 mixin _$InvestmentHighlight {
   String get type => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
-  String get impact =>
-      throw _privateConstructorUsedError; // positive, negative, neutral
+  String get impact => throw _privateConstructorUsedError;
   double? get value => throw _privateConstructorUsedError;
   String? get unit => throw _privateConstructorUsedError;
 
@@ -3258,7 +5908,6 @@ class _$InvestmentHighlightImpl implements _InvestmentHighlight {
   final String description;
   @override
   final String impact;
-// positive, negative, neutral
   @override
   final double? value;
   @override
@@ -3319,7 +5968,7 @@ abstract class _InvestmentHighlight implements InvestmentHighlight {
   String get description;
   @override
   String get impact;
-  @override // positive, negative, neutral
+  @override
   double? get value;
   @override
   String? get unit;
@@ -4159,7 +6808,14 @@ mixin _$AnnualData {
   double? get ebitdaMargin => throw _privateConstructorUsedError;
   double? get assetTurnover => throw _privateConstructorUsedError;
   double? get inventoryTurnover => throw _privateConstructorUsedError;
-  double? get interestCoverage => throw _privateConstructorUsedError;
+  double? get interestCoverage =>
+      throw _privateConstructorUsedError; // ADD THIS MISSING FIELD:
+  double? get interestExpense =>
+      throw _privateConstructorUsedError; // You might also want to add these commonly used fields:
+  double? get taxExpense => throw _privateConstructorUsedError;
+  double? get depreciation => throw _privateConstructorUsedError;
+  double? get amortization => throw _privateConstructorUsedError;
+  double? get capitalExpenditures => throw _privateConstructorUsedError;
   @TimestampConverter()
   DateTime? get yearEnd => throw _privateConstructorUsedError;
 
@@ -4207,6 +6863,11 @@ abstract class $AnnualDataCopyWith<$Res> {
       double? assetTurnover,
       double? inventoryTurnover,
       double? interestCoverage,
+      double? interestExpense,
+      double? taxExpense,
+      double? depreciation,
+      double? amortization,
+      double? capitalExpenditures,
       @TimestampConverter() DateTime? yearEnd});
 }
 
@@ -4254,6 +6915,11 @@ class _$AnnualDataCopyWithImpl<$Res, $Val extends AnnualData>
     Object? assetTurnover = freezed,
     Object? inventoryTurnover = freezed,
     Object? interestCoverage = freezed,
+    Object? interestExpense = freezed,
+    Object? taxExpense = freezed,
+    Object? depreciation = freezed,
+    Object? amortization = freezed,
+    Object? capitalExpenditures = freezed,
     Object? yearEnd = freezed,
   }) {
     return _then(_value.copyWith(
@@ -4381,6 +7047,26 @@ class _$AnnualDataCopyWithImpl<$Res, $Val extends AnnualData>
           ? _value.interestCoverage
           : interestCoverage // ignore: cast_nullable_to_non_nullable
               as double?,
+      interestExpense: freezed == interestExpense
+          ? _value.interestExpense
+          : interestExpense // ignore: cast_nullable_to_non_nullable
+              as double?,
+      taxExpense: freezed == taxExpense
+          ? _value.taxExpense
+          : taxExpense // ignore: cast_nullable_to_non_nullable
+              as double?,
+      depreciation: freezed == depreciation
+          ? _value.depreciation
+          : depreciation // ignore: cast_nullable_to_non_nullable
+              as double?,
+      amortization: freezed == amortization
+          ? _value.amortization
+          : amortization // ignore: cast_nullable_to_non_nullable
+              as double?,
+      capitalExpenditures: freezed == capitalExpenditures
+          ? _value.capitalExpenditures
+          : capitalExpenditures // ignore: cast_nullable_to_non_nullable
+              as double?,
       yearEnd: freezed == yearEnd
           ? _value.yearEnd
           : yearEnd // ignore: cast_nullable_to_non_nullable
@@ -4429,6 +7115,11 @@ abstract class _$$AnnualDataImplCopyWith<$Res>
       double? assetTurnover,
       double? inventoryTurnover,
       double? interestCoverage,
+      double? interestExpense,
+      double? taxExpense,
+      double? depreciation,
+      double? amortization,
+      double? capitalExpenditures,
       @TimestampConverter() DateTime? yearEnd});
 }
 
@@ -4474,6 +7165,11 @@ class __$$AnnualDataImplCopyWithImpl<$Res>
     Object? assetTurnover = freezed,
     Object? inventoryTurnover = freezed,
     Object? interestCoverage = freezed,
+    Object? interestExpense = freezed,
+    Object? taxExpense = freezed,
+    Object? depreciation = freezed,
+    Object? amortization = freezed,
+    Object? capitalExpenditures = freezed,
     Object? yearEnd = freezed,
   }) {
     return _then(_$AnnualDataImpl(
@@ -4601,6 +7297,26 @@ class __$$AnnualDataImplCopyWithImpl<$Res>
           ? _value.interestCoverage
           : interestCoverage // ignore: cast_nullable_to_non_nullable
               as double?,
+      interestExpense: freezed == interestExpense
+          ? _value.interestExpense
+          : interestExpense // ignore: cast_nullable_to_non_nullable
+              as double?,
+      taxExpense: freezed == taxExpense
+          ? _value.taxExpense
+          : taxExpense // ignore: cast_nullable_to_non_nullable
+              as double?,
+      depreciation: freezed == depreciation
+          ? _value.depreciation
+          : depreciation // ignore: cast_nullable_to_non_nullable
+              as double?,
+      amortization: freezed == amortization
+          ? _value.amortization
+          : amortization // ignore: cast_nullable_to_non_nullable
+              as double?,
+      capitalExpenditures: freezed == capitalExpenditures
+          ? _value.capitalExpenditures
+          : capitalExpenditures // ignore: cast_nullable_to_non_nullable
+              as double?,
       yearEnd: freezed == yearEnd
           ? _value.yearEnd
           : yearEnd // ignore: cast_nullable_to_non_nullable
@@ -4644,6 +7360,11 @@ class _$AnnualDataImpl implements _AnnualData {
       this.assetTurnover,
       this.inventoryTurnover,
       this.interestCoverage,
+      this.interestExpense,
+      this.taxExpense,
+      this.depreciation,
+      this.amortization,
+      this.capitalExpenditures,
       @TimestampConverter() this.yearEnd});
 
   factory _$AnnualDataImpl.fromJson(Map<String, dynamic> json) =>
@@ -4711,13 +7432,25 @@ class _$AnnualDataImpl implements _AnnualData {
   final double? inventoryTurnover;
   @override
   final double? interestCoverage;
+// ADD THIS MISSING FIELD:
+  @override
+  final double? interestExpense;
+// You might also want to add these commonly used fields:
+  @override
+  final double? taxExpense;
+  @override
+  final double? depreciation;
+  @override
+  final double? amortization;
+  @override
+  final double? capitalExpenditures;
   @override
   @TimestampConverter()
   final DateTime? yearEnd;
 
   @override
   String toString() {
-    return 'AnnualData(year: $year, sales: $sales, netProfit: $netProfit, eps: $eps, bookValue: $bookValue, roe: $roe, roce: $roce, peRatio: $peRatio, pbRatio: $pbRatio, dividendPerShare: $dividendPerShare, faceValue: $faceValue, operatingProfit: $operatingProfit, ebitda: $ebitda, grossProfit: $grossProfit, totalAssets: $totalAssets, totalLiabilities: $totalLiabilities, shareholdersEquity: $shareholdersEquity, totalDebt: $totalDebt, workingCapital: $workingCapital, operatingCashFlow: $operatingCashFlow, investingCashFlow: $investingCashFlow, financingCashFlow: $financingCashFlow, freeCashFlow: $freeCashFlow, currentRatio: $currentRatio, quickRatio: $quickRatio, debtToEquity: $debtToEquity, profitMargin: $profitMargin, ebitdaMargin: $ebitdaMargin, assetTurnover: $assetTurnover, inventoryTurnover: $inventoryTurnover, interestCoverage: $interestCoverage, yearEnd: $yearEnd)';
+    return 'AnnualData(year: $year, sales: $sales, netProfit: $netProfit, eps: $eps, bookValue: $bookValue, roe: $roe, roce: $roce, peRatio: $peRatio, pbRatio: $pbRatio, dividendPerShare: $dividendPerShare, faceValue: $faceValue, operatingProfit: $operatingProfit, ebitda: $ebitda, grossProfit: $grossProfit, totalAssets: $totalAssets, totalLiabilities: $totalLiabilities, shareholdersEquity: $shareholdersEquity, totalDebt: $totalDebt, workingCapital: $workingCapital, operatingCashFlow: $operatingCashFlow, investingCashFlow: $investingCashFlow, financingCashFlow: $financingCashFlow, freeCashFlow: $freeCashFlow, currentRatio: $currentRatio, quickRatio: $quickRatio, debtToEquity: $debtToEquity, profitMargin: $profitMargin, ebitdaMargin: $ebitdaMargin, assetTurnover: $assetTurnover, inventoryTurnover: $inventoryTurnover, interestCoverage: $interestCoverage, interestExpense: $interestExpense, taxExpense: $taxExpense, depreciation: $depreciation, amortization: $amortization, capitalExpenditures: $capitalExpenditures, yearEnd: $yearEnd)';
   }
 
   @override
@@ -4779,6 +7512,16 @@ class _$AnnualDataImpl implements _AnnualData {
                 other.inventoryTurnover == inventoryTurnover) &&
             (identical(other.interestCoverage, interestCoverage) ||
                 other.interestCoverage == interestCoverage) &&
+            (identical(other.interestExpense, interestExpense) ||
+                other.interestExpense == interestExpense) &&
+            (identical(other.taxExpense, taxExpense) ||
+                other.taxExpense == taxExpense) &&
+            (identical(other.depreciation, depreciation) ||
+                other.depreciation == depreciation) &&
+            (identical(other.amortization, amortization) ||
+                other.amortization == amortization) &&
+            (identical(other.capitalExpenditures, capitalExpenditures) ||
+                other.capitalExpenditures == capitalExpenditures) &&
             (identical(other.yearEnd, yearEnd) || other.yearEnd == yearEnd));
   }
 
@@ -4817,6 +7560,11 @@ class _$AnnualDataImpl implements _AnnualData {
         assetTurnover,
         inventoryTurnover,
         interestCoverage,
+        interestExpense,
+        taxExpense,
+        depreciation,
+        amortization,
+        capitalExpenditures,
         yearEnd
       ]);
 
@@ -4867,6 +7615,11 @@ abstract class _AnnualData implements AnnualData {
       final double? assetTurnover,
       final double? inventoryTurnover,
       final double? interestCoverage,
+      final double? interestExpense,
+      final double? taxExpense,
+      final double? depreciation,
+      final double? amortization,
+      final double? capitalExpenditures,
       @TimestampConverter() final DateTime? yearEnd}) = _$AnnualDataImpl;
 
   factory _AnnualData.fromJson(Map<String, dynamic> json) =
@@ -4934,6 +7687,16 @@ abstract class _AnnualData implements AnnualData {
   double? get inventoryTurnover;
   @override
   double? get interestCoverage;
+  @override // ADD THIS MISSING FIELD:
+  double? get interestExpense;
+  @override // You might also want to add these commonly used fields:
+  double? get taxExpense;
+  @override
+  double? get depreciation;
+  @override
+  double? get amortization;
+  @override
+  double? get capitalExpenditures;
   @override
   @TimestampConverter()
   DateTime? get yearEnd;

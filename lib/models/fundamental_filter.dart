@@ -1,993 +1,967 @@
-// models/fundamental_filter.dart
-import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
+part 'fundamental_filter.freezed.dart';
+part 'fundamental_filter.g.dart';
+
+@freezed
+class FundamentalFilter with _$FundamentalFilter {
+  const factory FundamentalFilter({
+    required FundamentalType type,
+    required String name,
+    required String description,
+    required FilterCategory category,
+    @Default([]) List<String> tags,
+    @Default('') String icon,
+    @Default(false) bool isPremium,
+    @Default(0) int minimumQualityScore,
+    @Default({}) Map<String, dynamic> criteria,
+    @Default(0) int difficulty, // 0=Beginner, 1=Intermediate, 2=Advanced
+    @Default('') String explanation,
+    @Default([]) List<String> relatedFilters,
+    @Default(0.0) double successRate, // Historical success rate if available
+  }) = _FundamentalFilter;
+
+  factory FundamentalFilter.fromJson(Map<String, dynamic> json) =>
+      _$FundamentalFilterFromJson(json);
+
+  static List<FundamentalFilter> getAllFilters() {
+    return [
+      // ============================================================================
+      // ENHANCED SAFETY & QUALITY FILTERS
+      // ============================================================================
+
+      const FundamentalFilter(
+        type: FundamentalType.debtFree,
+        name: 'Debt Free Companies',
+        description: 'Companies with minimal or no debt (D/E < 0.1)',
+        category: FilterCategory.quality,
+        tags: ['safe', 'conservative', 'low-risk', 'warren-buffett'],
+        icon: '🛡️',
+        minimumQualityScore: 2,
+        difficulty: 0,
+        explanation:
+            'Companies with low debt are generally safer investments as they have less financial risk and more flexibility during economic downturns.',
+        criteria: {'debt_to_equity_max': '0.1', 'roe_min': '0'},
+        relatedFilters: ['qualityStocks', 'altmanSafe'],
+        successRate: 85.5,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.qualityStocks,
+        name: 'Quality Stocks',
+        description:
+            'High-quality companies with strong fundamentals (Quality Score ≥ 3)',
+        category: FilterCategory.quality,
+        tags: ['quality', 'fundamentals', 'reliable', 'blue-chip'],
+        icon: '⭐',
+        minimumQualityScore: 3,
+        difficulty: 0,
+        explanation:
+            'Quality stocks combine profitability, financial stability, and growth. These are ideal for long-term investors seeking steady returns.',
+        criteria: {
+          'quality_score_min': '3',
+          'roe_min': '12',
+          'current_ratio_min': '1.5'
+        },
+        relatedFilters: ['debtFree', 'compoundingMachines'],
+        successRate: 78.2,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.strongBalance,
+        name: 'Strong Balance Sheet',
+        description:
+            'Companies with excellent working capital and liquidity management',
+        category: FilterCategory.quality,
+        tags: ['balance-sheet', 'liquidity', 'efficient', 'financial-strength'],
+        icon: '💪',
+        minimumQualityScore: 2,
+        difficulty: 1,
+        explanation:
+            'Strong balance sheets indicate good management and financial discipline, providing stability during market volatility.',
+        criteria: {
+          'current_ratio_min': '1.5',
+          'working_capital_days_max': '60'
+        },
+        relatedFilters: ['workingCapitalEfficient', 'debtFree'],
+        successRate: 72.8,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.piotroskiHigh,
+        name: 'High Piotroski Score',
+        description: 'Companies with Piotroski F-Score ≥ 7 (Excellent Quality)',
+        category: FilterCategory.quality,
+        tags: ['piotroski', 'quality', 'fundamental-analysis', 'academic'],
+        icon: '🏆',
+        minimumQualityScore: 3,
+        difficulty: 2,
+        explanation:
+            'Piotroski F-Score measures financial strength across 9 criteria. Scores ≥7 indicate exceptionally strong companies.',
+        criteria: {'piotroski_score_min': '7'},
+        relatedFilters: ['altmanSafe', 'compoundingMachines'],
+        successRate: 89.3,
+        isPremium: true,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.altmanSafe,
+        name: 'Altman Z-Score Safe',
+        description: 'Companies with low bankruptcy risk (Altman Z > 3.0)',
+        category: FilterCategory.quality,
+        tags: ['altman', 'bankruptcy-risk', 'safe', 'financial-distress'],
+        icon: '🛡️',
+        minimumQualityScore: 2,
+        difficulty: 2,
+        explanation:
+            'Altman Z-Score predicts bankruptcy probability. Scores >3.0 indicate very low bankruptcy risk within 2 years.',
+        criteria: {'altman_z_score_min': '3.0'},
+        relatedFilters: ['piotroskiHigh', 'debtFree'],
+        successRate: 92.1,
+        isPremium: true,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.compoundingMachines,
+        name: 'Compounding Machines',
+        description: 'High-quality companies with consistent wealth creation',
+        category: FilterCategory.quality,
+        tags: ['compounding', 'wealth-creation', 'long-term', 'multibagger'],
+        icon: '🔄',
+        minimumQualityScore: 4,
+        difficulty: 2,
+        explanation:
+            'Companies that reinvest profits efficiently to generate superior long-term returns through the power of compounding.',
+        criteria: {
+          'roe_min': '18',
+          'roce_min': '18',
+          'sales_growth_3y_min': '12',
+          'debt_to_equity_max': '0.5'
+        },
+        relatedFilters: ['qualityStocks', 'highROIC'],
+        successRate: 94.7,
+        isPremium: true,
+      ),
+
+      // ============================================================================
+      // ENHANCED PROFITABILITY FILTERS
+      // ============================================================================
+
+      const FundamentalFilter(
+        type: FundamentalType.highROE,
+        name: 'High ROE Stocks',
+        description: 'Companies with excellent return on equity (ROE > 15%)',
+        category: FilterCategory.profitability,
+        tags: ['profitability', 'efficiency', 'returns', 'roe'],
+        icon: '📈',
+        minimumQualityScore: 2,
+        difficulty: 0,
+        explanation:
+            'High ROE indicates efficient use of shareholders\' money to generate profits. ROE >15% is considered excellent.',
+        criteria: {'roe_min': '15', 'roe_max': '100'},
+        relatedFilters: ['highROIC', 'compoundingMachines'],
+        successRate: 76.4,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.profitableStocks,
+        name: 'Consistently Profitable',
+        description: 'Companies with consistent positive returns',
+        category: FilterCategory.profitability,
+        tags: ['profitable', 'consistent', 'stable', 'reliable'],
+        icon: '💰',
+        minimumQualityScore: 2,
+        difficulty: 0,
+        explanation:
+            'Companies that consistently generate profits are more likely to weather economic downturns and provide steady returns.',
+        criteria: {'roe_min': '0', 'current_ratio_min': '1.0'},
+        relatedFilters: ['consistentProfits', 'qualityStocks'],
+        successRate: 68.9,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.consistentProfits,
+        name: 'Consistent Profit Growth',
+        description: 'Companies with steady profit growth over time',
+        category: FilterCategory.profitability,
+        tags: ['growth', 'consistent', 'reliable', 'predictable'],
+        icon: '📊',
+        minimumQualityScore: 2,
+        difficulty: 1,
+        explanation:
+            'Steady profit growth indicates strong business models and management execution, leading to predictable returns.',
+        criteria: {'roe_min': '12', 'quality_score_min': '2'},
+        relatedFilters: ['profitableStocks', 'growthStocks'],
+        successRate: 73.6,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.highROIC,
+        name: 'High ROIC Stocks',
+        description:
+            'Companies with excellent Return on Invested Capital (>20%)',
+        category: FilterCategory.profitability,
+        tags: ['roic', 'capital-efficiency', 'returns', 'warren-buffett'],
+        icon: '💼',
+        minimumQualityScore: 2,
+        difficulty: 2,
+        explanation:
+            'ROIC measures how efficiently a company uses its capital. High ROIC indicates strong competitive advantages.',
+        criteria: {'roic_min': '20'},
+        relatedFilters: ['highROE', 'compoundingMachines'],
+        successRate: 81.3,
+        isPremium: true,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.freeCashFlowRich,
+        name: 'Free Cash Flow Rich',
+        description: 'Companies generating strong free cash flows',
+        category: FilterCategory.profitability,
+        tags: ['free-cash-flow', 'cash-generation', 'quality', 'dividend'],
+        icon: '💰',
+        minimumQualityScore: 2,
+        difficulty: 1,
+        explanation:
+            'Strong free cash flow provides flexibility for growth investments, debt reduction, and shareholder returns.',
+        criteria: {'fcf_yield_min': '5', 'free_cash_flow_positive': 'true'},
+        relatedFilters: ['dividendStocks', 'qualityStocks'],
+        successRate: 79.8,
+      ),
+
+      // ============================================================================
+      // ENHANCED GROWTH FILTERS
+      // ============================================================================
+
+      const FundamentalFilter(
+        type: FundamentalType.growthStocks,
+        name: 'Growth Stocks',
+        description: 'High-growth companies with strong revenue expansion',
+        category: FilterCategory.growth,
+        tags: ['growth', 'expansion', 'potential', 'high-returns'],
+        icon: '🚀',
+        minimumQualityScore: 1,
+        difficulty: 1,
+        explanation:
+            'Growth stocks prioritize revenue and earnings growth over dividends, often providing higher long-term returns.',
+        criteria: {'sales_growth_3y_min': '15', 'sales_growth_3y_max': '200'},
+        relatedFilters: ['highSalesGrowth', 'momentumStocks'],
+        successRate: 71.2,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.highSalesGrowth,
+        name: 'High Sales Growth',
+        description: 'Companies with exceptional revenue growth (>20%)',
+        category: FilterCategory.growth,
+        tags: ['revenue', 'expansion', 'fast-growing', 'emerging'],
+        icon: '📈',
+        difficulty: 1,
+        explanation:
+            'High sales growth indicates strong market demand and business expansion, but ensure it\'s sustainable.',
+        criteria: {'sales_growth_3y_min': '20', 'sales_growth_3y_max': '200'},
+        relatedFilters: ['growthStocks', 'momentumStocks'],
+        successRate: 69.4,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.momentumStocks,
+        name: 'Momentum Stocks',
+        description: 'Companies showing strong recent performance trends',
+        category: FilterCategory.growth,
+        tags: ['momentum', 'trending', 'performance', 'short-term'],
+        icon: '⚡',
+        difficulty: 2,
+        explanation:
+            'Momentum stocks show strong recent performance but can be volatile. Best for short to medium-term strategies.',
+        criteria: {
+          'profit_growth_3y_min': '20',
+          'recent_performance': 'positive'
+        },
+        relatedFilters: ['growthStocks', 'highSalesGrowth'],
+        successRate: 64.7,
+      ),
+
+      // ============================================================================
+      // ENHANCED VALUE FILTERS
+      // ============================================================================
+
+      const FundamentalFilter(
+        type: FundamentalType.lowPE,
+        name: 'Low P/E Stocks',
+        description: 'Potentially undervalued stocks with low P/E ratios',
+        category: FilterCategory.value,
+        tags: ['value', 'undervalued', 'pe-ratio', 'benjamin-graham'],
+        icon: '💎',
+        difficulty: 0,
+        explanation:
+            'Low P/E ratios may indicate undervaluation, but ensure the company has good fundamentals to avoid value traps.',
+        criteria: {'stock_pe_max': '15', 'stock_pe_min': '0', 'roe_min': '10'},
+        relatedFilters: ['valueStocks', 'undervalued'],
+        successRate: 67.8,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.valueStocks,
+        name: 'Value Stocks',
+        description: 'Undervalued companies with strong fundamentals',
+        category: FilterCategory.value,
+        tags: ['value', 'undervalued', 'bargain', 'warren-buffett'],
+        icon: '🎯',
+        minimumQualityScore: 2,
+        difficulty: 1,
+        explanation:
+            'Classic value investing approach: buying quality companies at attractive prices for long-term wealth creation.',
+        criteria: {
+          'stock_pe_max': '12',
+          'roe_min': '10',
+          'quality_score_min': '2'
+        },
+        relatedFilters: ['lowPE', 'grahamValue'],
+        successRate: 74.3,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.undervalued,
+        name: 'Deeply Undervalued',
+        description: 'Significantly undervalued quality companies',
+        category: FilterCategory.value,
+        tags: ['deep-value', 'undervalued', 'opportunity', 'contrarian'],
+        icon: '💰',
+        minimumQualityScore: 2,
+        difficulty: 2,
+        explanation:
+            'Deeply undervalued stocks offer significant upside potential but require patience and strong conviction.',
+        criteria: {'stock_pe_max': '10', 'quality_score_min': '2'},
+        relatedFilters: ['valueStocks', 'contrarian'],
+        successRate: 76.9,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.grahamValue,
+        name: 'Graham Value Stocks',
+        description: 'Stocks trading below their Graham Intrinsic Value',
+        category: FilterCategory.value,
+        tags: ['graham-number', 'intrinsic-value', 'undervalued', 'academic'],
+        icon: '💎',
+        minimumQualityScore: 2,
+        difficulty: 2,
+        explanation:
+            'Based on Benjamin Graham\'s formula for intrinsic value. Stocks trading below this value may be undervalued.',
+        criteria: {'graham_discount': 'true', 'safety_margin_min': '10'},
+        relatedFilters: ['valueStocks', 'undervalued'],
+        successRate: 82.4,
+        isPremium: true,
+      ),
+
+      // ============================================================================
+      // ENHANCED INCOME & DIVIDEND FILTERS
+      // ============================================================================
+
+      const FundamentalFilter(
+        type: FundamentalType.dividendStocks,
+        name: 'Dividend Paying Stocks',
+        description: 'Companies that regularly pay dividends',
+        category: FilterCategory.income,
+        tags: ['dividend', 'income', 'regular-payout', 'passive-income'],
+        icon: '💵',
+        difficulty: 0,
+        explanation:
+            'Dividend stocks provide regular income and are often from mature, stable companies with predictable cash flows.',
+        criteria: {'dividend_yield_min': '1.0', 'debt_status': 'Low Debt'},
+        relatedFilters: ['highDividendYield', 'freeCashFlowRich'],
+        successRate: 66.2,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.highDividendYield,
+        name: 'High Dividend Yield',
+        description: 'Companies with attractive dividend yields (>4%)',
+        category: FilterCategory.income,
+        tags: ['high-yield', 'income', 'attractive-yield', 'retirees'],
+        icon: '🎁',
+        minimumQualityScore: 2,
+        difficulty: 1,
+        explanation:
+            'High dividend yields provide attractive income but ensure the payout is sustainable and not a dividend trap.',
+        criteria: {'dividend_yield_min': '4.0', 'quality_score_min': '2'},
+        relatedFilters: ['dividendStocks', 'freeCashFlowRich'],
+        successRate: 63.8,
+      ),
+
+      // ============================================================================
+      // MARKET CAP FILTERS
+      // ============================================================================
+
+      const FundamentalFilter(
+        type: FundamentalType.largeCap,
+        name: 'Large Cap Stocks',
+        description: 'Large capitalization companies (>₹20,000 Cr)',
+        category: FilterCategory.marketCap,
+        tags: ['large-cap', 'stable', 'established', 'blue-chip'],
+        icon: '🏢',
+        difficulty: 0,
+        explanation:
+            'Large-cap stocks are typically stable, established companies with lower volatility and steady growth.',
+        criteria: {'market_cap_min': '20000'},
+        relatedFilters: ['qualityStocks', 'dividendStocks'],
+        successRate: 65.4,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.midCap,
+        name: 'Mid Cap Stocks',
+        description: 'Mid capitalization companies (₹5,000-20,000 Cr)',
+        category: FilterCategory.marketCap,
+        tags: ['mid-cap', 'balanced', 'potential', 'growth'],
+        icon: '🏛️',
+        difficulty: 1,
+        explanation:
+            'Mid-cap stocks offer a balance between growth potential and stability, often outperforming in bull markets.',
+        criteria: {'market_cap_min': '5000', 'market_cap_max': '20000'},
+        relatedFilters: ['growthStocks', 'qualityStocks'],
+        successRate: 69.7,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.smallCap,
+        name: 'Small Cap Stocks',
+        description: 'Small capitalization companies (<₹5,000 Cr)',
+        category: FilterCategory.marketCap,
+        tags: ['small-cap', 'growth-potential', 'emerging', 'high-risk'],
+        icon: '🏪',
+        difficulty: 2,
+        explanation:
+            'Small-cap stocks offer high growth potential but come with higher volatility and risk. Suitable for risk-tolerant investors.',
+        criteria: {'market_cap_max': '5000', 'market_cap_min': '100'},
+        relatedFilters: ['growthStocks', 'momentumStocks'],
+        successRate: 58.3,
+      ),
+
+      // ============================================================================
+      // BUSINESS INTELLIGENCE FILTERS
+      // ============================================================================
+
+      const FundamentalFilter(
+        type: FundamentalType.workingCapitalEfficient,
+        name: 'Working Capital Efficient',
+        description: 'Companies with excellent working capital management',
+        category: FilterCategory.efficiency,
+        tags: [
+          'efficiency',
+          'working-capital',
+          'cash-management',
+          'operational'
+        ],
+        icon: '⚙️',
+        difficulty: 2,
+        explanation:
+            'Efficient working capital management indicates strong operational control and cash flow optimization.',
+        criteria: {
+          'working_capital_efficiency': 'Excellent',
+          'working_capital_days_max': '45'
+        },
+        relatedFilters: ['cashEfficientStocks', 'strongBalance'],
+        successRate: 77.2,
+        isPremium: true,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.cashEfficientStocks,
+        name: 'Cash Cycle Efficient',
+        description: 'Companies with optimized cash conversion cycles',
+        category: FilterCategory.efficiency,
+        tags: ['cash-cycle', 'efficiency', 'liquidity', 'working-capital'],
+        icon: '💳',
+        difficulty: 2,
+        explanation:
+            'Short cash conversion cycles mean companies collect payments faster, improving liquidity and returns.',
+        criteria: {
+          'cash_conversion_cycle_max': '60',
+          'cash_cycle_efficiency': 'Good'
+        },
+        relatedFilters: ['workingCapitalEfficient', 'freeCashFlowRich'],
+        successRate: 74.8,
+        isPremium: true,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.businessInsightRich,
+        name: 'Rich Business Insights',
+        description:
+            'Companies with comprehensive business analysis and highlights',
+        category: FilterCategory.insights,
+        tags: ['insights', 'analysis', 'comprehensive', 'research'],
+        icon: '🧠',
+        minimumQualityScore: 2,
+        difficulty: 1,
+        explanation:
+            'Companies with rich business insights provide better understanding of growth drivers and competitive advantages.',
+        criteria: {
+          'business_overview_available': 'true',
+          'investment_highlights_min': '1'
+        },
+        relatedFilters: ['recentMilestones', 'qualityStocks'],
+        successRate: 70.5,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.recentMilestones,
+        name: 'Recent Key Milestones',
+        description: 'Companies with recent significant achievements',
+        category: FilterCategory.insights,
+        tags: ['milestones', 'achievements', 'recent', 'catalysts'],
+        icon: '🎯',
+        difficulty: 1,
+        explanation:
+            'Recent milestones can indicate positive business momentum and potential upcoming growth catalysts.',
+        criteria: {'key_milestones_min': '1', 'recent_performance': 'positive'},
+        relatedFilters: ['businessInsightRich', 'momentumStocks'],
+        successRate: 68.1,
+      ),
+
+      // ============================================================================
+      // RISK & OPPORTUNITY FILTERS
+      // ============================================================================
+
+      const FundamentalFilter(
+        type: FundamentalType.lowVolatility,
+        name: 'Low Risk Stocks',
+        description: 'Low volatility, stable companies',
+        category: FilterCategory.risk,
+        tags: ['low-risk', 'stable', 'conservative', 'defensive'],
+        icon: '🛡️',
+        minimumQualityScore: 2,
+        difficulty: 0,
+        explanation:
+            'Low volatility stocks provide stability and are suitable for conservative investors seeking steady returns.',
+        criteria: {'risk_level': 'Low', 'market_cap_min': '5000'},
+        relatedFilters: ['qualityStocks', 'dividendStocks'],
+        successRate: 72.6,
+      ),
+
+      const FundamentalFilter(
+        type: FundamentalType.contrarian,
+        name: 'Contrarian Opportunities',
+        description: 'Quality companies currently out of favor',
+        category: FilterCategory.opportunity,
+        tags: ['contrarian', 'opportunity', 'recovery', 'beaten-down'],
+        icon: '🔄',
+        minimumQualityScore: 2,
+        difficulty: 2,
+        explanation:
+            'Contrarian investing involves buying quality companies when they\'re temporarily out of favor, requiring patience.',
+        criteria: {'change_percent_max': '-5', 'quality_score_min': '2'},
+        relatedFilters: ['valueStocks', 'undervalued'],
+        successRate: 79.3,
+      ),
+    ];
+  }
+
+  // ============================================================================
+  // ENHANCED HELPER METHODS
+  // ============================================================================
+
+  static List<FundamentalFilter> getFiltersByCategory(FilterCategory category) {
+    return getAllFilters()
+        .where((filter) => filter.category == category)
+        .toList();
+  }
+
+  static List<FilterCategory> getAllCategories() {
+    return FilterCategory.values;
+  }
+
+  static List<FundamentalFilter> getPopularFilters() {
+    return [
+      getAllFilters()
+          .firstWhere((f) => f.type == FundamentalType.qualityStocks),
+      getAllFilters().firstWhere((f) => f.type == FundamentalType.debtFree),
+      getAllFilters().firstWhere((f) => f.type == FundamentalType.highROE),
+      getAllFilters().firstWhere((f) => f.type == FundamentalType.growthStocks),
+      getAllFilters().firstWhere((f) => f.type == FundamentalType.valueStocks),
+      getAllFilters()
+          .firstWhere((f) => f.type == FundamentalType.dividendStocks),
+    ];
+  }
+
+  static List<FundamentalFilter> getAdvancedFilters() {
+    return getAllFilters().where((filter) => filter.difficulty >= 2).toList();
+  }
+
+  static List<FundamentalFilter> getBeginnerFilters() {
+    return getAllFilters().where((filter) => filter.difficulty == 0).toList();
+  }
+
+  static List<FundamentalFilter> getPremiumFilters() {
+    return getAllFilters().where((filter) => filter.isPremium).toList();
+  }
+
+  static List<FundamentalFilter> getFiltersBySuccessRate(
+      {double minRate = 70.0}) {
+    return getAllFilters()
+        .where((filter) => filter.successRate >= minRate)
+        .toList()
+      ..sort((a, b) => b.successRate.compareTo(a.successRate));
+  }
+
+  static List<FundamentalFilter> searchFilters(String query) {
+    final queryLower = query.toLowerCase();
+    return getAllFilters()
+        .where((filter) =>
+            filter.name.toLowerCase().contains(queryLower) ||
+            filter.description.toLowerCase().contains(queryLower) ||
+            filter.tags.any((tag) => tag.toLowerCase().contains(queryLower)))
+        .toList();
+  }
+
+  static FundamentalFilter? getFilterByType(FundamentalType type) {
+    try {
+      return getAllFilters().firstWhere((filter) => filter.type == type);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static List<FundamentalFilter> getRelatedFilters(FundamentalType type) {
+    final filter = getFilterByType(type);
+    if (filter == null) return [];
+
+    final relatedTypes = filter.relatedFilters
+        .map((name) => FundamentalType.values.firstWhere(
+              (t) => t.name == name,
+              orElse: () => FundamentalType.qualityStocks,
+            ))
+        .toList();
+
+    return relatedTypes
+        .map((type) => getFilterByType(type))
+        .where((f) => f != null)
+        .cast<FundamentalFilter>()
+        .toList();
+  }
+}
+
+// Enhanced enum with all filter types
 enum FundamentalType {
-  // Safety & Quality Filters
+  // Enhanced Safety & Quality
   debtFree,
   qualityStocks,
   strongBalance,
-  consistentProfits,
+  piotroskiHigh,
+  altmanSafe,
+  compoundingMachines,
 
-  // Profitability Filters
+  // Enhanced Profitability
   highROE,
   profitableStocks,
+  consistentProfits,
+  highROIC,
+  freeCashFlowRich,
 
-  // Growth Filters
+  // Enhanced Growth
   growthStocks,
   highSalesGrowth,
   momentumStocks,
 
-  // Value Filters
+  // Enhanced Value
   lowPE,
   valueStocks,
   undervalued,
+  grahamValue,
 
-  // Income & Dividend Filters
+  // Enhanced Income
   dividendStocks,
   highDividendYield,
 
-  // Market Cap Filters
+  // Market Cap
   largeCap,
   midCap,
   smallCap,
 
-  // Risk & Volatility Filters
-  lowVolatility,
-  contrarian,
-
-  // Enhanced Working Capital & Efficiency Filters
+  // Business Intelligence
   workingCapitalEfficient,
   cashEfficientStocks,
-  highLiquidityStocks,
-  debtFreeQuality,
-
-  // NEW: Business Insights & Enhanced Quality Filters
   businessInsightRich,
   recentMilestones,
-  comprehensiveAnalysis,
-  qualityWithGrowth,
-  sustainableBusiness,
-  innovativeCompanies,
-  marketLeaders,
-  emergingOpportunities,
+
+  // Risk & Opportunity
+  lowVolatility,
+  contrarian,
 }
-
-class FundamentalFilter {
-  final FundamentalType type;
-  final String title;
-  final String description;
-  final IconData icon;
-  final Map<String, dynamic> criteria;
-  final Color? color;
-  final FilterCategory category;
-  final bool isPremium;
-
-  const FundamentalFilter({
-    required this.type,
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.criteria,
-    required this.category,
-    this.color,
-    this.isPremium = false,
-  });
-
-  static List<FundamentalFilter> defaultFilters = [
-    // ========================================================================
-    // ENHANCED SAFETY & QUALITY FILTERS
-    // ========================================================================
-
-    FundamentalFilter(
-      type: FundamentalType.debtFree,
-      title: 'Debt Free',
-      description: 'Companies with minimal or zero debt (Debt-to-Equity < 0.1)',
-      icon: Icons.shield_outlined,
-      criteria: {'debtToEquity': 0.1, 'roe': 0.0, 'qualityScore': 2},
-      category: FilterCategory.quality,
-      color: Colors.green,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.qualityStocks,
-      title: 'Quality Stocks',
-      description:
-          'High-quality companies with strong fundamentals and A/B grades',
-      icon: Icons.star_outlined,
-      criteria: {
-        'qualityScore': 3,
-        'roe': 12.0,
-        'debtToEquity': 0.5,
-        'currentRatio': 1.5,
-        'overallQualityGrade': ['A', 'B']
-      },
-      category: FilterCategory.quality,
-      color: Colors.blue,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.strongBalance,
-      title: 'Strong Balance Sheet',
-      description:
-          'Companies with healthy balance sheets and excellent liquidity',
-      icon: Icons.account_balance,
-      criteria: {
-        'currentRatio': 1.5,
-        'debtToEquity': 0.3,
-        'interestCoverage': 5.0,
-        'workingCapitalDays': 60,
-        'liquidityStatus': 'Excellent'
-      },
-      category: FilterCategory.quality,
-      color: Colors.teal,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.consistentProfits,
-      title: 'Profit Consistency',
-      description:
-          'Stable earnings over multiple years with quality fundamentals',
-      icon: Icons.timeline,
-      criteria: {
-        'hasConsistentProfits': true,
-        'profitGrowth3Y': 0.0,
-        'currentRatio': 1.2,
-        'qualityScore': 2,
-        'riskLevel': 'Low'
-      },
-      category: FilterCategory.quality,
-      color: Colors.cyan,
-    ),
-
-    // ========================================================================
-    // ENHANCED WORKING CAPITAL & EFFICIENCY FILTERS
-    // ========================================================================
-
-    FundamentalFilter(
-      type: FundamentalType.workingCapitalEfficient,
-      title: 'Working Capital Efficient',
-      description:
-          'Companies with excellent working capital management (< 45 days)',
-      icon: Icons.access_time,
-      criteria: {
-        'workingCapitalDays': 45,
-        'currentRatio': 1.5,
-        'cashConversionCycle': 60,
-        'workingCapitalEfficiency': 'Excellent'
-      },
-      category: FilterCategory.efficiency,
-      color: Colors.lightBlue,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.cashEfficientStocks,
-      title: 'Cash Efficient',
-      description:
-          'Companies with efficient cash conversion and cycle management',
-      icon: Icons.monetization_on,
-      criteria: {
-        'cashConversionCycle': 60,
-        'debtorDays': 60,
-        'inventoryDays': 90,
-        'currentRatio': 1.2,
-        'cashCycleEfficiency': 'Good'
-      },
-      category: FilterCategory.efficiency,
-      color: Colors.amber,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.highLiquidityStocks,
-      title: 'High Liquidity',
-      description:
-          'Companies with excellent liquidity ratios and cash position',
-      icon: Icons.water_drop,
-      criteria: {
-        'currentRatio': 2.0,
-        'quickRatio': 1.5,
-        'debtToEquity': 0.4,
-        'liquidityStatus': 'Excellent'
-      },
-      category: FilterCategory.efficiency,
-      color: Colors.cyan,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.debtFreeQuality,
-      title: 'Debt-Free Quality',
-      description: 'Debt-free companies with high quality scores and A grades',
-      icon: Icons.verified_outlined,
-      criteria: {
-        'debtToEquity': 0.05,
-        'qualityScore': 4,
-        'roe': 15.0,
-        'currentRatio': 1.8,
-        'overallQualityGrade': 'A',
-        'debtStatus': 'Debt Free'
-      },
-      category: FilterCategory.quality,
-      color: Colors.purpleAccent,
-    ),
-
-    // ========================================================================
-    // NEW: BUSINESS INSIGHTS & ENHANCED QUALITY FILTERS
-    // ========================================================================
-
-    FundamentalFilter(
-      type: FundamentalType.businessInsightRich,
-      title: 'Business Insight Rich',
-      description:
-          'Companies with comprehensive business overviews and investment highlights',
-      icon: Icons.insights,
-      criteria: {
-        'businessOverview': true,
-        'investmentHighlights': 2,
-        'qualityScore': 2,
-        'industryClassification': 1
-      },
-      category: FilterCategory.insights,
-      color: Colors.deepPurple,
-      isPremium: true,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.recentMilestones,
-      title: 'Recent Milestones',
-      description: 'Companies with recent key milestones and positive momentum',
-      icon: Icons.timeline,
-      criteria: {
-        'keyMilestones': 1,
-        'recentPerformance': 'positive',
-        'changePercent': 0.0,
-        'qualityScore': 2
-      },
-      category: FilterCategory.insights,
-      color: Colors.orange,
-      isPremium: true,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.comprehensiveAnalysis,
-      title: 'Comprehensive Analysis',
-      description:
-          'Companies with detailed pros/cons analysis and business insights',
-      icon: Icons.analytics,
-      criteria: {
-        'pros': 2,
-        'cons': 1,
-        'businessOverview': true,
-        'qualityScore': 3,
-        'investmentHighlights': 1
-      },
-      category: FilterCategory.insights,
-      color: Colors.indigo,
-      isPremium: true,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.qualityWithGrowth,
-      title: 'Quality + Growth',
-      description: 'High-quality companies with strong growth prospects',
-      icon: Icons.rocket_launch,
-      criteria: {
-        'qualityScore': 3,
-        'salesGrowth3Y': 15.0,
-        'profitGrowth3Y': 15.0,
-        'roe': 15.0,
-        'overallQualityGrade': ['A', 'B']
-      },
-      category: FilterCategory.growth,
-      color: Colors.green,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.sustainableBusiness,
-      title: 'Sustainable Business',
-      description: 'Companies with sustainable business models and low risk',
-      icon: Icons.eco,
-      criteria: {
-        'qualityScore': 3,
-        'riskLevel': 'Low',
-        'debtToEquity': 0.3,
-        'roe': 12.0,
-        'businessOverview': true
-      },
-      category: FilterCategory.quality,
-      color: Colors.lightGreen,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.innovativeCompanies,
-      title: 'Innovative Companies',
-      description:
-          'Companies showing innovation and strong investment highlights',
-      icon: Icons.lightbulb,
-      criteria: {
-        'investmentHighlights': 3,
-        'salesGrowth3Y': 10.0,
-        'qualityScore': 2,
-        'marketCapCategory': 'Mid Cap'
-      },
-      category: FilterCategory.growth,
-      color: Colors.purple,
-      isPremium: true,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.marketLeaders,
-      title: 'Market Leaders',
-      description: 'Large-cap companies with market leadership and quality',
-      icon: Icons.emoji_events,
-      criteria: {
-        'marketCap': 20000,
-        'qualityScore': 3,
-        'roe': 12.0,
-        'overallQualityGrade': ['A', 'B'],
-        'businessOverview': true
-      },
-      category: FilterCategory.quality,
-      color: Colors.amber,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.emergingOpportunities,
-      title: 'Emerging Opportunities',
-      description: 'Small to mid-cap companies with high growth potential',
-      icon: Icons.trending_up,
-      criteria: {
-        'marketCapMax': 10000,
-        'salesGrowth3Y': 20.0,
-        'qualityScore': 2,
-        'investmentHighlights': 1,
-        'riskLevel': ['Low', 'Medium']
-      },
-      category: FilterCategory.growth,
-      color: Colors.teal,
-    ),
-
-    // ========================================================================
-    // ENHANCED PROFITABILITY FILTERS
-    // ========================================================================
-
-    FundamentalFilter(
-      type: FundamentalType.highROE,
-      title: 'High ROE',
-      description: 'Return on Equity > 15% with excellent quality metrics',
-      icon: Icons.trending_up,
-      criteria: {
-        'roe': 15.0,
-        'currentRatio': 1.0,
-        'qualityScore': 2,
-        'overallQualityGrade': ['A', 'B', 'C']
-      },
-      category: FilterCategory.profitability,
-      color: Colors.purple,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.profitableStocks,
-      title: 'Consistently Profitable',
-      description: 'Companies with consistent profits and quality fundamentals',
-      icon: Icons.trending_up_outlined,
-      criteria: {
-        'isProfitable': true,
-        'hasConsistentProfits': true,
-        'currentRatio': 1.0,
-        'qualityScore': 2,
-        'riskLevel': ['Low', 'Medium']
-      },
-      category: FilterCategory.profitability,
-      color: Colors.indigo,
-    ),
-
-    // ========================================================================
-    // ENHANCED GROWTH FILTERS
-    // ========================================================================
-
-    FundamentalFilter(
-      type: FundamentalType.growthStocks,
-      title: 'Growth Stocks',
-      description: 'High revenue and profit growth with quality fundamentals',
-      icon: Icons.rocket_launch,
-      criteria: {
-        'salesGrowth3Y': 15.0,
-        'profitGrowth3Y': 15.0,
-        'qualityScore': 2
-      },
-      category: FilterCategory.growth,
-      color: Colors.orange,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.highSalesGrowth,
-      title: 'High Sales Growth',
-      description:
-          'Strong revenue growth companies (> 20%) with quality metrics',
-      icon: Icons.show_chart,
-      criteria: {'salesGrowth3Y': 20.0, 'qualityScore': 1, 'currentRatio': 1.0},
-      category: FilterCategory.growth,
-      color: Colors.deepOrange,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.momentumStocks,
-      title: 'Momentum Stocks',
-      description: 'Strong price and earnings momentum with positive trends',
-      icon: Icons.speed,
-      criteria: {
-        'salesGrowth1Y': 20.0,
-        'profitGrowth1Y': 20.0,
-        'recentPerformance': 'positive'
-      },
-      category: FilterCategory.growth,
-      color: Colors.red,
-    ),
-
-    // ========================================================================
-    // ENHANCED VALUE FILTERS
-    // ========================================================================
-
-    FundamentalFilter(
-      type: FundamentalType.lowPE,
-      title: 'Low P/E',
-      description: 'P/E Ratio < 15 with positive ROE and quality metrics',
-      icon: Icons.price_check,
-      criteria: {'stockPe': 15.0, 'roe': 5.0, 'qualityScore': 1},
-      category: FilterCategory.value,
-      color: Colors.brown,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.valueStocks,
-      title: 'Value Stocks',
-      description: 'Undervalued companies with strong fundamentals and quality',
-      icon: Icons.diamond_outlined,
-      criteria: {
-        'stockPe': 12.0,
-        'priceToBook': 1.5,
-        'roe': 10.0,
-        'currentRatio': 1.0,
-        'qualityScore': 2
-      },
-      category: FilterCategory.value,
-      color: Colors.amber,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.undervalued,
-      title: 'Undervalued',
-      description:
-          'Trading below intrinsic value with excellent quality grades',
-      icon: Icons.local_offer,
-      criteria: {
-        'stockPe': 10.0,
-        'priceToBook': 1.0,
-        'qualityScore': 2,
-        'overallQualityGrade': ['A', 'B']
-      },
-      category: FilterCategory.value,
-      color: Colors.lime,
-    ),
-
-    // ========================================================================
-    // ENHANCED INCOME & DIVIDEND FILTERS
-    // ========================================================================
-
-    FundamentalFilter(
-      type: FundamentalType.dividendStocks,
-      title: 'Dividend Stocks',
-      description: 'Regular dividend paying companies with excellent liquidity',
-      icon: Icons.account_balance_wallet,
-      criteria: {
-        'paysDividends': true,
-        'dividendYield': 1.0,
-        'currentRatio': 1.2,
-        'debtStatus': ['Low Debt', 'Debt Free']
-      },
-      category: FilterCategory.income,
-      color: Colors.lightBlue,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.highDividendYield,
-      title: 'High Dividend Yield',
-      description: 'Dividend yield > 4% with low debt and quality fundamentals',
-      icon: Icons.savings,
-      criteria: {
-        'dividendYield': 4.0,
-        'paysDividends': true,
-        'debtToEquity': 0.6,
-        'qualityScore': 2
-      },
-      category: FilterCategory.income,
-      color: Colors.lightGreen,
-    ),
-
-    // ========================================================================
-    // MARKET CAP FILTERS (Enhanced with quality integration)
-    // ========================================================================
-
-    FundamentalFilter(
-      type: FundamentalType.largeCap,
-      title: 'Large Cap',
-      description: 'Market Cap > ₹20,000 Cr with quality fundamentals',
-      icon: Icons.business,
-      criteria: {'marketCap': 20000, 'qualityScore': 1},
-      category: FilterCategory.marketCap,
-      color: Colors.blue,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.midCap,
-      title: 'Mid Cap',
-      description: 'Market Cap ₹5,000-20,000 Cr with growth potential',
-      icon: Icons.business_center,
-      criteria: {
-        'marketCapMin': 5000,
-        'marketCapMax': 20000,
-        'qualityScore': 1
-      },
-      category: FilterCategory.marketCap,
-      color: Colors.orange,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.smallCap,
-      title: 'Small Cap',
-      description: 'Market Cap < ₹5,000 Cr with quality metrics',
-      icon: Icons.store,
-      criteria: {'marketCapMax': 5000, 'qualityScore': 1, 'currentRatio': 1.0},
-      category: FilterCategory.marketCap,
-      color: Colors.purple,
-    ),
-
-    // ========================================================================
-    // ENHANCED RISK & VOLATILITY FILTERS
-    // ========================================================================
-
-    FundamentalFilter(
-      type: FundamentalType.lowVolatility,
-      title: 'Low Volatility',
-      description: 'Stable movements with low risk and excellent liquidity',
-      icon: Icons.waves,
-      criteria: {
-        'riskLevel': 'Low',
-        'roe': 10.0,
-        'marketCap': 5000,
-        'currentRatio': 1.5,
-        'qualityScore': 2
-      },
-      category: FilterCategory.risk,
-      color: Colors.grey,
-    ),
-
-    FundamentalFilter(
-      type: FundamentalType.contrarian,
-      title: 'Contrarian Picks',
-      description: 'Temporarily underperforming quality stocks with potential',
-      icon: Icons.trending_down,
-      criteria: {
-        'changePercent': -5.0,
-        'roe': 10.0,
-        'qualityScore': 2,
-        'currentRatio': 1.0,
-        'riskLevel': ['Low', 'Medium']
-      },
-      category: FilterCategory.value,
-      color: Colors.deepPurple,
-    ),
-  ];
-
-  // ============================================================================
-  // ENHANCED CATEGORY FILTERS WITH NEW CATEGORIES
-  // ============================================================================
-
-  static List<FundamentalFilter> getFiltersByCategory(FilterCategory category) {
-    return defaultFilters.where((f) => f.category == category).toList();
-  }
-
-  // Enhanced popular filters with business insights
-  static List<FundamentalFilter> getPopularFilters() {
-    return defaultFilters
-        .where((f) => [
-              FundamentalType.debtFree,
-              FundamentalType.highROE,
-              FundamentalType.growthStocks,
-              FundamentalType.dividendStocks,
-              FundamentalType.largeCap,
-              FundamentalType.qualityStocks,
-              FundamentalType.workingCapitalEfficient,
-              FundamentalType.businessInsightRich,
-              FundamentalType.qualityWithGrowth,
-            ].contains(f.type))
-        .toList();
-  }
-
-  // Get premium filters (requiring business insights)
-  static List<FundamentalFilter> getPremiumFilters() {
-    return defaultFilters.where((f) => f.isPremium).toList();
-  }
-
-  // Get efficiency-focused filters
-  static List<FundamentalFilter> getEfficiencyFilters() {
-    return defaultFilters
-        .where((f) => f.category == FilterCategory.efficiency)
-        .toList();
-  }
-
-  // Get business insight filters
-  static List<FundamentalFilter> getBusinessInsightFilters() {
-    return defaultFilters
-        .where((f) => f.category == FilterCategory.insights)
-        .toList();
-  }
-
-  // Enhanced search filters
-  static List<FundamentalFilter> searchFilters(String query) {
-    final lowercaseQuery = query.toLowerCase();
-    return defaultFilters
-        .where((filter) =>
-            filter.title.toLowerCase().contains(lowercaseQuery) ||
-            filter.description.toLowerCase().contains(lowercaseQuery) ||
-            filter.type.displayName.toLowerCase().contains(lowercaseQuery))
-        .toList();
-  }
-
-  // Get filters by quality level
-  static List<FundamentalFilter> getQualityFilters({int minQuality = 3}) {
-    return defaultFilters
-        .where((f) =>
-            f.criteria['qualityScore'] != null &&
-            f.criteria['qualityScore'] >= minQuality)
-        .toList();
-  }
-
-  // Get recently added filters
-  static List<FundamentalFilter> getRecentFilters() {
-    return defaultFilters
-        .where((f) => [
-              FundamentalType.businessInsightRich,
-              FundamentalType.recentMilestones,
-              FundamentalType.comprehensiveAnalysis,
-              FundamentalType.sustainableBusiness,
-              FundamentalType.innovativeCompanies,
-              FundamentalType.marketLeaders,
-              FundamentalType.emergingOpportunities,
-            ].contains(f.type))
-        .toList();
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is FundamentalFilter && other.type == type;
-  }
-
-  @override
-  int get hashCode => type.hashCode;
-
-  @override
-  String toString() => 'FundamentalFilter(${type.name}: $title)';
-}
-
-// ============================================================================
-// ENHANCED FILTER CATEGORIES WITH NEW CATEGORIES
-// ============================================================================
 
 enum FilterCategory {
-  quality,
-  profitability,
-  growth,
-  value,
-  income,
-  marketCap,
-  risk,
-  efficiency,
-  insights, // NEW: For business insights filters
+  quality('Quality & Safety', '🛡️',
+      'Safe, high-quality companies with strong fundamentals'),
+  profitability(
+      'Profitability', '💰', 'Companies with excellent profit generation'),
+  growth('Growth', '📈', 'High-growth companies with expansion potential'),
+  value('Value', '💎', 'Undervalued companies with attractive valuations'),
+  income('Income', '💵', 'Dividend-paying companies for regular income'),
+  marketCap(
+      'Market Cap', '🏢', 'Companies categorized by market capitalization'),
+  efficiency(
+      'Efficiency', '⚙️', 'Companies with excellent operational efficiency'),
+  insights(
+      'Business Insights', '🧠', 'Companies with rich business intelligence'),
+  risk('Risk Management', '🛡️', 'Low-risk, stable investment options'),
+  opportunity(
+      'Opportunities', '🎯', 'Special situation and contrarian opportunities');
+
+  const FilterCategory(this.displayName, this.icon, this.description);
+
+  final String displayName;
+  final String icon;
+  final String description;
 }
 
-// Enhanced extension with new categories
-extension FilterCategoryExtension on FilterCategory {
+// Enhanced extension with comprehensive properties
+extension FundamentalTypeExtension on FundamentalType {
   String get displayName {
     switch (this) {
-      case FilterCategory.quality:
-        return 'Quality & Safety';
-      case FilterCategory.profitability:
-        return 'Profitability';
-      case FilterCategory.growth:
-        return 'Growth';
-      case FilterCategory.value:
-        return 'Value';
-      case FilterCategory.income:
-        return 'Income';
-      case FilterCategory.marketCap:
-        return 'Market Cap';
-      case FilterCategory.risk:
-        return 'Low Risk';
-      case FilterCategory.efficiency:
-        return 'Efficiency';
-      case FilterCategory.insights:
-        return 'Business Insights';
+      case FundamentalType.debtFree:
+        return 'Debt Free';
+      case FundamentalType.qualityStocks:
+        return 'Quality Stocks';
+      case FundamentalType.strongBalance:
+        return 'Strong Balance Sheet';
+      case FundamentalType.piotroskiHigh:
+        return 'High Piotroski Score';
+      case FundamentalType.altmanSafe:
+        return 'Altman Z-Score Safe';
+      case FundamentalType.compoundingMachines:
+        return 'Compounding Machines';
+      case FundamentalType.highROE:
+        return 'High ROE';
+      case FundamentalType.profitableStocks:
+        return 'Profitable Stocks';
+      case FundamentalType.consistentProfits:
+        return 'Consistent Profits';
+      case FundamentalType.highROIC:
+        return 'High ROIC';
+      case FundamentalType.freeCashFlowRich:
+        return 'Free Cash Flow Rich';
+      case FundamentalType.growthStocks:
+        return 'Growth Stocks';
+      case FundamentalType.highSalesGrowth:
+        return 'High Sales Growth';
+      case FundamentalType.momentumStocks:
+        return 'Momentum Stocks';
+      case FundamentalType.lowPE:
+        return 'Low P/E';
+      case FundamentalType.valueStocks:
+        return 'Value Stocks';
+      case FundamentalType.undervalued:
+        return 'Undervalued';
+      case FundamentalType.grahamValue:
+        return 'Graham Value';
+      case FundamentalType.dividendStocks:
+        return 'Dividend Stocks';
+      case FundamentalType.highDividendYield:
+        return 'High Dividend Yield';
+      case FundamentalType.largeCap:
+        return 'Large Cap';
+      case FundamentalType.midCap:
+        return 'Mid Cap';
+      case FundamentalType.smallCap:
+        return 'Small Cap';
+      case FundamentalType.workingCapitalEfficient:
+        return 'Working Capital Efficient';
+      case FundamentalType.cashEfficientStocks:
+        return 'Cash Efficient';
+      case FundamentalType.businessInsightRich:
+        return 'Rich Business Insights';
+      case FundamentalType.recentMilestones:
+        return 'Recent Milestones';
+      case FundamentalType.lowVolatility:
+        return 'Low Volatility';
+      case FundamentalType.contrarian:
+        return 'Contrarian';
     }
   }
 
   String get description {
     switch (this) {
-      case FilterCategory.quality:
-        return 'Companies with strong fundamentals, low debt, and quality metrics';
-      case FilterCategory.profitability:
-        return 'Companies with strong profit margins and consistent earnings';
-      case FilterCategory.growth:
-        return 'Companies showing strong revenue and profit growth';
-      case FilterCategory.value:
-        return 'Undervalued companies trading below intrinsic value';
-      case FilterCategory.income:
-        return 'Dividend-paying companies with regular income streams';
-      case FilterCategory.marketCap:
-        return 'Companies categorized by market capitalization size';
-      case FilterCategory.risk:
-        return 'Conservative investments with low volatility';
-      case FilterCategory.efficiency:
-        return 'Companies with efficient capital and working capital management';
-      case FilterCategory.insights:
-        return 'Companies with comprehensive business analysis and insights';
-    }
-  }
-
-  IconData get icon {
-    switch (this) {
-      case FilterCategory.quality:
-        return Icons.verified;
-      case FilterCategory.profitability:
-        return Icons.attach_money;
-      case FilterCategory.growth:
-        return Icons.trending_up;
-      case FilterCategory.value:
-        return Icons.local_offer;
-      case FilterCategory.income:
-        return Icons.account_balance_wallet;
-      case FilterCategory.marketCap:
-        return Icons.business;
-      case FilterCategory.risk:
-        return Icons.shield;
-      case FilterCategory.efficiency:
-        return Icons.speed;
-      case FilterCategory.insights:
-        return Icons.insights;
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case FilterCategory.quality:
-        return Colors.blue;
-      case FilterCategory.profitability:
-        return Colors.green;
-      case FilterCategory.growth:
-        return Colors.orange;
-      case FilterCategory.value:
-        return Colors.purple;
-      case FilterCategory.income:
-        return Colors.teal;
-      case FilterCategory.marketCap:
-        return Colors.indigo;
-      case FilterCategory.risk:
-        return Colors.grey;
-      case FilterCategory.efficiency:
-        return Colors.cyan;
-      case FilterCategory.insights:
-        return Colors.deepPurple;
-    }
-  }
-
-  bool get isPremium {
-    return this == FilterCategory.insights;
-  }
-}
-
-// ============================================================================
-// ENHANCED UTILITY EXTENSIONS
-// ============================================================================
-
-extension FundamentalTypeExtension on FundamentalType {
-  String get displayName {
-    switch (this) {
+      case FundamentalType.debtFree:
+        return 'Companies with minimal debt (D/E < 0.1)';
+      case FundamentalType.qualityStocks:
+        return 'High-quality companies with strong fundamentals';
+      case FundamentalType.strongBalance:
+        return 'Excellent balance sheet and liquidity management';
+      case FundamentalType.piotroskiHigh:
+        return 'Piotroski F-Score ≥ 7 (Excellent Quality)';
+      case FundamentalType.altmanSafe:
+        return 'Low bankruptcy risk (Altman Z > 3.0)';
+      case FundamentalType.compoundingMachines:
+        return 'Consistent wealth creators with high returns';
+      case FundamentalType.highROE:
+        return 'Return on Equity > 15%';
+      case FundamentalType.profitableStocks:
+        return 'Consistently profitable companies';
+      case FundamentalType.consistentProfits:
+        return 'Steady profit growth over time';
+      case FundamentalType.highROIC:
+        return 'Return on Invested Capital > 20%';
+      case FundamentalType.freeCashFlowRich:
+        return 'Strong free cash flow generation';
+      case FundamentalType.growthStocks:
+        return 'High revenue and profit growth';
+      case FundamentalType.highSalesGrowth:
+        return 'Revenue growth > 20%';
+      case FundamentalType.momentumStocks:
+        return 'Strong recent performance trends';
+      case FundamentalType.lowPE:
+        return 'P/E Ratio < 15';
+      case FundamentalType.valueStocks:
+        return 'Undervalued with strong fundamentals';
+      case FundamentalType.undervalued:
+        return 'Significantly undervalued opportunities';
+      case FundamentalType.grahamValue:
+        return 'Trading below Graham Intrinsic Value';
+      case FundamentalType.dividendStocks:
+        return 'Regular dividend paying companies';
+      case FundamentalType.highDividendYield:
+        return 'Dividend yield > 4%';
+      case FundamentalType.largeCap:
+        return 'Market cap > ₹20,000 Cr';
+      case FundamentalType.midCap:
+        return 'Market cap ₹5,000-20,000 Cr';
+      case FundamentalType.smallCap:
+        return 'Market cap < ₹5,000 Cr';
       case FundamentalType.workingCapitalEfficient:
-        return 'Working Capital Efficient';
+        return 'Excellent working capital management';
       case FundamentalType.cashEfficientStocks:
-        return 'Cash Efficient';
-      case FundamentalType.highLiquidityStocks:
-        return 'High Liquidity';
-      case FundamentalType.debtFreeQuality:
-        return 'Debt-Free Quality';
+        return 'Optimized cash conversion cycles';
       case FundamentalType.businessInsightRich:
-        return 'Business Insight Rich';
+        return 'Comprehensive business analysis available';
       case FundamentalType.recentMilestones:
-        return 'Recent Milestones';
-      case FundamentalType.comprehensiveAnalysis:
-        return 'Comprehensive Analysis';
-      case FundamentalType.qualityWithGrowth:
-        return 'Quality + Growth';
-      case FundamentalType.sustainableBusiness:
-        return 'Sustainable Business';
-      case FundamentalType.innovativeCompanies:
-        return 'Innovative Companies';
-      case FundamentalType.marketLeaders:
-        return 'Market Leaders';
-      case FundamentalType.emergingOpportunities:
-        return 'Emerging Opportunities';
-      default:
-        return name;
+        return 'Recent significant achievements';
+      case FundamentalType.lowVolatility:
+        return 'Low risk, stable companies';
+      case FundamentalType.contrarian:
+        return 'Quality companies currently out of favor';
     }
   }
 
-  bool get isEfficiencyFilter {
-    return [
-      FundamentalType.workingCapitalEfficient,
-      FundamentalType.cashEfficientStocks,
-      FundamentalType.highLiquidityStocks,
-      FundamentalType.debtFreeQuality,
-    ].contains(this);
-  }
-
-  bool get isBusinessInsightFilter {
-    return [
-      FundamentalType.businessInsightRich,
-      FundamentalType.recentMilestones,
-      FundamentalType.comprehensiveAnalysis,
-      FundamentalType.sustainableBusiness,
-      FundamentalType.innovativeCompanies,
-      FundamentalType.marketLeaders,
-      FundamentalType.emergingOpportunities,
-    ].contains(this);
-  }
-
-  bool get isQualityFocused {
-    return [
-      FundamentalType.qualityStocks,
-      FundamentalType.strongBalance,
-      FundamentalType.debtFreeQuality,
-      FundamentalType.qualityWithGrowth,
-      FundamentalType.sustainableBusiness,
-      FundamentalType.marketLeaders,
-    ].contains(this);
-  }
-
-  bool get requiresBusinessData {
-    return [
-      FundamentalType.businessInsightRich,
-      FundamentalType.comprehensiveAnalysis,
-      FundamentalType.sustainableBusiness,
-      FundamentalType.innovativeCompanies,
-      FundamentalType.marketLeaders,
-    ].contains(this);
+  String get icon {
+    switch (this) {
+      case FundamentalType.debtFree:
+        return '🛡️';
+      case FundamentalType.qualityStocks:
+        return '⭐';
+      case FundamentalType.strongBalance:
+        return '💪';
+      case FundamentalType.piotroskiHigh:
+        return '🏆';
+      case FundamentalType.altmanSafe:
+        return '🛡️';
+      case FundamentalType.compoundingMachines:
+        return '🔄';
+      case FundamentalType.highROE:
+        return '📈';
+      case FundamentalType.profitableStocks:
+        return '💰';
+      case FundamentalType.consistentProfits:
+        return '📊';
+      case FundamentalType.highROIC:
+        return '💼';
+      case FundamentalType.freeCashFlowRich:
+        return '💰';
+      case FundamentalType.growthStocks:
+        return '🚀';
+      case FundamentalType.highSalesGrowth:
+        return '📈';
+      case FundamentalType.momentumStocks:
+        return '⚡';
+      case FundamentalType.lowPE:
+        return '💎';
+      case FundamentalType.valueStocks:
+        return '🎯';
+      case FundamentalType.undervalued:
+        return '💰';
+      case FundamentalType.grahamValue:
+        return '💎';
+      case FundamentalType.dividendStocks:
+        return '💵';
+      case FundamentalType.highDividendYield:
+        return '🎁';
+      case FundamentalType.largeCap:
+        return '🏢';
+      case FundamentalType.midCap:
+        return '🏛️';
+      case FundamentalType.smallCap:
+        return '🏪';
+      case FundamentalType.workingCapitalEfficient:
+        return '⚙️';
+      case FundamentalType.cashEfficientStocks:
+        return '💳';
+      case FundamentalType.businessInsightRich:
+        return '🧠';
+      case FundamentalType.recentMilestones:
+        return '🎯';
+      case FundamentalType.lowVolatility:
+        return '🛡️';
+      case FundamentalType.contrarian:
+        return '🔄';
+    }
   }
 
   FilterCategory get category {
-    if (isEfficiencyFilter) return FilterCategory.efficiency;
-    if (isBusinessInsightFilter) return FilterCategory.insights;
-
     switch (this) {
       case FundamentalType.debtFree:
       case FundamentalType.qualityStocks:
       case FundamentalType.strongBalance:
-      case FundamentalType.consistentProfits:
-      case FundamentalType.debtFreeQuality:
-      case FundamentalType.sustainableBusiness:
-      case FundamentalType.marketLeaders:
+      case FundamentalType.piotroskiHigh:
+      case FundamentalType.altmanSafe:
+      case FundamentalType.compoundingMachines:
         return FilterCategory.quality;
-
       case FundamentalType.highROE:
       case FundamentalType.profitableStocks:
+      case FundamentalType.consistentProfits:
+      case FundamentalType.highROIC:
+      case FundamentalType.freeCashFlowRich:
         return FilterCategory.profitability;
-
       case FundamentalType.growthStocks:
       case FundamentalType.highSalesGrowth:
       case FundamentalType.momentumStocks:
-      case FundamentalType.qualityWithGrowth:
-      case FundamentalType.innovativeCompanies:
-      case FundamentalType.emergingOpportunities:
         return FilterCategory.growth;
-
       case FundamentalType.lowPE:
       case FundamentalType.valueStocks:
       case FundamentalType.undervalued:
-      case FundamentalType.contrarian:
+      case FundamentalType.grahamValue:
         return FilterCategory.value;
-
       case FundamentalType.dividendStocks:
       case FundamentalType.highDividendYield:
         return FilterCategory.income;
-
       case FundamentalType.largeCap:
       case FundamentalType.midCap:
       case FundamentalType.smallCap:
         return FilterCategory.marketCap;
-
+      case FundamentalType.workingCapitalEfficient:
+      case FundamentalType.cashEfficientStocks:
+        return FilterCategory.efficiency;
+      case FundamentalType.businessInsightRich:
+      case FundamentalType.recentMilestones:
+        return FilterCategory.insights;
       case FundamentalType.lowVolatility:
         return FilterCategory.risk;
-
-      default:
-        return FilterCategory.quality;
-    }
-  }
-}
-
-// ============================================================================
-// FILTER UTILITY FUNCTIONS
-// ============================================================================
-
-class FilterUtils {
-  static List<FundamentalFilter> getRecommendedFilters({
-    required bool isNewUser,
-    required bool hasBusinessInsights,
-  }) {
-    if (isNewUser) {
-      return [
-        ...FundamentalFilter.defaultFilters.where((f) => [
-              FundamentalType.qualityStocks,
-              FundamentalType.debtFree,
-              FundamentalType.largeCap,
-              FundamentalType.dividendStocks,
-            ].contains(f.type)),
-      ];
-    }
-
-    if (hasBusinessInsights) {
-      return FundamentalFilter.getPremiumFilters();
-    }
-
-    return FundamentalFilter.getPopularFilters();
-  }
-
-  static List<FundamentalFilter> getFiltersForRiskProfile(String riskProfile) {
-    switch (riskProfile.toLowerCase()) {
-      case 'conservative':
-        return FundamentalFilter.defaultFilters
-            .where((f) => [
-                  FundamentalType.debtFree,
-                  FundamentalType.qualityStocks,
-                  FundamentalType.largeCap,
-                  FundamentalType.dividendStocks,
-                  FundamentalType.lowVolatility,
-                ].contains(f.type))
-            .toList();
-
-      case 'moderate':
-        return FundamentalFilter.defaultFilters
-            .where((f) => [
-                  FundamentalType.qualityStocks,
-                  FundamentalType.growthStocks,
-                  FundamentalType.midCap,
-                  FundamentalType.valueStocks,
-                  FundamentalType.qualityWithGrowth,
-                ].contains(f.type))
-            .toList();
-
-      case 'aggressive':
-        return FundamentalFilter.defaultFilters
-            .where((f) => [
-                  FundamentalType.growthStocks,
-                  FundamentalType.smallCap,
-                  FundamentalType.momentumStocks,
-                  FundamentalType.emergingOpportunities,
-                  FundamentalType.innovativeCompanies,
-                ].contains(f.type))
-            .toList();
-
-      default:
-        return FundamentalFilter.getPopularFilters();
+      case FundamentalType.contrarian:
+        return FilterCategory.opportunity;
     }
   }
 
-  static bool doesFilterRequireBusinessData(FundamentalType type) {
-    return type.requiresBusinessData;
+  int get difficulty {
+    final filter = FundamentalFilter.getFilterByType(this);
+    return filter?.difficulty ?? 1;
   }
 
-  static String getFilterComplexityLevel(FundamentalType type) {
-    if (type.isBusinessInsightFilter) return 'Advanced';
-    if (type.isEfficiencyFilter) return 'Intermediate';
-    if (type.isQualityFocused) return 'Beginner';
-    return 'Intermediate';
+  bool get isPremium {
+    final filter = FundamentalFilter.getFilterByType(this);
+    return filter?.isPremium ?? false;
+  }
+
+  double get successRate {
+    final filter = FundamentalFilter.getFilterByType(this);
+    return filter?.successRate ?? 0.0;
   }
 }

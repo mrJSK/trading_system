@@ -5,875 +5,724 @@ import 'dart:math';
 part 'financial_data_model.freezed.dart';
 part 'financial_data_model.g.dart';
 
-// ============================================================================
-// ENHANCED FINANCIAL DATA MODELS FOR LATEST SCRAPER DATA
-// ============================================================================
-
 @freezed
 class FinancialDataModel with _$FinancialDataModel {
-  const FinancialDataModel._();
-
   const factory FinancialDataModel({
     @Default([]) List<String> headers,
     @Default([]) List<FinancialDataRow> body,
-    @Default('') String dataType,
-    @Default('') String sourceUrl,
-    @Default('') String lastUpdated,
+    String? tableTitle,
+    String? dataSource,
+    @Default({}) Map<String, dynamic> metadata,
+    @Default('') String tableType, // 'quarterly', 'annual', 'ratios', etc.
+    DateTime? lastUpdated,
+    @Default(false) bool isProcessed,
   }) = _FinancialDataModel;
 
   factory FinancialDataModel.fromJson(Map<String, dynamic> json) =>
       _$FinancialDataModelFromJson(json);
+
+  // Enhanced factory for raw scraped table data
+  factory FinancialDataModel.fromRawTable(Map<String, dynamic> rawTable,
+      {String? tableType}) {
+    try {
+      final headers = rawTable['headers'] != null
+          ? List<String>.from(rawTable['headers'])
+          : <String>[];
+
+      final rawBody = rawTable['body'] != null
+          ? List<dynamic>.from(rawTable['body'])
+          : <dynamic>[];
+
+      final body = rawBody.map((row) {
+        if (row is Map &&
+            row.containsKey('Description') &&
+            row.containsKey('values')) {
+          return FinancialDataRow(
+            description: row['Description']?.toString() ?? '',
+            values: row['values'] != null
+                ? List<String>.from(row['values'])
+                : <String>[],
+            calculatedMetrics: _calculateRowMetrics(
+              row['Description']?.toString() ?? '',
+              row['values'] != null
+                  ? List<String>.from(row['values'])
+                  : <String>[],
+            ),
+          );
+        }
+        return const FinancialDataRow(description: '', values: []);
+      }).toList();
+
+      return FinancialDataModel(
+        headers: headers,
+        body: body,
+        tableTitle: rawTable['title']?.toString(),
+        dataSource: 'screener.in',
+        metadata: rawTable is Map<String, dynamic> ? rawTable : {},
+        tableType: tableType ?? _inferTableType(rawTable),
+        lastUpdated: DateTime.now(),
+        isProcessed: true,
+      );
+    } catch (e) {
+      debugPrint('Error creating FinancialDataModel from raw table: $e');
+      return const FinancialDataModel();
+    }
+  }
+
+  // Infer table type from content
+  static String _inferTableType(Map<String, dynamic> rawTable) {
+    final title = rawTable['title']?.toString().toLowerCase() ?? '';
+    final headers = rawTable['headers'] as List?;
+
+    if (title.contains('quarterly') ||
+        (headers != null && headers.any((h) => h.toString().contains('Q')))) {
+      return 'quarterly';
+    } else if (title.contains('ratio')) {
+      return 'ratios';
+    } else if (title.contains('balance')) {
+      return 'balance_sheet';
+    } else if (title.contains('cash')) {
+      return 'cash_flow';
+    } else if (title.contains('profit') || title.contains('loss')) {
+      return 'profit_loss';
+    }
+    return 'annual';
+  }
+
+  // Calculate metrics for each row
+  static Map<String, double> _calculateRowMetrics(
+      String description, List<String> values) {
+    Map<String, double> metrics = {};
+
+    if (values.length >= 2) {
+      final latest = _parseNumericValue(values[0]);
+      final previous = _parseNumericValue(values[1]);
+
+      if (latest != null && previous != null && previous != 0) {
+        metrics['growth_rate'] = ((latest - previous) / previous) * 100;
+        metrics['absolute_change'] = latest - previous;
+      }
+
+      if (latest != null) {
+        metrics['latest_value'] = latest;
+      }
+    }
+
+    return metrics;
+  }
+
+  static double? _parseNumericValue(String value) {
+    if (value.isEmpty || value == '-' || value.toLowerCase() == 'n/a')
+      return null;
+    final cleaned = value.replaceAll(RegExp(r'[^\d.-]'), '');
+    return double.tryParse(cleaned);
+  }
 }
 
 @freezed
 class FinancialDataRow with _$FinancialDataRow {
-  const FinancialDataRow._();
-
   const factory FinancialDataRow({
-    @Default('') String description,
-    @Default([]) List<String?> values,
-    @Default('') String category,
-    @Default(false) bool isCalculated,
+    required String description,
+    @Default([]) List<String> values,
+    @Default({}) Map<String, String> additionalData,
+    @Default({}) Map<String, double> calculatedMetrics,
+    String? category, // 'revenue', 'expense', 'asset', 'liability', etc.
+    @Default(false) bool isKeyMetric,
   }) = _FinancialDataRow;
 
   factory FinancialDataRow.fromJson(Map<String, dynamic> json) =>
       _$FinancialDataRowFromJson(json);
 }
 
-// ============================================================================
-// QUARTERLY DATA MODEL (FROM LATEST SCRAPER)
-// ============================================================================
+// Enhanced extension with expert-level analysis capabilities
+extension FinancialDataModelExtensions on FinancialDataModel {
+  // ============================================================================
+  // ENHANCED DATA ACCESS METHODS
+  // ============================================================================
 
-@freezed
-class QuarterlyData with _$QuarterlyData {
-  const QuarterlyData._();
-
-  const factory QuarterlyData({
-    @Default('') String quarter,
-    @Default('') String year,
-    @Default('') String period,
-    double? sales,
-    double? netProfit,
-    double? eps,
-    double? ebitda,
-    double? operatingProfit,
-    double? operatingMargin,
-    double? netMargin,
-    @Default({}) Map<String, dynamic> additionalMetrics,
-  }) = _QuarterlyData;
-
-  factory QuarterlyData.fromJson(Map<String, dynamic> json) =>
-      _$QuarterlyDataFromJson(json);
-}
-
-// ============================================================================
-// ANNUAL DATA MODEL (FROM LATEST SCRAPER)
-// ============================================================================
-
-@freezed
-class AnnualData with _$AnnualData {
-  const AnnualData._();
-
-  const factory AnnualData({
-    @Default('') String year,
-    double? sales,
-    double? netProfit,
-    double? eps,
-    double? bookValue,
-    double? dividendYield,
-    double? roe,
-    double? roce,
-    double? peRatio,
-    double? pbRatio,
-    double? debtToEquity,
-    double? currentRatio,
-    double? interestCoverage,
-    double? totalAssets,
-    double? shareholdersEquity,
-    double? totalDebt,
-    double? workingCapital,
-    double? operatingCashFlow,
-    double? investingCashFlow,
-    double? financingCashFlow,
-    double? freeCashFlow,
-    double? ebitda,
-    double? operatingProfit,
-    @Default({}) Map<String, dynamic> additionalMetrics,
-  }) = _AnnualData;
-
-  factory AnnualData.fromJson(Map<String, dynamic> json) =>
-      _$AnnualDataFromJson(json);
-}
-
-// ============================================================================
-// SHAREHOLDING PATTERN (FROM LATEST SCRAPER)
-// ============================================================================
-
-@freezed
-class ShareholdingPattern with _$ShareholdingPattern {
-  const ShareholdingPattern._();
-
-  const factory ShareholdingPattern({
-    double? promoterHolding,
-    double? publicHolding,
-    double? institutionalHolding,
-    double? foreignInstitutional,
-    @Default([]) List<MajorShareholder> majorShareholders,
-    @Default({}) Map<String, Map<String, String>> quarterly,
-    @Default('') String lastUpdated,
-  }) = _ShareholdingPattern;
-
-  factory ShareholdingPattern.fromJson(Map<String, dynamic> json) =>
-      _$ShareholdingPatternFromJson(json);
-}
-
-@freezed
-class MajorShareholder with _$MajorShareholder {
-  const factory MajorShareholder({
-    @Default('') String name,
-    @Default(0.0) double percentage,
-    @Default('') String category,
-  }) = _MajorShareholder;
-
-  factory MajorShareholder.fromJson(Map<String, dynamic> json) =>
-      _$MajorShareholderFromJson(json);
-}
-
-// ============================================================================
-// KEY POINTS MODELS (FROM LATEST SCRAPER)
-// ============================================================================
-
-@freezed
-class KeyMilestone with _$KeyMilestone {
-  const factory KeyMilestone({
-    @Default('') String year,
-    @Default('') String description,
-    @Default('') String category,
-    @Default('') String impact,
-  }) = _KeyMilestone;
-
-  factory KeyMilestone.fromJson(Map<String, dynamic> json) =>
-      _$KeyMilestoneFromJson(json);
-}
-
-@freezed
-class InvestmentHighlight with _$InvestmentHighlight {
-  const factory InvestmentHighlight({
-    @Default('') String type,
-    @Default('') String description,
-    @Default('') String impact,
-    @Default('') String category,
-  }) = _InvestmentHighlight;
-
-  factory InvestmentHighlight.fromJson(Map<String, dynamic> json) =>
-      _$InvestmentHighlightFromJson(json);
-}
-
-// ============================================================================
-// ENHANCED EXTENSIONS FOR LATEST SCRAPER DATA
-// ============================================================================
-
-extension FinancialDataModelX on FinancialDataModel {
-  bool get isEmpty => headers.isEmpty || body.isEmpty;
-  bool get isNotEmpty => !isEmpty;
-  int get columnCount => headers.length;
-  int get rowCount => body.length;
-
-  static FinancialDataModel fromFirebaseData(dynamic json) {
+  /// Get value by description and header with fuzzy matching
+  String? getValue(String description, String header) {
     try {
-      if (json == null) return const FinancialDataModel();
+      final rowIndex =
+          body.indexWhere((row) => _fuzzyMatch(row.description, description));
+      if (rowIndex == -1) return null;
 
-      if (json is Map<String, dynamic>) {
-        // Handle direct structure from latest scraper
-        if (json.containsKey('headers') && json.containsKey('body')) {
-          return FinancialDataModel.fromJson(json);
-        }
+      final headerIndex = headers.indexWhere((h) => _fuzzyMatch(h, header));
+      if (headerIndex == -1) return null;
 
-        // Handle nested quarterly/annual data structure
-        if (json.containsKey('quarterly_results')) {
-          return _parseQuarterlyResults(json['quarterly_results']);
-        }
-
-        if (json.containsKey('annual_data')) {
-          return _parseAnnualData(json['annual_data']);
-        }
-
-        if (json.containsKey('profit_loss')) {
-          return _parseProfitLoss(json['profit_loss']);
-        }
-
-        if (json.containsKey('balance_sheet')) {
-          return _parseBalanceSheet(json['balance_sheet']);
-        }
-
-        if (json.containsKey('cash_flow')) {
-          return _parseCashFlow(json['cash_flow']);
-        }
-
-        if (json.containsKey('ratios')) {
-          return _parseRatios(json['ratios']);
-        }
-
-        return _parseGenericStructure(json);
+      if (headerIndex < body[rowIndex].values.length) {
+        return body[rowIndex].values[headerIndex];
       }
-
-      return const FinancialDataModel();
+      return null;
     } catch (e) {
-      debugPrint('Error parsing Firebase financial data: $e');
-      return const FinancialDataModel();
+      debugPrint('Error getting value: $e');
+      return null;
     }
   }
 
-  static FinancialDataModel _parseQuarterlyResults(dynamic data) {
+  /// Enhanced fuzzy matching for financial terms
+  bool _fuzzyMatch(String text, String pattern) {
+    final textLower = text.toLowerCase();
+    final patternLower = pattern.toLowerCase();
+
+    // Direct match
+    if (textLower.contains(patternLower)) return true;
+
+    // Common financial term mappings
+    final synonyms = {
+      'sales': ['revenue', 'income from operations', 'turnover'],
+      'net profit': ['profit after tax', 'net income', 'pat'],
+      'total assets': ['assets'],
+      'shareholders equity': ['net worth', 'equity', 'shareholders fund'],
+      'debt to equity': ['d/e', 'debt equity ratio'],
+      'return on equity': ['roe'],
+      'return on assets': ['roa'],
+      'earnings per share': ['eps'],
+      'interest coverage': ['interest cover', 'times interest earned'],
+      'current ratio': ['cr'],
+      'quick ratio': ['acid test ratio'],
+    };
+
+    for (final entry in synonyms.entries) {
+      if (patternLower.contains(entry.key) ||
+          entry.value.any((syn) => patternLower.contains(syn))) {
+        if (textLower.contains(entry.key) ||
+            entry.value.any((syn) => textLower.contains(syn))) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /// Get all values for a specific description with enhanced matching
+  List<String> getRowValues(String description) {
     try {
-      if (data is! Map<String, dynamic>) return const FinancialDataModel();
+      final row = body.firstWhere(
+        (row) => _fuzzyMatch(row.description, description),
+        orElse: () => const FinancialDataRow(description: '', values: []),
+      );
+      return row.values;
+    } catch (e) {
+      return [];
+    }
+  }
 
-      final headers = (data['headers'] as List<dynamic>? ?? [])
-          .map((e) => e?.toString() ?? '')
-          .where((h) => h.isNotEmpty)
-          .toList();
+  /// Get latest value (first column after description)
+  String? getLatestValue(String description) {
+    try {
+      final values = getRowValues(description);
+      return values.isNotEmpty ? values.first : null;
+    } catch (e) {
+      return null;
+    }
+  }
 
-      final bodyData = <FinancialDataRow>[];
+  /// Enhanced numeric value parsing with better cleaning
+  double? getNumericValue(String description, String header) {
+    final value = getValue(description, header);
+    return _parseCleanNumeric(value);
+  }
 
-      // Parse quarterly metrics
-      final metrics = [
-        'Sales',
-        'Net Profit',
-        'EPS',
-        'EBITDA',
-        'Operating Profit',
-        'Operating Margin',
-        'Net Margin',
-      ];
+  /// Get latest numeric value with enhanced parsing
+  double? getLatestNumericValue(String description) {
+    final value = getLatestValue(description);
+    return _parseCleanNumeric(value);
+  }
 
-      for (final metric in metrics) {
-        final values = (data[metric.toLowerCase().replaceAll(' ', '_')]
-                    as List<dynamic>? ??
-                [])
-            .map((e) => e?.toString())
+  /// Enhanced numeric parsing
+  double? _parseCleanNumeric(String? value) {
+    if (value == null ||
+        value.isEmpty ||
+        value == '-' ||
+        value.toLowerCase() == 'n/a') return null;
+
+    // Handle special cases
+    if (value.toLowerCase().contains('inf') ||
+        value.toLowerCase().contains('infinity')) return null;
+
+    // Remove currency symbols, commas, parentheses, and other formatting
+    String cleaned = value
+        .replaceAll(RegExp(r'[₹$€£¥,\s()%]'), '')
+        .replaceAll('Cr.', '')
+        .replaceAll('cr', '')
+        .replaceAll('L', '')
+        .trim();
+
+    // Handle negative values in parentheses
+    if (value.contains('(') && value.contains(')')) {
+      cleaned = '-' + cleaned.replaceAll(RegExp(r'[()]'), '');
+    }
+
+    final parsed = double.tryParse(cleaned);
+
+    // Handle very large or very small values
+    if (parsed != null && (parsed.isInfinite || parsed.isNaN)) return null;
+
+    return parsed;
+  }
+
+  // ============================================================================
+  // EXPERT-LEVEL ANALYSIS METHODS
+  // ============================================================================
+
+  /// Calculate comprehensive growth metrics
+  Map<String, double> calculateComprehensiveGrowth() {
+    if (headers.length < 2) return {};
+
+    Map<String, double> growthMetrics = {};
+
+    // Calculate 1-year, 3-year, and 5-year growth for key metrics
+    final keyMetrics = [
+      'Sales',
+      'Net Profit',
+      'Total Assets',
+      'Shareholders Equity',
+      'EBITDA'
+    ];
+
+    for (final metric in keyMetrics) {
+      final values = getRowValues(metric);
+      if (values.isNotEmpty) {
+        final numericValues = values
+            .map((v) => _parseCleanNumeric(v))
+            .where((v) => v != null)
+            .cast<double>()
             .toList();
 
-        if (values.any((v) => v != null && v.isNotEmpty)) {
-          bodyData.add(FinancialDataRow(
-            description: metric,
-            values: values,
-            category: 'quarterly',
-          ));
-        }
-      }
-
-      return FinancialDataModel(
-        headers: headers,
-        body: bodyData,
-        dataType: 'quarterly',
-        lastUpdated: data['last_updated']?.toString() ?? '',
-      );
-    } catch (e) {
-      debugPrint('Error parsing quarterly results: $e');
-      return const FinancialDataModel();
-    }
-  }
-
-  static FinancialDataModel _parseAnnualData(dynamic data) {
-    try {
-      if (data is! Map<String, dynamic>) return const FinancialDataModel();
-
-      final headers = (data['headers'] as List<dynamic>? ?? [])
-          .map((e) => e?.toString() ?? '')
-          .where((h) => h.isNotEmpty)
-          .toList();
-
-      final bodyData = <FinancialDataRow>[];
-
-      // Parse annual metrics with enhanced field mapping
-      final metricsMap = {
-        'Revenue': ['sales', 'revenue', 'total_income'],
-        'Net Profit': ['net_profit', 'profit_after_tax', 'pat'],
-        'EBITDA': ['ebitda', 'operating_profit_before_depreciation'],
-        'Operating Profit': ['operating_profit', 'ebit'],
-        'EPS': ['eps', 'earnings_per_share'],
-        'Book Value': ['book_value', 'nav_per_share'],
-        'Dividend Yield': ['dividend_yield', 'dividend_percent'],
-        'ROE': ['roe', 'return_on_equity'],
-        'ROCE': ['roce', 'return_on_capital_employed'],
-        'Total Assets': ['total_assets', 'assets'],
-        'Shareholders Equity': ['shareholders_equity', 'equity'],
-        'Total Debt': ['total_debt', 'debt'],
-        'Free Cash Flow': ['free_cash_flow', 'fcf'],
-      };
-
-      for (final entry in metricsMap.entries) {
-        final metric = entry.key;
-        final possibleKeys = entry.value;
-
-        List<String?>? values;
-        for (final key in possibleKeys) {
-          if (data.containsKey(key)) {
-            values = (data[key] as List<dynamic>? ?? [])
-                .map((e) => e?.toString())
-                .toList();
-            break;
+        if (numericValues.length >= 2) {
+          // 1-year growth
+          final growth1Y =
+              _calculateGrowthRate(numericValues[0], numericValues[1]);
+          if (growth1Y != null) {
+            growthMetrics['${metric.toLowerCase().replaceAll(' ', '_')}_1y'] =
+                growth1Y;
           }
         }
 
-        if (values != null && values.any((v) => v != null && v!.isNotEmpty)) {
-          bodyData.add(FinancialDataRow(
-            description: metric,
-            values: values,
-            category: 'annual',
-          ));
-        }
-      }
-
-      return FinancialDataModel(
-        headers: headers,
-        body: bodyData,
-        dataType: 'annual',
-        lastUpdated: data['last_updated']?.toString() ?? '',
-      );
-    } catch (e) {
-      debugPrint('Error parsing annual data: $e');
-      return const FinancialDataModel();
-    }
-  }
-
-  static FinancialDataModel _parseProfitLoss(dynamic data) {
-    try {
-      if (data is! Map<String, dynamic>) return const FinancialDataModel();
-
-      final headers = (data['headers'] as List<dynamic>? ?? [])
-          .map((e) => e?.toString() ?? '')
-          .toList();
-
-      final bodyData = <FinancialDataRow>[];
-
-      // Enhanced P&L structure parsing
-      final plMetrics = {
-        'Total Income': ['total_income', 'revenue', 'sales'],
-        'Total Expenses': ['total_expenses', 'operating_expenses'],
-        'Operating Profit': ['operating_profit', 'ebit'],
-        'Interest & Tax': ['interest_tax', 'finance_costs'],
-        'Net Profit': ['net_profit', 'profit_after_tax'],
-        'EPS': ['eps', 'earnings_per_share'],
-        'Operating Margin': ['operating_margin', 'ebit_margin'],
-        'Net Margin': ['net_margin', 'profit_margin'],
-      };
-
-      for (final entry in plMetrics.entries) {
-        final metric = entry.key;
-        final keys = entry.value;
-
-        for (final key in keys) {
-          if (data.containsKey(key)) {
-            final values = (data[key] as List<dynamic>? ?? [])
-                .map((e) => e?.toString())
-                .toList();
-
-            if (values.any((v) => v != null && v!.isNotEmpty)) {
-              bodyData.add(FinancialDataRow(
-                description: metric,
-                values: values,
-                category: 'profit_loss',
-              ));
-              break;
-            }
-          }
-        }
-      }
-
-      return FinancialDataModel(
-        headers: headers,
-        body: bodyData,
-        dataType: 'profit_loss',
-        lastUpdated: data['last_updated']?.toString() ?? '',
-      );
-    } catch (e) {
-      debugPrint('Error parsing P&L data: $e');
-      return const FinancialDataModel();
-    }
-  }
-
-  static FinancialDataModel _parseBalanceSheet(dynamic data) {
-    try {
-      if (data is! Map<String, dynamic>) return const FinancialDataModel();
-
-      final headers = (data['headers'] as List<dynamic>? ?? [])
-          .map((e) => e?.toString() ?? '')
-          .toList();
-
-      final bodyData = <FinancialDataRow>[];
-
-      final bsMetrics = {
-        'Total Assets': ['total_assets', 'assets'],
-        'Fixed Assets': ['fixed_assets', 'tangible_assets'],
-        'Current Assets': ['current_assets'],
-        'Total Liabilities': ['total_liabilities', 'liabilities'],
-        'Current Liabilities': ['current_liabilities'],
-        'Long Term Debt': ['long_term_debt', 'total_debt'],
-        'Shareholders Equity': ['shareholders_equity', 'equity'],
-        'Reserves': ['reserves', 'retained_earnings'],
-        'Book Value Per Share': ['book_value', 'nav_per_share'],
-        'Tangible Book Value': ['tangible_book_value'],
-      };
-
-      for (final entry in bsMetrics.entries) {
-        final metric = entry.key;
-        final keys = entry.value;
-
-        for (final key in keys) {
-          if (data.containsKey(key)) {
-            final values = (data[key] as List<dynamic>? ?? [])
-                .map((e) => e?.toString())
-                .toList();
-
-            if (values.any((v) => v != null && v!.isNotEmpty)) {
-              bodyData.add(FinancialDataRow(
-                description: metric,
-                values: values,
-                category: 'balance_sheet',
-              ));
-              break;
-            }
-          }
-        }
-      }
-
-      return FinancialDataModel(
-        headers: headers,
-        body: bodyData,
-        dataType: 'balance_sheet',
-        lastUpdated: data['last_updated']?.toString() ?? '',
-      );
-    } catch (e) {
-      debugPrint('Error parsing balance sheet data: $e');
-      return const FinancialDataModel();
-    }
-  }
-
-  static FinancialDataModel _parseCashFlow(dynamic data) {
-    try {
-      if (data is! Map<String, dynamic>) return const FinancialDataModel();
-
-      final headers = (data['headers'] as List<dynamic>? ?? [])
-          .map((e) => e?.toString() ?? '')
-          .toList();
-
-      final bodyData = <FinancialDataRow>[];
-
-      final cfMetrics = {
-        'Operating Cash Flow': ['operating_cash_flow', 'cash_from_operations'],
-        'Investing Cash Flow': ['investing_cash_flow', 'cash_from_investing'],
-        'Financing Cash Flow': ['financing_cash_flow', 'cash_from_financing'],
-        'Net Cash Flow': ['net_cash_flow', 'change_in_cash'],
-        'Free Cash Flow': ['free_cash_flow', 'fcf'],
-        'Cash and Equivalents': ['cash_equivalents', 'cash'],
-      };
-
-      for (final entry in cfMetrics.entries) {
-        final metric = entry.key;
-        final keys = entry.value;
-
-        for (final key in keys) {
-          if (data.containsKey(key)) {
-            final values = (data[key] as List<dynamic>? ?? [])
-                .map((e) => e?.toString())
-                .toList();
-
-            if (values.any((v) => v != null && v!.isNotEmpty)) {
-              bodyData.add(FinancialDataRow(
-                description: metric,
-                values: values,
-                category: 'cash_flow',
-              ));
-              break;
-            }
-          }
-        }
-      }
-
-      return FinancialDataModel(
-        headers: headers,
-        body: bodyData,
-        dataType: 'cash_flow',
-        lastUpdated: data['last_updated']?.toString() ?? '',
-      );
-    } catch (e) {
-      debugPrint('Error parsing cash flow data: $e');
-      return const FinancialDataModel();
-    }
-  }
-
-  static FinancialDataModel _parseRatios(dynamic data) {
-    try {
-      if (data is! Map<String, dynamic>) return const FinancialDataModel();
-
-      final headers = (data['headers'] as List<dynamic>? ?? [])
-          .map((e) => e?.toString() ?? '')
-          .toList();
-
-      final bodyData = <FinancialDataRow>[];
-
-      final ratioMetrics = {
-        'P/E Ratio': ['pe_ratio', 'stock_pe'],
-        'P/B Ratio': ['pb_ratio', 'price_to_book'],
-        'ROE (%)': ['roe', 'return_on_equity'],
-        'ROCE (%)': ['roce', 'return_on_capital_employed'],
-        'Current Ratio': ['current_ratio'],
-        'Quick Ratio': ['quick_ratio'],
-        'Debt to Equity': ['debt_to_equity', 'debt_equity_ratio'],
-        'Interest Coverage': ['interest_coverage', 'times_interest_earned'],
-        'Asset Turnover': ['asset_turnover', 'total_asset_turnover'],
-        'Inventory Turnover': ['inventory_turnover'],
-        'Working Capital Days': ['working_capital_days'],
-        'Cash Conversion Cycle': ['cash_conversion_cycle'],
-        'Dividend Yield (%)': ['dividend_yield'],
-      };
-
-      for (final entry in ratioMetrics.entries) {
-        final metric = entry.key;
-        final keys = entry.value;
-
-        for (final key in keys) {
-          if (data.containsKey(key)) {
-            final values = (data[key] as List<dynamic>? ?? [])
-                .map((e) => e?.toString())
-                .toList();
-
-            if (values.any((v) => v != null && v!.isNotEmpty)) {
-              bodyData.add(FinancialDataRow(
-                description: metric,
-                values: values,
-                category: 'ratios',
-                isCalculated: true,
-              ));
-              break;
-            }
-          }
-        }
-      }
-
-      return FinancialDataModel(
-        headers: headers,
-        body: bodyData,
-        dataType: 'ratios',
-        lastUpdated: data['last_updated']?.toString() ?? '',
-      );
-    } catch (e) {
-      debugPrint('Error parsing ratios data: $e');
-      return const FinancialDataModel();
-    }
-  }
-
-  static FinancialDataModel _parseGenericStructure(Map<String, dynamic> json) {
-    try {
-      final headers = (json['headers'] as List<dynamic>? ?? [])
-          .map((e) => e?.toString() ?? '')
-          .where((h) => h.isNotEmpty)
-          .toList();
-
-      final bodyData = (json['body'] as List<dynamic>? ?? [])
-          .map((item) {
-            if (item is Map<String, dynamic>) {
-              return FinancialDataRow.fromJson(item);
-            }
-            return const FinancialDataRow();
-          })
-          .where((row) => row.description.isNotEmpty)
-          .toList();
-
-      return FinancialDataModel(
-        headers: headers,
-        body: bodyData,
-        dataType: json['data_type']?.toString() ?? '',
-        sourceUrl: json['source_url']?.toString() ?? '',
-        lastUpdated: json['last_updated']?.toString() ?? '',
-      );
-    } catch (e) {
-      debugPrint('Error parsing generic structure: $e');
-      return const FinancialDataModel();
-    }
-  }
-
-  // Enhanced safe data access methods
-  String getValueAt(int rowIndex, int columnIndex) {
-    try {
-      if (rowIndex >= 0 &&
-          rowIndex < body.length &&
-          columnIndex >= 0 &&
-          columnIndex < body[rowIndex].values.length) {
-        return body[rowIndex].values[columnIndex] ?? '';
-      }
-      return '';
-    } catch (e) {
-      return '';
-    }
-  }
-
-  FinancialDataRow? findRowByDescription(String description) {
-    if (body.isEmpty || description.isEmpty) return null;
-
-    try {
-      final searchTerm = description.toLowerCase().trim();
-
-      for (final row in body) {
-        final rowDesc = row.description.toLowerCase().trim();
-        if (rowDesc == searchTerm || rowDesc.contains(searchTerm)) {
-          return row;
-        }
-      }
-
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  List<String> getColumnValues(int columnIndex) {
-    try {
-      if (columnIndex < 0 || columnIndex >= headers.length) {
-        return [];
-      }
-
-      return body.map((row) {
-        if (columnIndex < row.values.length) {
-          return row.values[columnIndex] ?? '';
-        }
-        return '';
-      }).toList();
-    } catch (e) {
-      return [];
-    }
-  }
-
-  List<List<String>> get tableData {
-    try {
-      if (isEmpty) return [];
-
-      List<List<String>> table = [];
-      table.add(['Description', ...headers]);
-
-      for (final row in body) {
-        final rowData = [row.description];
-        for (int i = 0; i < headers.length; i++) {
-          if (i < row.values.length) {
-            rowData.add(row.values[i] ?? '');
-          } else {
-            rowData.add('');
-          }
-        }
-        table.add(rowData);
-      }
-
-      return table;
-    } catch (e) {
-      return [];
-    }
-  }
-
-  Map<String, List<double?>> get growthRates {
-    try {
-      if (columnCount < 2) return {};
-
-      Map<String, List<double?>> growth = {};
-
-      for (final row in body) {
-        if (!row.hasNumericData) continue;
-
-        List<double?> rates = [];
-        for (int i = 1; i < row.values.length && i < headers.length; i++) {
-          final current = row.getNumericValue(i);
-          final previous = row.getNumericValue(i - 1);
-
-          if (current != null && previous != null && previous != 0) {
-            final rate = ((current - previous) / previous) * 100;
-            rates.add(rate);
-          } else {
-            rates.add(null);
+        if (numericValues.length >= 4) {
+          // 3-year CAGR
+          final cagr3Y = _calculateCAGR(numericValues[0], numericValues[3], 3);
+          if (cagr3Y != null) {
+            growthMetrics[
+                    '${metric.toLowerCase().replaceAll(' ', '_')}_3y_cagr'] =
+                cagr3Y;
           }
         }
 
-        if (rates.any((rate) => rate != null)) {
-          growth[row.description] = rates;
+        if (numericValues.length >= 6) {
+          // 5-year CAGR
+          final cagr5Y = _calculateCAGR(numericValues[0], numericValues[5], 5);
+          if (cagr5Y != null) {
+            growthMetrics[
+                    '${metric.toLowerCase().replaceAll(' ', '_')}_5y_cagr'] =
+                cagr5Y;
+          }
         }
       }
-
-      return growth;
-    } catch (e) {
-      return {};
     }
+
+    return growthMetrics;
   }
 
-  double? getLatestMetric(String metricName) {
-    final row = findRowByDescription(metricName);
-    return row?.latestNumericValue;
+  /// Calculate CAGR (Compound Annual Growth Rate)
+  double? _calculateCAGR(double endValue, double beginValue, int years) {
+    if (beginValue <= 0 || endValue <= 0 || years <= 0) return null;
+    return (pow(endValue / beginValue, 1 / years) - 1) * 100;
   }
 
-  double? getMetricGrowthRate(String metricName) {
-    final row = findRowByDescription(metricName);
-    return row?.growthRate;
+  /// Calculate simple growth rate
+  double? _calculateGrowthRate(double current, double previous) {
+    if (previous == 0) return null;
+    return ((current - previous) / previous) * 100;
   }
 
-  double? getMetricCAGR(String metricName) {
-    final row = findRowByDescription(metricName);
-    return row?.cagr;
+  /// Extract financial health indicators
+  Map<String, dynamic> analyzeFinancialHealth() {
+    final healthMetrics = <String, dynamic>{};
+
+    // Liquidity ratios
+    final currentRatio = getLatestNumericValue('Current Ratio');
+    final quickRatio = getLatestNumericValue('Quick Ratio');
+
+    healthMetrics['liquidity'] = {
+      'current_ratio': currentRatio,
+      'quick_ratio': quickRatio,
+      'liquidity_status': _assessLiquidity(currentRatio, quickRatio),
+    };
+
+    // Leverage ratios
+    final debtToEquity = getLatestNumericValue('Debt to Equity');
+    final interestCoverage = getLatestNumericValue('Interest Coverage');
+
+    healthMetrics['leverage'] = {
+      'debt_to_equity': debtToEquity,
+      'interest_coverage': interestCoverage,
+      'leverage_status': _assessLeverage(debtToEquity, interestCoverage),
+    };
+
+    // Profitability ratios
+    final roe = getLatestNumericValue('Return on Equity');
+    final roa = getLatestNumericValue('Return on Assets');
+    final roce = getLatestNumericValue('Return on Capital Employed');
+
+    healthMetrics['profitability'] = {
+      'roe': roe,
+      'roa': roa,
+      'roce': roce,
+      'profitability_status': _assessProfitability(roe, roa, roce),
+    };
+
+    return healthMetrics;
   }
 
-  bool isMetricTrendingUp(String metricName) {
-    final row = findRowByDescription(metricName);
-    return row?.isGrowingTrend ?? false;
+  String _assessLiquidity(double? currentRatio, double? quickRatio) {
+    if (currentRatio == null) return 'Unknown';
+    if (currentRatio > 2.0 && (quickRatio == null || quickRatio > 1.5))
+      return 'Excellent';
+    if (currentRatio > 1.5) return 'Good';
+    if (currentRatio > 1.0) return 'Adequate';
+    return 'Poor';
   }
 
-  Map<String, double?> get latestMetricsSummary {
-    Map<String, double?> summary = {};
+  String _assessLeverage(double? debtToEquity, double? interestCoverage) {
+    if (debtToEquity == null) return 'Unknown';
+    if (debtToEquity < 0.1) return 'Conservative';
+    if (debtToEquity < 0.5 &&
+        (interestCoverage == null || interestCoverage > 5)) return 'Moderate';
+    if (debtToEquity < 1.0) return 'Leveraged';
+    return 'High Risk';
+  }
+
+  String _assessProfitability(double? roe, double? roa, double? roce) {
+    if (roe == null) return 'Unknown';
+    if (roe > 20 && (roce == null || roce > 20)) return 'Excellent';
+    if (roe > 15) return 'Good';
+    if (roe > 10) return 'Average';
+    if (roe > 0) return 'Weak';
+    return 'Loss Making';
+  }
+
+  /// Get trend analysis for key metrics
+  Map<String, String> analyzeTrends() {
+    final trends = <String, String>{};
+
+    final keyMetrics = [
+      'Sales',
+      'Net Profit',
+      'Total Assets',
+      'ROE',
+      'Current Ratio'
+    ];
+
+    for (final metric in keyMetrics) {
+      final values = getRowValues(metric);
+      if (values.length >= 3) {
+        final numericValues = values
+            .take(3)
+            .map((v) => _parseCleanNumeric(v))
+            .where((v) => v != null)
+            .cast<double>()
+            .toList();
+
+        if (numericValues.length >= 3) {
+          trends[metric.toLowerCase().replaceAll(' ', '_')] =
+              _calculateTrend(numericValues);
+        }
+      }
+    }
+
+    return trends;
+  }
+
+  String _calculateTrend(List<double> values) {
+    if (values.length < 3) return 'Insufficient Data';
+
+    final recent = values[0];
+    final middle = values[1];
+    final old = values[2];
+
+    final recentChange = (recent - middle) / middle * 100;
+    final olderChange = (middle - old) / old * 100;
+
+    if (recentChange > 5 && olderChange > 5) return 'Strong Upward';
+    if (recentChange > 0 && olderChange > 0) return 'Upward';
+    if (recentChange < -5 && olderChange < -5) return 'Strong Downward';
+    if (recentChange < 0 && olderChange < 0) return 'Downward';
+    return 'Sideways';
+  }
+
+  // ============================================================================
+  // EXISTING METHODS (Enhanced)
+  // ============================================================================
+
+  /// Enhanced toMap with calculated metrics
+  Map<String, Map<String, dynamic>> toMap() {
+    final result = <String, Map<String, dynamic>>{};
+
     for (final row in body) {
-      if (row.hasNumericData) {
-        summary[row.description] = row.latestNumericValue;
+      if (row.description.isNotEmpty) {
+        final rowMap = <String, dynamic>{};
+        for (int i = 0; i < headers.length && i < row.values.length; i++) {
+          rowMap[headers[i]] = row.values[i];
+        }
+        // Add calculated metrics
+        rowMap.addAll(row.calculatedMetrics);
+        result[row.description] = rowMap;
       }
     }
-    return summary;
+
+    return result;
+  }
+
+  /// Find rows containing specific keywords (enhanced)
+  List<FinancialDataRow> findRows(List<String> keywords) {
+    return body.where((row) {
+      final description = row.description.toLowerCase();
+      return keywords.any((keyword) => _fuzzyMatch(description, keyword));
+    }).toList();
+  }
+
+  /// Enhanced growth rate calculation
+  double? getGrowthRate(
+      String description, String currentPeriod, String previousPeriod) {
+    final currentValue = getNumericValue(description, currentPeriod);
+    final previousValue = getNumericValue(description, previousPeriod);
+
+    if (currentValue == null || previousValue == null || previousValue == 0) {
+      return null;
+    }
+
+    return ((currentValue - previousValue) / previousValue) * 100;
+  }
+
+  /// Check if table has meaningful data
+  bool get hasData =>
+      headers.isNotEmpty &&
+      body.isNotEmpty &&
+      body.any(
+          (row) => row.values.any((value) => value.isNotEmpty && value != '-'));
+
+  /// Get time periods (headers excluding description)
+  List<String> get timePeriods => headers;
+
+  /// Get all metric names (descriptions)
+  List<String> get metrics => body.map((row) => row.description).toList();
+
+  /// Get key financial metrics only
+  List<String> get keyMetrics => body
+      .where((row) => row.isKeyMetric || _isKeyMetric(row.description))
+      .map((row) => row.description)
+      .toList();
+
+  bool _isKeyMetric(String description) {
+    final keyTerms = [
+      'sales',
+      'revenue',
+      'net profit',
+      'ebitda',
+      'total assets',
+      'shareholders equity',
+      'roe',
+      'roce',
+      'current ratio',
+      'debt to equity'
+    ];
+    return keyTerms.any((term) => _fuzzyMatch(description, term));
   }
 }
 
-// ============================================================================
-// ENHANCED FINANCIAL DATA ROW EXTENSIONS
-// ============================================================================
+// Enhanced utility class for financial metrics extraction
+class FinancialMetricsExtractor {
+  /// Extract comprehensive key metrics with enhanced parsing
+  static Map<String, double?> extractKeyMetrics(FinancialDataModel model) {
+    return {
+      // Revenue metrics
+      'sales': model.getLatestNumericValue('Sales'),
+      'revenue': model.getLatestNumericValue('Revenue'),
+      'totalIncome': model.getLatestNumericValue('Total Income'),
 
-extension FinancialDataRowX on FinancialDataRow {
-  String get latestValue => values.isEmpty ? '' : (values.last ?? '');
-  String get firstValue => values.isEmpty ? '' : (values.first ?? '');
-  bool get hasNumericData =>
-      values.any((value) => _parseNumericValue(value) != null);
+      // Profit metrics
+      'netProfit': model.getLatestNumericValue('Net Profit'),
+      'grossProfit': model.getLatestNumericValue('Gross Profit'),
+      'operatingProfit': model.getLatestNumericValue('Operating Profit'),
+      'ebitda': model.getLatestNumericValue('EBITDA'),
+      'ebit': model.getLatestNumericValue('EBIT'),
 
-  double? getNumericValue(int index) {
-    try {
-      if (index >= 0 && index < values.length) {
-        return _parseNumericValue(values[index]);
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
+      // Balance sheet metrics
+      'totalAssets': model.getLatestNumericValue('Total Assets'),
+      'totalLiabilities': model.getLatestNumericValue('Total Liabilities'),
+      'shareholdersEquity': model.getLatestNumericValue('Shareholders Equity'),
+      'totalDebt': model.getLatestNumericValue('Total Debt'),
+      'workingCapital': model.getLatestNumericValue('Working Capital'),
+
+      // Cash flow metrics
+      'operatingCashFlow': model.getLatestNumericValue('Operating Cash Flow'),
+      'freeCashFlow': model.getLatestNumericValue('Free Cash Flow'),
+      'investingCashFlow': model.getLatestNumericValue('Investing Cash Flow'),
+      'financingCashFlow': model.getLatestNumericValue('Financing Cash Flow'),
+
+      // Per share metrics
+      'eps': model.getLatestNumericValue('EPS'),
+      'bookValue': model.getLatestNumericValue('Book Value'),
+      'dividendPerShare': model.getLatestNumericValue('Dividend Per Share'),
+
+      // Ratios
+      'currentRatio': model.getLatestNumericValue('Current Ratio'),
+      'quickRatio': model.getLatestNumericValue('Quick Ratio'),
+      'debtToEquity': model.getLatestNumericValue('Debt to Equity'),
+      'returnOnEquity': model.getLatestNumericValue('Return on Equity'),
+      'returnOnAssets': model.getLatestNumericValue('Return on Assets'),
+      'returnOnCapital': model.getLatestNumericValue('Return on Capital'),
+      'interestCoverage': model.getLatestNumericValue('Interest Coverage'),
+      'assetTurnover': model.getLatestNumericValue('Asset Turnover'),
+      'inventoryTurnover': model.getLatestNumericValue('Inventory Turnover'),
+
+      // Expense metrics
+      'interestExpense': model.getLatestNumericValue('Interest Expense'),
+      'taxExpense': model.getLatestNumericValue('Tax Expense'),
+      'depreciation': model.getLatestNumericValue('Depreciation'),
+    };
   }
 
-  List<double?> get numericValues => values.map(_parseNumericValue).toList();
+  /// Extract time series data with enhanced period detection
+  static List<Map<String, dynamic>> extractTimeSeriesData(
+      FinancialDataModel model, String metric) {
+    final values = model.getRowValues(metric);
+    final headers = model.headers;
 
-  double? get latestNumericValue =>
-      values.isEmpty ? null : _parseNumericValue(latestValue);
+    List<Map<String, dynamic>> timeSeries = [];
 
-  double? get growthRate {
-    try {
-      final first = _parseNumericValue(firstValue);
-      final last = _parseNumericValue(latestValue);
-
-      if (first != null && last != null && first != 0) {
-        return ((last - first) / first) * 100;
+    for (int i = 0; i < headers.length && i < values.length; i++) {
+      final numericValue = model.getNumericValue(metric, headers[i]);
+      if (numericValue != null) {
+        timeSeries.add({
+          'period': headers[i],
+          'value': numericValue,
+          'rawValue': values[i],
+          'periodType': _determinePeriodType(headers[i]),
+          'year': _extractYear(headers[i]),
+          'quarter': _extractQuarter(headers[i]),
+        });
       }
-      return null;
-    } catch (e) {
-      return null;
     }
+
+    return timeSeries;
   }
 
-  double? get cagr {
-    try {
-      if (values.length < 2) return null;
-
-      final first = _parseNumericValue(firstValue);
-      final last = _parseNumericValue(latestValue);
-      final years = values.length - 1;
-
-      if (first != null && last != null && first > 0 && years > 0) {
-        return (pow(last / first, 1 / years) - 1) * 100;
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
+  static String _determinePeriodType(String header) {
+    if (header.contains('Q') || header.contains('quarter')) return 'quarterly';
+    if (RegExp(r'\d{4}').hasMatch(header)) return 'annual';
+    return 'unknown';
   }
 
-  double? get averageValue {
-    try {
-      final nums =
-          numericValues.where((v) => v != null).cast<double>().toList();
-      if (nums.isEmpty) return null;
-      return nums.reduce((a, b) => a + b) / nums.length;
-    } catch (e) {
-      return null;
-    }
+  static int? _extractYear(String header) {
+    final yearMatch = RegExp(r'(\d{4})').firstMatch(header);
+    return yearMatch != null ? int.tryParse(yearMatch.group(1)!) : null;
   }
 
-  bool get isGrowingTrend {
-    try {
-      final nums =
-          numericValues.where((v) => v != null).cast<double>().toList();
-      if (nums.length < 2) return false;
-
-      int upCount = 0;
-      for (int i = 1; i < nums.length; i++) {
-        if (nums[i] > nums[i - 1]) upCount++;
-      }
-
-      return upCount > nums.length / 2;
-    } catch (e) {
-      return false;
-    }
+  static String? _extractQuarter(String header) {
+    final quarterMatch = RegExp(r'Q(\d)').firstMatch(header);
+    return quarterMatch?.group(1);
   }
 
-  double? _parseNumericValue(String? value) {
-    try {
-      if (value == null || value.isEmpty) return null;
+  /// Calculate enhanced growth rates with CAGR
+  static Map<String, double?> calculateGrowthRates(FinancialDataModel model) {
+    final headers = model.headers;
+    final growthRates = <String, double?>{};
 
-      String cleanValue = value
-          .replaceAll(',', '')
-          .replaceAll('₹', '')
-          .replaceAll('Rs.', '')
-          .replaceAll('Rs', '')
-          .replaceAll('%', '')
-          .replaceAll('(', '-')
-          .replaceAll(')', '')
-          .replaceAll(' ', '')
-          .trim();
+    if (headers.length < 2) return growthRates;
 
-      if (value.contains('(') && value.contains(')')) {
-        cleanValue = '-' + cleanValue.replaceAll('-', '');
+    final keyMetrics = [
+      'Sales',
+      'Net Profit',
+      'Total Assets',
+      'Shareholders Equity'
+    ];
+
+    for (final metric in keyMetrics) {
+      final values = model.getRowValues(metric);
+      final numericValues = values
+          .map((v) => model._parseCleanNumeric(v))
+          .where((v) => v != null)
+          .cast<double>()
+          .toList();
+
+      if (numericValues.length >= 2) {
+        // 1-year growth
+        final growth1Y =
+            model._calculateGrowthRate(numericValues[0], numericValues[1]);
+        if (growth1Y != null) {
+          growthRates['${metric.toLowerCase().replaceAll(' ', '_')}_1y'] =
+              growth1Y;
+        }
       }
 
-      if (cleanValue.toLowerCase() == 'na' ||
-          cleanValue.toLowerCase() == 'n/a' ||
-          cleanValue == '-' ||
-          cleanValue.isEmpty) {
-        return null;
+      if (numericValues.length >= 4) {
+        // 3-year CAGR
+        final cagr3Y =
+            model._calculateCAGR(numericValues[0], numericValues[3], 3);
+        if (cagr3Y != null) {
+          growthRates['${metric.toLowerCase().replaceAll(' ', '_')}_3y_cagr'] =
+              cagr3Y;
+        }
       }
-
-      // Handle Crores
-      if (cleanValue.toLowerCase().endsWith('cr')) {
-        final numPart = cleanValue.toLowerCase().replaceAll('cr', '').trim();
-        final parsed = double.tryParse(numPart);
-        return parsed != null ? parsed * 100 : null;
-      }
-
-      // Handle Lakhs
-      if (cleanValue.toLowerCase().endsWith('l') ||
-          cleanValue.toLowerCase().endsWith('lakh')) {
-        final numPart = cleanValue
-            .toLowerCase()
-            .replaceAll('l', '')
-            .replaceAll('lakh', '')
-            .trim();
-        final parsed = double.tryParse(numPart);
-        return parsed;
-      }
-
-      // Handle thousands (K)
-      if (cleanValue.toLowerCase().endsWith('k')) {
-        final numPart = cleanValue.toLowerCase().replaceAll('k', '').trim();
-        final parsed = double.tryParse(numPart);
-        return parsed != null ? parsed * 1000 : null;
-      }
-
-      return double.tryParse(cleanValue);
-    } catch (e) {
-      return null;
     }
+
+    return growthRates;
+  }
+
+  /// Extract quality indicators
+  static Map<String, dynamic> extractQualityIndicators(
+      FinancialDataModel model) {
+    return {
+      'financial_health': model.analyzeFinancialHealth(),
+      'growth_metrics': model.calculateComprehensiveGrowth(),
+      'trend_analysis': model.analyzeTrends(),
+      'data_quality': {
+        'completeness': _calculateDataCompleteness(model),
+        'consistency': _calculateDataConsistency(model),
+        'recency': model.lastUpdated?.toIso8601String(),
+      },
+    };
+  }
+
+  static double _calculateDataCompleteness(FinancialDataModel model) {
+    if (model.body.isEmpty) return 0.0;
+
+    int totalCells = 0;
+    int filledCells = 0;
+
+    for (final row in model.body) {
+      for (final value in row.values) {
+        totalCells++;
+        if (value.isNotEmpty && value != '-' && value.toLowerCase() != 'n/a') {
+          filledCells++;
+        }
+      }
+    }
+
+    return totalCells > 0 ? (filledCells / totalCells) * 100 : 0.0;
+  }
+
+  static double _calculateDataConsistency(FinancialDataModel model) {
+    // Check for logical consistency in financial data
+    double consistencyScore = 100.0;
+
+    // Example: Check if assets = liabilities + equity (roughly)
+    final assets = model.getLatestNumericValue('Total Assets');
+    final liabilities = model.getLatestNumericValue('Total Liabilities');
+    final equity = model.getLatestNumericValue('Shareholders Equity');
+
+    if (assets != null && liabilities != null && equity != null) {
+      final difference = (assets - (liabilities + equity)).abs();
+      final tolerance = assets * 0.05; // 5% tolerance
+      if (difference > tolerance) {
+        consistencyScore -= 20;
+      }
+    }
+
+    return max(0.0, consistencyScore);
   }
 }

@@ -74,6 +74,12 @@ _$CompanyModelImpl _$$CompanyModelImplFromJson(Map<String, dynamic> json) =>
       salesCAGR5Y: (json['salesCAGR5Y'] as num?)?.toDouble(),
       profitCAGR3Y: (json['profitCAGR3Y'] as num?)?.toDouble(),
       profitCAGR5Y: (json['profitCAGR5Y'] as num?)?.toDouble(),
+      rawFinancialTables: const RawFinancialTablesConverter()
+          .fromJson(json['rawFinancialTables']),
+      companyKeyPoints:
+          const CompanyKeyPointsConverter().fromJson(json['companyKeyPoints']),
+      calculatedMetrics: const CalculatedMetricsConverter()
+          .fromJson(json['calculatedMetrics']),
       businessOverview: json['businessOverview'] as String? ?? '',
       sector: json['sector'] as String?,
       industry: json['industry'] as String?,
@@ -108,6 +114,12 @@ _$CompanyModelImpl _$$CompanyModelImplFromJson(Map<String, dynamic> json) =>
       altmanZScore: (json['altmanZScore'] as num?)?.toDouble(),
       qualityGrade: json['qualityGrade'] as String?,
       creditRating: json['creditRating'] as String?,
+      grahamNumber: (json['grahamNumber'] as num?)?.toDouble(),
+      roic: (json['roic'] as num?)?.toDouble(),
+      fcfYield: (json['fcfYield'] as num?)?.toDouble(),
+      debtServiceCoverage: (json['debtServiceCoverage'] as num?)?.toDouble(),
+      comprehensiveScore: (json['comprehensiveScore'] as num?)?.toDouble(),
+      investmentRecommendation: json['investmentRecommendation'] as String?,
       shareholdingPattern: const ShareholdingPatternConverter()
           .fromJson(json['shareholdingPattern']),
       ratiosData: json['ratiosData'] as Map<String, dynamic>? ?? const {},
@@ -231,6 +243,12 @@ Map<String, dynamic> _$$CompanyModelImplToJson(_$CompanyModelImpl instance) =>
       'salesCAGR5Y': instance.salesCAGR5Y,
       'profitCAGR3Y': instance.profitCAGR3Y,
       'profitCAGR5Y': instance.profitCAGR5Y,
+      'rawFinancialTables': const RawFinancialTablesConverter()
+          .toJson(instance.rawFinancialTables),
+      'companyKeyPoints':
+          const CompanyKeyPointsConverter().toJson(instance.companyKeyPoints),
+      'calculatedMetrics':
+          const CalculatedMetricsConverter().toJson(instance.calculatedMetrics),
       'businessOverview': instance.businessOverview,
       'sector': instance.sector,
       'industry': instance.industry,
@@ -250,6 +268,12 @@ Map<String, dynamic> _$$CompanyModelImplToJson(_$CompanyModelImpl instance) =>
       'altmanZScore': instance.altmanZScore,
       'qualityGrade': instance.qualityGrade,
       'creditRating': instance.creditRating,
+      'grahamNumber': instance.grahamNumber,
+      'roic': instance.roic,
+      'fcfYield': instance.fcfYield,
+      'debtServiceCoverage': instance.debtServiceCoverage,
+      'comprehensiveScore': instance.comprehensiveScore,
+      'investmentRecommendation': instance.investmentRecommendation,
       'shareholdingPattern': const ShareholdingPatternConverter()
           .toJson(instance.shareholdingPattern),
       'ratiosData': instance.ratiosData,
@@ -286,6 +310,249 @@ Map<String, dynamic> _$$CompanyModelImplToJson(_$CompanyModelImpl instance) =>
       'isGrowthStock': instance.isGrowthStock,
       'isValueStock': instance.isValueStock,
       'isQualityStock': instance.isQualityStock,
+    };
+
+_$RawFinancialTablesImpl _$$RawFinancialTablesImplFromJson(
+        Map<String, dynamic> json) =>
+    _$RawFinancialTablesImpl(
+      quarterlyResults:
+          json['quarterlyResults'] as Map<String, dynamic>? ?? const {},
+      profitLossStatement:
+          json['profitLossStatement'] as Map<String, dynamic>? ?? const {},
+      balanceSheet: json['balanceSheet'] as Map<String, dynamic>? ?? const {},
+      cashFlowStatement:
+          json['cashFlowStatement'] as Map<String, dynamic>? ?? const {},
+      ratiosTable: json['ratiosTable'] as Map<String, dynamic>? ?? const {},
+      shareholdingTable:
+          json['shareholdingTable'] as Map<String, dynamic>? ?? const {},
+    );
+
+Map<String, dynamic> _$$RawFinancialTablesImplToJson(
+        _$RawFinancialTablesImpl instance) =>
+    <String, dynamic>{
+      'quarterlyResults': instance.quarterlyResults,
+      'profitLossStatement': instance.profitLossStatement,
+      'balanceSheet': instance.balanceSheet,
+      'cashFlowStatement': instance.cashFlowStatement,
+      'ratiosTable': instance.ratiosTable,
+      'shareholdingTable': instance.shareholdingTable,
+    };
+
+_$CompanyKeyPointsImpl _$$CompanyKeyPointsImplFromJson(
+        Map<String, dynamic> json) =>
+    _$CompanyKeyPointsImpl(
+      businessHighlights: (json['businessHighlights'] as List<dynamic>?)
+              ?.map(
+                  (e) => BusinessHighlight.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      financialStrengths: (json['financialStrengths'] as List<dynamic>?)
+              ?.map(
+                  (e) => FinancialStrength.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      riskFactors: (json['riskFactors'] as List<dynamic>?)
+              ?.map((e) => RiskFactor.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      competitiveAdvantages: (json['competitiveAdvantages'] as List<dynamic>?)
+              ?.map((e) =>
+                  CompetitiveAdvantage.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      recentDevelopments: (json['recentDevelopments'] as List<dynamic>?)
+              ?.map(
+                  (e) => RecentDevelopment.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      managementInsights: (json['managementInsights'] as List<dynamic>?)
+              ?.map(
+                  (e) => ManagementInsight.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
+
+Map<String, dynamic> _$$CompanyKeyPointsImplToJson(
+        _$CompanyKeyPointsImpl instance) =>
+    <String, dynamic>{
+      'businessHighlights': instance.businessHighlights,
+      'financialStrengths': instance.financialStrengths,
+      'riskFactors': instance.riskFactors,
+      'competitiveAdvantages': instance.competitiveAdvantages,
+      'recentDevelopments': instance.recentDevelopments,
+      'managementInsights': instance.managementInsights,
+    };
+
+_$BusinessHighlightImpl _$$BusinessHighlightImplFromJson(
+        Map<String, dynamic> json) =>
+    _$BusinessHighlightImpl(
+      type: json['type'] as String,
+      description: json['description'] as String,
+      impact: json['impact'] as String,
+    );
+
+Map<String, dynamic> _$$BusinessHighlightImplToJson(
+        _$BusinessHighlightImpl instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'description': instance.description,
+      'impact': instance.impact,
+    };
+
+_$FinancialStrengthImpl _$$FinancialStrengthImplFromJson(
+        Map<String, dynamic> json) =>
+    _$FinancialStrengthImpl(
+      type: json['type'] as String,
+      description: json['description'] as String,
+      impact: json['impact'] as String,
+      value: (json['value'] as num?)?.toDouble(),
+      trend: json['trend'] as String?,
+    );
+
+Map<String, dynamic> _$$FinancialStrengthImplToJson(
+        _$FinancialStrengthImpl instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'description': instance.description,
+      'impact': instance.impact,
+      'value': instance.value,
+      'trend': instance.trend,
+    };
+
+_$RiskFactorImpl _$$RiskFactorImplFromJson(Map<String, dynamic> json) =>
+    _$RiskFactorImpl(
+      type: json['type'] as String,
+      description: json['description'] as String,
+      impact: json['impact'] as String,
+      severity: json['severity'] as String,
+    );
+
+Map<String, dynamic> _$$RiskFactorImplToJson(_$RiskFactorImpl instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'description': instance.description,
+      'impact': instance.impact,
+      'severity': instance.severity,
+    };
+
+_$CompetitiveAdvantageImpl _$$CompetitiveAdvantageImplFromJson(
+        Map<String, dynamic> json) =>
+    _$CompetitiveAdvantageImpl(
+      type: json['type'] as String,
+      description: json['description'] as String,
+      impact: json['impact'] as String,
+      sustainability: json['sustainability'] as String?,
+    );
+
+Map<String, dynamic> _$$CompetitiveAdvantageImplToJson(
+        _$CompetitiveAdvantageImpl instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'description': instance.description,
+      'impact': instance.impact,
+      'sustainability': instance.sustainability,
+    };
+
+_$RecentDevelopmentImpl _$$RecentDevelopmentImplFromJson(
+        Map<String, dynamic> json) =>
+    _$RecentDevelopmentImpl(
+      type: json['type'] as String,
+      description: json['description'] as String,
+      impact: json['impact'] as String,
+      date:
+          json['date'] == null ? null : DateTime.parse(json['date'] as String),
+    );
+
+Map<String, dynamic> _$$RecentDevelopmentImplToJson(
+        _$RecentDevelopmentImpl instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'description': instance.description,
+      'impact': instance.impact,
+      'date': instance.date?.toIso8601String(),
+    };
+
+_$ManagementInsightImpl _$$ManagementInsightImplFromJson(
+        Map<String, dynamic> json) =>
+    _$ManagementInsightImpl(
+      type: json['type'] as String,
+      description: json['description'] as String,
+      impact: json['impact'] as String,
+    );
+
+Map<String, dynamic> _$$ManagementInsightImplToJson(
+        _$ManagementInsightImpl instance) =>
+    <String, dynamic>{
+      'type': instance.type,
+      'description': instance.description,
+      'impact': instance.impact,
+    };
+
+_$CalculatedMetricsImpl _$$CalculatedMetricsImplFromJson(
+        Map<String, dynamic> json) =>
+    _$CalculatedMetricsImpl(
+      piotroskiScore: (json['piotroskiScore'] as num?)?.toDouble(),
+      altmanZScore: (json['altmanZScore'] as num?)?.toDouble(),
+      grahamNumber: (json['grahamNumber'] as num?)?.toDouble(),
+      pegRatio: (json['pegRatio'] as num?)?.toDouble(),
+      roic: (json['roic'] as num?)?.toDouble(),
+      fcfYield: (json['fcfYield'] as num?)?.toDouble(),
+      comprehensiveScore: (json['comprehensiveScore'] as num?)?.toDouble(),
+      riskAssessment: json['riskAssessment'] as String?,
+      investmentGrade: json['investmentGrade'] as String?,
+      investmentRecommendation: json['investmentRecommendation'] as String?,
+      safetyMargin: (json['safetyMargin'] as num?)?.toDouble(),
+      debtServiceCoverage: (json['debtServiceCoverage'] as num?)?.toDouble(),
+      workingCapitalTurnover:
+          (json['workingCapitalTurnover'] as num?)?.toDouble(),
+      returnOnAssets: (json['returnOnAssets'] as num?)?.toDouble(),
+      returnOnCapital: (json['returnOnCapital'] as num?)?.toDouble(),
+      evToEbitda: (json['evToEbitda'] as num?)?.toDouble(),
+      priceToFreeCashFlow: (json['priceToFreeCashFlow'] as num?)?.toDouble(),
+      enterpriseValueToSales:
+          (json['enterpriseValueToSales'] as num?)?.toDouble(),
+      sectorComparison:
+          (json['sectorComparison'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toDouble()),
+      ),
+      qualityMetrics: (json['qualityMetrics'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ),
+      strengthFactors: (json['strengthFactors'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      weaknessFactors: (json['weaknessFactors'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      valuationMetrics: json['valuationMetrics'] as Map<String, dynamic>?,
+    );
+
+Map<String, dynamic> _$$CalculatedMetricsImplToJson(
+        _$CalculatedMetricsImpl instance) =>
+    <String, dynamic>{
+      'piotroskiScore': instance.piotroskiScore,
+      'altmanZScore': instance.altmanZScore,
+      'grahamNumber': instance.grahamNumber,
+      'pegRatio': instance.pegRatio,
+      'roic': instance.roic,
+      'fcfYield': instance.fcfYield,
+      'comprehensiveScore': instance.comprehensiveScore,
+      'riskAssessment': instance.riskAssessment,
+      'investmentGrade': instance.investmentGrade,
+      'investmentRecommendation': instance.investmentRecommendation,
+      'safetyMargin': instance.safetyMargin,
+      'debtServiceCoverage': instance.debtServiceCoverage,
+      'workingCapitalTurnover': instance.workingCapitalTurnover,
+      'returnOnAssets': instance.returnOnAssets,
+      'returnOnCapital': instance.returnOnCapital,
+      'evToEbitda': instance.evToEbitda,
+      'priceToFreeCashFlow': instance.priceToFreeCashFlow,
+      'enterpriseValueToSales': instance.enterpriseValueToSales,
+      'sectorComparison': instance.sectorComparison,
+      'qualityMetrics': instance.qualityMetrics,
+      'strengthFactors': instance.strengthFactors,
+      'weaknessFactors': instance.weaknessFactors,
+      'valuationMetrics': instance.valuationMetrics,
     };
 
 _$KeyMilestoneImpl _$$KeyMilestoneImplFromJson(Map<String, dynamic> json) =>
@@ -430,6 +697,11 @@ _$AnnualDataImpl _$$AnnualDataImplFromJson(Map<String, dynamic> json) =>
       assetTurnover: (json['assetTurnover'] as num?)?.toDouble(),
       inventoryTurnover: (json['inventoryTurnover'] as num?)?.toDouble(),
       interestCoverage: (json['interestCoverage'] as num?)?.toDouble(),
+      interestExpense: (json['interestExpense'] as num?)?.toDouble(),
+      taxExpense: (json['taxExpense'] as num?)?.toDouble(),
+      depreciation: (json['depreciation'] as num?)?.toDouble(),
+      amortization: (json['amortization'] as num?)?.toDouble(),
+      capitalExpenditures: (json['capitalExpenditures'] as num?)?.toDouble(),
       yearEnd: const TimestampConverter().fromJson(json['yearEnd']),
     );
 
@@ -466,6 +738,11 @@ Map<String, dynamic> _$$AnnualDataImplToJson(_$AnnualDataImpl instance) =>
       'assetTurnover': instance.assetTurnover,
       'inventoryTurnover': instance.inventoryTurnover,
       'interestCoverage': instance.interestCoverage,
+      'interestExpense': instance.interestExpense,
+      'taxExpense': instance.taxExpense,
+      'depreciation': instance.depreciation,
+      'amortization': instance.amortization,
+      'capitalExpenditures': instance.capitalExpenditures,
       'yearEnd': const TimestampConverter().toJson(instance.yearEnd),
     };
 

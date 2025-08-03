@@ -1,1139 +1,1205 @@
-// providers/companies_provider.dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/company_model.dart';
-import '../models/fundamental_filter.dart' as filter;
+import '../models/fundamental_filter.dart';
+import '../services/fundamental_analysis_service.dart';
+import 'dart:math';
 
-class CompaniesNotifier extends StateNotifier<AsyncValue<List<CompanyModel>>> {
-  CompaniesNotifier(this._ref) : super(const AsyncValue.loading()) {
-    _companies = [];
-    _lastDocument = null;
-    _hasMore = true;
-    _isLoading = false;
+part 'company_provider.g.dart';
+
+@riverpod
+class CompanyNotifier extends _$CompanyNotifier {
+  @override
+  Future<List<CompanyModel>> build() async {
+    return await _fetchCompanies();
   }
 
-  final Ref _ref;
-  List<CompanyModel> _companies = [];
-  DocumentSnapshot? _lastDocument;
-  bool _hasMore = true;
-  bool _isLoading = false;
-
-  // Enhanced debug methods for new financial fields including key points
-  Future<void> debugFetchRawCompanies() async {
-    print(
-        '=== 🐛 DEBUG: Starting comprehensive raw companies fetch with key points ===');
-
+  Future<List<CompanyModel>> _fetchCompanies() async {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('companies')
-          .limit(10)
+          .limit(1000)
           .get();
 
-      print('🐛 DEBUG: Query executed successfully');
-      print('🐛 DEBUG: Found ${snapshot.docs.length} documents');
-
-      if (snapshot.docs.isEmpty) {
-        print('🐛 DEBUG: ❌ No documents found in companies collection');
-        return;
-      }
-
-      for (int i = 0; i < snapshot.docs.length; i++) {
-        final doc = snapshot.docs[i];
-        print('--- Document ${i + 1} ---');
-        print('📄 Document ID: ${doc.id}');
-
-        try {
-          final rawData = doc.data() as Map<String, dynamic>;
-          print('📊 Available fields: ${rawData.keys.toList()}');
-
-          // Check essential fields
-          print('🔍 Basic fields check:');
-          print('  - name: ${rawData['name']}');
-          print('  - market_cap: ${rawData['market_cap']}');
-          print('  - current_price: ${rawData['current_price']}');
-          print('  - roe: ${rawData['roe']}');
-          print('  - stock_pe: ${rawData['stock_pe']}');
-
-          // Check enhanced ratios from updated scraper
-          print('🎯 Enhanced ratio fields:');
-          print('  - debt_to_equity: ${rawData['debt_to_equity']}');
-          print('  - current_ratio: ${rawData['current_ratio']}');
-          print('  - working_capital_days: ${rawData['working_capital_days']}');
-          print('  - debtor_days: ${rawData['debtor_days']}');
-          print('  - inventory_days: ${rawData['inventory_days']}');
-          print(
-              '  - cash_conversion_cycle: ${rawData['cash_conversion_cycle']}');
-          print('  - interest_coverage: ${rawData['interest_coverage']}');
-
-          // Check quality and efficiency scores
-          print('📈 Quality & efficiency fields:');
-          print('  - quality_score: ${rawData['quality_score']}');
-          print(
-              '  - overall_quality_grade: ${rawData['overall_quality_grade']}');
-          print(
-              '  - working_capital_efficiency: ${rawData['working_capital_efficiency']}');
-          print('  - liquidity_status: ${rawData['liquidity_status']}');
-          print('  - debt_status: ${rawData['debt_status']}');
-          print('  - risk_level: ${rawData['risk_level']}');
-
-          // NEW: Check key points and company insights
-          print('🏢 Key points & company insights:');
-          print(
-              '  - business_overview: ${rawData['business_overview']?.toString().substring(0, 100) ?? 'N/A'}...');
-          print('  - sector: ${rawData['sector']}');
-          print('  - industry: ${rawData['industry']}');
-          print(
-              '  - industry_classification: ${rawData['industry_classification']}');
-          print('  - recent_performance: ${rawData['recent_performance']}');
-          print(
-              '  - key_milestones: ${rawData['key_milestones']?.length ?? 0} milestones');
-          print(
-              '  - investment_highlights: ${rawData['investment_highlights']?.length ?? 0} highlights');
-          print(
-              '  - financial_summary: ${rawData['financial_summary']?.length ?? 0} summary items');
-
-          // Check historical data
-          print('📊 Historical data:');
-          print(
-              '  - annual_data_history: ${rawData['annual_data_history']?.length ?? 0} years');
-          print(
-              '  - quarterly_data_history: ${rawData['quarterly_data_history']?.length ?? 0} quarters');
-
-          // Check legacy vs new field mapping
-          print('🔄 Field mapping check:');
-          print('  - sales_growth_3y: ${rawData['sales_growth_3y']}');
-          print('  - profit_growth_3y: ${rawData['profit_growth_3y']}');
-          print(
-              '  - Compounded Sales Growth (legacy): ${rawData['Compounded Sales Growth']}');
-          print(
-              '  - Compounded Profit Growth (legacy): ${rawData['Compounded Profit Growth']}');
-        } catch (e) {
-          print('❌ Error reading document data: $e');
-        }
-      }
-
-      print('=== ✅ DEBUG: Comprehensive raw fetch completed successfully ===');
-    } catch (error) {
-      print('🐛 DEBUG: ❌ Error fetching raw companies: $error');
-    }
-  }
-
-  Future<void> loadInitialCompanies() async {
-    if (_isLoading) return;
-
-    state = const AsyncValue.loading();
-    _isLoading = true;
-
-    try {
-      print('Loading initial companies with enhanced data and key points...');
-
-      // Enhanced query with better filtering for quality data
-      Query query = FirebaseFirestore.instance
-          .collection('companies')
-          .where('market_cap', isGreaterThan: 100) // Filter micro companies
-          .orderBy('market_cap', descending: true)
-          .limit(50);
-
-      final snapshot = await query.get();
-      print('Fetched ${snapshot.docs.length} documents from Firestore');
-
-      List<CompanyModel> companies = [];
-
-      for (var doc in snapshot.docs) {
-        try {
-          final company = CompanyModel.fromFirestore(doc);
-          companies.add(company);
-
-          // Enhanced debug with key points data
-          print('✅ ${company.symbol}: '
-              'Quality=${company.overallQualityGrade}(${company.qualityScore}), '
-              'WCDays=${company.workingCapitalDays}, '
-              'DebtRatio=${company.debtToEquity}, '
-              'Sector=${company.sector}, '
-              'BusinessOverview=${company.businessOverview.isNotEmpty ? "✓" : "✗"}, '
-              'Milestones=${company.keyMilestones.length}, '
-              'Highlights=${company.investmentHighlights.length}');
-        } catch (e) {
-          print('Error parsing company ${doc.id}: $e');
-          continue;
-        }
-      }
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastDocument = snapshot.docs.last;
-      }
-
-      _companies = companies;
-      _isLoading = false;
-      state = AsyncValue.data(_companies);
-
-      print(
-          'Successfully loaded ${companies.length} companies with enhanced financial data and key points');
-    } catch (error, stackTrace) {
-      print('Error loading initial companies: $error');
-      _isLoading = false;
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<void> loadMoreCompanies() async {
-    if (_isLoading || !_hasMore || _lastDocument == null) return;
-    _isLoading = true;
-
-    try {
-      Query query = FirebaseFirestore.instance
-          .collection('companies')
-          .where('market_cap', isGreaterThan: 100)
-          .orderBy('market_cap', descending: true)
-          .startAfterDocument(_lastDocument!)
-          .limit(20);
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isEmpty) {
-        _hasMore = false;
-      } else {
-        List<CompanyModel> newCompanies = [];
-
-        for (var doc in snapshot.docs) {
-          try {
-            final company = CompanyModel.fromFirestore(doc);
-            newCompanies.add(company);
-          } catch (e) {
-            print('Error parsing company ${doc.id}: $e');
-            continue;
-          }
-        }
-
-        if (newCompanies.isNotEmpty) {
-          _companies.addAll(newCompanies);
-          _lastDocument = snapshot.docs.last;
-          state = AsyncValue.data(_companies);
-        }
-      }
-      _isLoading = false;
-    } catch (error, stackTrace) {
-      _isLoading = false;
-      print('Error loading more companies: $error');
-    }
-  }
-
-  // Enhanced search with sector/industry and key points consideration
-  Future<void> searchCompanies(String query) async {
-    if (query.isEmpty || query.trim().isEmpty) {
-      await loadInitialCompanies();
-      return;
-    }
-
-    state = const AsyncValue.loading();
-    _isLoading = true;
-
-    try {
-      final searchTerm = query.trim();
-      List<CompanyModel> searchResults = [];
-      print('Enhanced search with key points for: $searchTerm');
-
-      // Strategy 1: Exact symbol match
-      var symbolQuery = FirebaseFirestore.instance
-          .collection('companies')
-          .where('symbol', isEqualTo: searchTerm.toUpperCase())
-          .limit(10);
-
-      var snapshot = await symbolQuery.get();
-      for (var doc in snapshot.docs) {
-        try {
-          final company = CompanyModel.fromFirestore(doc);
-          searchResults.add(company);
-        } catch (e) {
-          print('Error parsing company ${doc.id}: $e');
-          continue;
-        }
-      }
-
-      // Strategy 2: Symbol prefix search
-      if (searchResults.isEmpty && searchTerm.length >= 2) {
-        symbolQuery = FirebaseFirestore.instance
-            .collection('companies')
-            .where('symbol', isGreaterThanOrEqualTo: searchTerm.toUpperCase())
-            .where('symbol',
-                isLessThanOrEqualTo: '${searchTerm.toUpperCase()}\uf8ff')
-            .orderBy('symbol')
-            .limit(20);
-
-        snapshot = await symbolQuery.get();
-        for (var doc in snapshot.docs) {
-          try {
-            final company = CompanyModel.fromFirestore(doc);
-            if (!searchResults.any((c) => c.symbol == company.symbol)) {
-              searchResults.add(company);
-            }
-          } catch (e) {
-            print('Error parsing company ${doc.id}: $e');
-            continue;
-          }
-        }
-      }
-
-      // Strategy 3: Company name search
-      if (searchResults.length < 10 && searchTerm.length >= 2) {
-        final nameQuery = FirebaseFirestore.instance
-            .collection('companies')
-            .where('name', isGreaterThanOrEqualTo: searchTerm)
-            .where('name', isLessThanOrEqualTo: '$searchTerm\uf8ff')
-            .orderBy('name')
-            .limit(20);
-
-        final nameSnapshot = await nameQuery.get();
-        for (var doc in nameSnapshot.docs) {
-          try {
-            final company = CompanyModel.fromFirestore(doc);
-            if (!searchResults.any((c) => c.symbol == company.symbol)) {
-              searchResults.add(company);
-            }
-          } catch (e) {
-            print('Error parsing company ${doc.id}: $e');
-            continue;
-          }
-        }
-      }
-
-      // NEW Strategy 4: Sector-based search
-      if (searchResults.length < 15 && searchTerm.length >= 3) {
-        final sectorQuery = FirebaseFirestore.instance
-            .collection('companies')
-            .where('sector', isGreaterThanOrEqualTo: searchTerm)
-            .where('sector', isLessThanOrEqualTo: '$searchTerm\uf8ff')
-            .orderBy('sector')
-            .orderBy('market_cap', descending: true)
-            .limit(20);
-
-        try {
-          final sectorSnapshot = await sectorQuery.get();
-          for (var doc in sectorSnapshot.docs) {
+      final companies = snapshot.docs
+          .map((doc) {
             try {
-              final company = CompanyModel.fromFirestore(doc);
-              if (!searchResults.any((c) => c.symbol == company.symbol)) {
-                searchResults.add(company);
-              }
+              return CompanyModel.fromFirestore(doc);
             } catch (e) {
-              print('Error parsing company ${doc.id}: $e');
-              continue;
+              debugPrint('Error parsing company ${doc.id}: $e');
+              return null;
             }
-          }
-        } catch (e) {
-          print('Sector search failed (expected for missing indices): $e');
-        }
-      }
+          })
+          .whereType<CompanyModel>()
+          .toList();
 
-      // Strategy 5: Enhanced fuzzy search with quality prioritization
-      if (searchResults.isEmpty && searchTerm.length >= 3) {
-        print(
-            'Trying enhanced fuzzy search with key points matching for: $searchTerm');
-        final fuzzyQuery = FirebaseFirestore.instance
-            .collection('companies')
-            .where('market_cap', isGreaterThan: 500)
-            .orderBy('market_cap', descending: true)
-            .limit(300);
-
-        final fuzzySnapshot = await fuzzyQuery.get();
-        for (var doc in fuzzySnapshot.docs) {
-          try {
-            final company = CompanyModel.fromFirestore(doc);
-            // Enhanced matching includes sector and industry
-            if (company.matchesSearchQuery(searchTerm)) {
-              searchResults.add(company);
-              if (searchResults.length >= 25) break;
-            }
-          } catch (e) {
-            print('Error parsing company ${doc.id}: $e');
-            continue;
-          }
-        }
-      }
-
-      // Enhanced sorting by quality score, then sector relevance, then market cap
-      searchResults.sort((a, b) {
-        // Primary: Quality score
-        final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
-        if (qualityComparison != 0) return qualityComparison;
-
-        // Secondary: Sector match relevance
-        final aHasSector =
-            a.sector?.toLowerCase().contains(searchTerm.toLowerCase()) ?? false;
-        final bHasSector =
-            b.sector?.toLowerCase().contains(searchTerm.toLowerCase()) ?? false;
-        if (aHasSector && !bHasSector) return -1;
-        if (!aHasSector && bHasSector) return 1;
-
-        // Tertiary: Market cap
-        return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
-      });
-
-      _companies = searchResults;
-      _hasMore = false;
-      _isLoading = false;
-      state = AsyncValue.data(_companies);
-
-      print(
-          'Enhanced search with key points completed. Found ${searchResults.length} companies for "$searchTerm"');
-    } catch (error, stackTrace) {
-      print('Search error: $error');
-      _isLoading = false;
-      state = AsyncValue.error(error, stackTrace);
+      final processedCompanies =
+          await compute(_processCompaniesInBackground, companies);
+      return processedCompanies;
+    } catch (e, stack) {
+      debugPrint('Error fetching companies: $e\n$stack');
+      return [];
     }
   }
 
-  // Enhanced fundamental filtering with new ratios and quality metrics
-  Future<void> applyFundamentalFilter(
-      filter.FundamentalFilter fundamentalFilter) async {
-    state = const AsyncValue.loading();
-    _isLoading = true;
-
-    try {
-      Query query = FirebaseFirestore.instance.collection('companies');
-
-      // Apply enhanced database-level filters with new quality metrics
-      switch (fundamentalFilter.type) {
-        case filter.FundamentalType.debtFree:
-          query = query
-              .where('debt_to_equity', isLessThan: 0.1)
-              .where('roe', isGreaterThan: 0)
-              .orderBy('debt_to_equity')
-              .orderBy('roe', descending: true);
-          break;
-        case filter.FundamentalType.highROE:
-          query = query
-              .where('roe', isGreaterThan: 15.0)
-              .orderBy('roe', descending: true);
-          break;
-        case filter.FundamentalType.lowPE:
-          query = query
-              .where('stock_pe', isLessThan: 20.0)
-              .where('stock_pe', isGreaterThan: 0)
-              .orderBy('stock_pe');
-          break;
-        case filter.FundamentalType.largeCap:
-          query = query
-              .where('market_cap', isGreaterThan: 20000)
-              .orderBy('market_cap', descending: true);
-          break;
-        case filter.FundamentalType.midCap:
-          query = query
-              .where('market_cap', isGreaterThan: 5000)
-              .where('market_cap', isLessThanOrEqualTo: 20000)
-              .orderBy('market_cap', descending: true);
-          break;
-        case filter.FundamentalType.smallCap:
-          query = query
-              .where('market_cap', isLessThan: 5000)
-              .where('market_cap', isGreaterThan: 100)
-              .orderBy('market_cap', descending: true);
-          break;
-        case filter.FundamentalType.dividendStocks:
-          query = query
-              .where('dividend_yield', isGreaterThan: 1.0)
-              .orderBy('dividend_yield', descending: true);
-          break;
-        case filter.FundamentalType.qualityStocks:
-          // Enhanced quality filtering with multiple criteria
-          query = query
-              .where('current_ratio', isGreaterThan: 1.5)
-              .where('roe', isGreaterThan: 12.0)
-              .orderBy('current_ratio', descending: true)
-              .orderBy('roe', descending: true);
-          break;
-        default:
-          query = query.orderBy('market_cap', descending: true);
-          break;
-      }
-
-      query = query.limit(200);
-      final snapshot = await query.get();
-
-      List<CompanyModel> companies = [];
-      for (var doc in snapshot.docs) {
-        try {
-          final company = CompanyModel.fromFirestore(doc);
-
-          // Apply enhanced client-side filtering
-          if (company.matchesFundamentalFilter(fundamentalFilter.type)) {
-            companies.add(company);
-          }
-        } catch (e) {
-          print('Error parsing company ${doc.id}: $e');
-          continue;
-        }
-      }
-
-      // Enhanced sorting by quality score and efficiency metrics
-      companies.sort((a, b) {
-        final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
-        if (qualityComparison != 0) return qualityComparison;
-
-        // Secondary: Working capital efficiency for similar quality companies
-        final aWCDays = a.workingCapitalDays ?? double.infinity;
-        final bWCDays = b.workingCapitalDays ?? double.infinity;
-        final wcComparison = aWCDays.compareTo(bWCDays); // Lower is better
-        if (wcComparison != 0) return wcComparison;
-
-        return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
-      });
-
-      _companies = companies;
-      _hasMore = false;
-      _isLoading = false;
-      state = AsyncValue.data(_companies);
-
-      print(
-          'Applied enhanced filter ${fundamentalFilter.type.name}. Found ${companies.length} companies with quality scoring');
-    } catch (error, stackTrace) {
-      print('Filter error: $error');
-      _isLoading = false;
-      state = AsyncValue.error(error, stackTrace);
-    }
+  static List<CompanyModel> _processCompaniesInBackground(
+      List<CompanyModel> companies) {
+    return companies.map(_enhanceCompanyWithCalculations).toList();
   }
 
-  // Enhanced quality stocks loading with comprehensive quality assessment
-  Future<void> loadQualityStocks({int minQualityScore = 3}) async {
-    state = const AsyncValue.loading();
-    _isLoading = true;
-
-    try {
-      // Enhanced query using multiple quality indicators
-      var query = FirebaseFirestore.instance
-          .collection('companies')
-          .where('roe', isGreaterThan: 12.0)
-          .where('current_ratio', isGreaterThan: 1.2)
-          .orderBy('roe', descending: true)
-          .orderBy('current_ratio', descending: true)
-          .limit(150);
-
-      var snapshot = await query.get();
-
-      List<CompanyModel> companies = [];
-      for (var doc in snapshot.docs) {
-        try {
-          final company = CompanyModel.fromFirestore(doc);
-
-          // Enhanced quality filtering with multiple criteria
-          if (company.qualityScore >= minQualityScore) {
-            companies.add(company);
-          }
-        } catch (e) {
-          print('Error parsing company ${doc.id}: $e');
-          continue;
-        }
-      }
-
-      // Enhanced sorting by comprehensive quality metrics
-      companies.sort((a, b) {
-        // Primary: Quality score
-        final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
-        if (qualityComparison != 0) return qualityComparison;
-
-        // Secondary: ROE
-        final roeA = a.roe ?? 0;
-        final roeB = b.roe ?? 0;
-        final roeComparison = roeB.compareTo(roeA);
-        if (roeComparison != 0) return roeComparison;
-
-        // Tertiary: Working capital efficiency (lower days = better)
-        final wcA = a.workingCapitalDays ?? double.infinity;
-        final wcB = b.workingCapitalDays ?? double.infinity;
-        final wcComparison = wcA.compareTo(wcB);
-        if (wcComparison != 0) return wcComparison;
-
-        // Quaternary: Debt level (lower = better)
-        final debtA = a.debtToEquity ?? double.infinity;
-        final debtB = b.debtToEquity ?? double.infinity;
-        return debtA.compareTo(debtB);
-      });
-
-      _companies = companies;
-      _hasMore = false;
-      _isLoading = false;
-      state = AsyncValue.data(_companies);
-
-      print(
-          'Loaded ${companies.length} enhanced quality stocks with min score $minQualityScore');
-    } catch (error, stackTrace) {
-      print('Quality stocks error: $error');
-      _isLoading = false;
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  // Enhanced top performers with quality and sector consideration
-  Future<void> loadTopPerformers() async {
-    state = const AsyncValue.loading();
-    _isLoading = true;
-
-    try {
-      final query = FirebaseFirestore.instance
-          .collection('companies')
-          .where('change_percent', isGreaterThan: 1.0)
-          .where('market_cap', isGreaterThan: 1000)
-          .orderBy('change_percent', descending: true)
-          .limit(100);
-
-      final snapshot = await query.get();
-      List<CompanyModel> companies = [];
-
-      for (var doc in snapshot.docs) {
-        try {
-          final company = CompanyModel.fromFirestore(doc);
-          companies.add(company);
-        } catch (e) {
-          print('Error parsing company ${doc.id}: $e');
-          continue;
-        }
-      }
-
-      // Enhanced sorting considering performance, quality, and sector diversity
-      companies.sort((a, b) {
-        // Primary: Change percent
-        final changeComparison = b.changePercent.compareTo(a.changePercent);
-        if (changeComparison.abs() > 1.0) return changeComparison;
-
-        // Secondary: Quality score for similar performers
-        final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
-        if (qualityComparison != 0) return qualityComparison;
-
-        // Tertiary: Market cap
-        return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
-      });
-
-      _companies = companies;
-      _hasMore = false;
-      _isLoading = false;
-      state = AsyncValue.data(_companies);
-
-      print(
-          'Loaded ${companies.length} enhanced top performers with quality metrics');
-    } catch (error, stackTrace) {
-      print('Top performers error: $error');
-      _isLoading = false;
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  // Enhanced working capital efficient companies
-  Future<void> loadWorkingCapitalEfficient() async {
-    state = const AsyncValue.loading();
-    _isLoading = true;
-
-    try {
-      final query = FirebaseFirestore.instance
-          .collection('companies')
-          .where('working_capital_days', isLessThan: 60)
-          .where('current_ratio', isGreaterThan: 1.5)
-          .orderBy('working_capital_days')
-          .orderBy('current_ratio', descending: true)
-          .limit(100);
-
-      final snapshot = await query.get();
-      List<CompanyModel> companies = [];
-
-      for (var doc in snapshot.docs) {
-        try {
-          final company = CompanyModel.fromFirestore(doc);
-          companies.add(company);
-        } catch (e) {
-          print('Error parsing company ${doc.id}: $e');
-          continue;
-        }
-      }
-
-      _companies = companies;
-      _hasMore = false;
-      _isLoading = false;
-      state = AsyncValue.data(_companies);
-
-      print('Loaded ${companies.length} working capital efficient companies');
-    } catch (error, stackTrace) {
-      print('Working capital efficient error: $error');
-      _isLoading = false;
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  // NEW: Load companies by sector
-  Future<void> loadCompaniesBySector(String sector) async {
-    state = const AsyncValue.loading();
-    _isLoading = true;
-
-    try {
-      final query = FirebaseFirestore.instance
-          .collection('companies')
-          .where('sector', isEqualTo: sector)
-          .where('market_cap', isGreaterThan: 500)
-          .orderBy('market_cap', descending: true)
-          .limit(100);
-
-      final snapshot = await query.get();
-      List<CompanyModel> companies = [];
-
-      for (var doc in snapshot.docs) {
-        try {
-          final company = CompanyModel.fromFirestore(doc);
-          companies.add(company);
-        } catch (e) {
-          print('Error parsing company ${doc.id}: $e');
-          continue;
-        }
-      }
-
-      // Sort by quality score within sector
-      companies.sort((a, b) {
-        final qualityComparison = b.qualityScore.compareTo(a.qualityScore);
-        if (qualityComparison != 0) return qualityComparison;
-        return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
-      });
-
-      _companies = companies;
-      _hasMore = false;
-      _isLoading = false;
-      state = AsyncValue.data(_companies);
-
-      print('Loaded ${companies.length} companies from $sector sector');
-    } catch (error, stackTrace) {
-      print('Sector filter error: $error');
-      _isLoading = false;
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  // NEW: Load companies with comprehensive business overview
-  Future<void> loadCompaniesWithBusinessInsights() async {
-    state = const AsyncValue.loading();
-    _isLoading = true;
-
-    try {
-      final query = FirebaseFirestore.instance
-          .collection('companies')
-          .where('market_cap', isGreaterThan: 1000)
-          .orderBy('market_cap', descending: true)
-          .limit(100);
-
-      final snapshot = await query.get();
-      List<CompanyModel> companies = [];
-
-      for (var doc in snapshot.docs) {
-        try {
-          final company = CompanyModel.fromFirestore(doc);
-          // Only include companies with substantial business overview or key points
-          if (company.businessOverview.isNotEmpty ||
-              company.keyMilestones.isNotEmpty ||
-              company.investmentHighlights.isNotEmpty) {
-            companies.add(company);
-          }
-        } catch (e) {
-          print('Error parsing company ${doc.id}: $e');
-          continue;
-        }
-      }
-
-      // Sort by completeness of business insights
-      companies.sort((a, b) {
-        final aInsightScore = _calculateInsightScore(a);
-        final bInsightScore = _calculateInsightScore(b);
-        final insightComparison = bInsightScore.compareTo(aInsightScore);
-        if (insightComparison != 0) return insightComparison;
-        return (b.marketCap ?? 0).compareTo(a.marketCap ?? 0);
-      });
-
-      _companies = companies;
-      _hasMore = false;
-      _isLoading = false;
-      state = AsyncValue.data(_companies);
-
-      print(
-          'Loaded ${companies.length} companies with comprehensive business insights');
-    } catch (error, stackTrace) {
-      print('Business insights filter error: $error');
-      _isLoading = false;
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  // Helper method to calculate insight completeness score
-  int _calculateInsightScore(CompanyModel company) {
-    int score = 0;
-    if (company.businessOverview.isNotEmpty) score += 3;
-    if (company.sector?.isNotEmpty == true) score += 1;
-    if (company.industry?.isNotEmpty == true) score += 1;
-    if (company.keyMilestones.isNotEmpty) score += 2;
-    if (company.investmentHighlights.isNotEmpty) score += 2;
-    if (company.financialSummary.isNotEmpty) score += 1;
-    return score;
-  }
-
-  // Enhanced state management methods
-  CompaniesState get currentState {
-    return CompaniesState(
-      companies: _companies,
-      isLoading: _isLoading,
-      hasMore: _hasMore,
-      lastDocument: _lastDocument,
+  static CompanyModel _enhanceCompanyWithCalculations(CompanyModel company) {
+    final calculatedMetrics = CalculatedMetrics(
+      piotroskiScore: company.calculatedPiotroskiScore,
+      altmanZScore: company.calculatedAltmanZScore,
+      grahamNumber: company.calculatedGrahamNumber,
+      pegRatio: company.calculatedPEGRatio,
+      roic: company.calculatedROIC,
+      fcfYield: company.calculatedFCFYield,
+      comprehensiveScore: company.calculatedComprehensiveScore,
+      riskAssessment: company.calculatedRiskAssessment,
+      investmentGrade: company.calculatedInvestmentGrade,
+      investmentRecommendation: company.calculatedInvestmentRecommendation,
+      safetyMargin: company.safetyMargin,
+      strengthFactors: _calculateStrengthFactors(company),
+      weaknessFactors: _calculateWeaknessFactors(company),
+      qualityMetrics: _calculateQualityMetrics(company),
+      valuationMetrics: _calculateValuationMetrics(company),
+      debtServiceCoverage: _calculateDebtServiceCoverage(company),
+      workingCapitalTurnover: _calculateWorkingCapitalTurnover(company),
+      returnOnAssets: _calculateReturnOnAssets(company),
+      returnOnCapital: _calculateReturnOnCapital(company),
+      evToEbitda: _calculateEVToEBITDA(company),
+      priceToFreeCashFlow: _calculatePriceToFreeCashFlow(company),
+      enterpriseValueToSales: _calculateEnterpriseValueToSales(company),
     );
+
+    return company.copyWith(calculatedMetrics: calculatedMetrics);
   }
 
-  Future<void> applyFilters() async {
-    _reset();
-    await loadInitialCompanies();
+  static List<String> _calculateStrengthFactors(CompanyModel company) {
+    final strengths = <String>[];
+
+    if (company.roe != null && company.roe! > 15) {
+      strengths.add('High ROE (${company.roe!.toStringAsFixed(1)}%)');
+    }
+    if (company.roce != null && company.roce! > 15) {
+      strengths.add('Strong ROCE (${company.roce!.toStringAsFixed(1)}%)');
+    }
+    if (company.debtToEquity != null && company.debtToEquity! < 0.5) {
+      strengths
+          .add('Low Debt (D/E: ${company.debtToEquity!.toStringAsFixed(2)})');
+    }
+    if (company.currentRatio != null && company.currentRatio! > 1.5) {
+      strengths.add(
+          'Strong Liquidity (CR: ${company.currentRatio!.toStringAsFixed(2)})');
+    }
+    if (company.salesGrowth3Y != null && company.salesGrowth3Y! > 15) {
+      strengths.add(
+          'High Sales Growth (${company.salesGrowth3Y!.toStringAsFixed(1)}%)');
+    }
+    if (company.profitGrowth3Y != null && company.profitGrowth3Y! > 15) {
+      strengths.add(
+          'Strong Profit Growth (${company.profitGrowth3Y!.toStringAsFixed(1)}%)');
+    }
+    if (company.dividendYield != null && company.dividendYield! > 2) {
+      strengths.add(
+          'Good Dividend Yield (${company.dividendYield!.toStringAsFixed(1)}%)');
+    }
+    if (company.interestCoverage != null && company.interestCoverage! > 5) {
+      strengths.add(
+          'Strong Interest Coverage (${company.interestCoverage!.toStringAsFixed(1)}x)');
+    }
+    if (company.workingCapitalDays != null &&
+        company.workingCapitalDays! < 60) {
+      strengths.add(
+          'Efficient Working Capital (${company.workingCapitalDays!.toInt()} days)');
+    }
+
+    return strengths;
+  }
+
+  static List<String> _calculateWeaknessFactors(CompanyModel company) {
+    final weaknesses = <String>[];
+
+    if (company.roe != null && company.roe! < 10) {
+      weaknesses.add('Low ROE (${company.roe!.toStringAsFixed(1)}%)');
+    }
+    if (company.debtToEquity != null && company.debtToEquity! > 1.0) {
+      weaknesses
+          .add('High Debt (D/E: ${company.debtToEquity!.toStringAsFixed(2)})');
+    }
+    if (company.currentRatio != null && company.currentRatio! < 1.0) {
+      weaknesses.add(
+          'Poor Liquidity (CR: ${company.currentRatio!.toStringAsFixed(2)})');
+    }
+    if (company.stockPe != null && company.stockPe! > 30) {
+      weaknesses
+          .add('High Valuation (P/E: ${company.stockPe!.toStringAsFixed(1)})');
+    }
+    if (company.interestCoverage != null && company.interestCoverage! < 2.5) {
+      weaknesses.add(
+          'Low Interest Coverage (${company.interestCoverage!.toStringAsFixed(1)}x)');
+    }
+    if (company.workingCapitalDays != null &&
+        company.workingCapitalDays! > 120) {
+      weaknesses.add(
+          'Inefficient Working Capital (${company.workingCapitalDays!.toInt()} days)');
+    }
+    if (company.salesGrowth3Y != null && company.salesGrowth3Y! < 5) {
+      weaknesses.add(
+          'Slow Sales Growth (${company.salesGrowth3Y!.toStringAsFixed(1)}%)');
+    }
+
+    return weaknesses;
+  }
+
+  static Map<String, String> _calculateQualityMetrics(CompanyModel company) {
+    final metrics = <String, String>{};
+
+    final piotroski = company.calculatedPiotroskiScore;
+    if (piotroski >= 7) {
+      metrics['Piotroski'] = 'Excellent (${piotroski.toInt()}/9)';
+    } else if (piotroski >= 5) {
+      metrics['Piotroski'] = 'Good (${piotroski.toInt()}/9)';
+    } else {
+      metrics['Piotroski'] = 'Poor (${piotroski.toInt()}/9)';
+    }
+
+    final altman = company.calculatedAltmanZScore;
+    if (altman > 3.0) {
+      metrics['Bankruptcy Risk'] = 'Very Low';
+    } else if (altman > 1.8) {
+      metrics['Bankruptcy Risk'] = 'Low';
+    } else {
+      metrics['Bankruptcy Risk'] = 'High';
+    }
+
+    final comprehensive = company.calculatedComprehensiveScore;
+    if (comprehensive > 80) {
+      metrics['Overall Quality'] = 'Excellent';
+    } else if (comprehensive > 60) {
+      metrics['Overall Quality'] = 'Good';
+    } else if (comprehensive > 40) {
+      metrics['Overall Quality'] = 'Average';
+    } else {
+      metrics['Overall Quality'] = 'Poor';
+    }
+
+    // Add credit rating assessment
+    if (altman > 3.0 && piotroski >= 7) {
+      metrics['Credit Rating'] = 'AAA';
+    } else if (altman > 2.5 && piotroski >= 6) {
+      metrics['Credit Rating'] = 'AA';
+    } else if (altman > 1.8 && piotroski >= 5) {
+      metrics['Credit Rating'] = 'A';
+    } else {
+      metrics['Credit Rating'] = 'BBB or Below';
+    }
+
+    return metrics;
+  }
+
+  static Map<String, dynamic> _calculateValuationMetrics(CompanyModel company) {
+    final metrics = <String, dynamic>{};
+
+    if (company.stockPe != null) {
+      metrics['PE_Ratio'] = company.stockPe;
+      if (company.stockPe! < 15) {
+        metrics['PE_Status'] = 'Undervalued';
+      } else if (company.stockPe! < 25) {
+        metrics['PE_Status'] = 'Fair';
+      } else {
+        metrics['PE_Status'] = 'Overvalued';
+      }
+    }
+
+    if (company.priceToBook != null) {
+      metrics['PB_Ratio'] = company.priceToBook;
+      if (company.priceToBook! < 1.5) {
+        metrics['PB_Status'] = 'Undervalued';
+      } else if (company.priceToBook! < 3.0) {
+        metrics['PB_Status'] = 'Fair';
+      } else {
+        metrics['PB_Status'] = 'Overvalued';
+      }
+    }
+
+    final pegRatio = company.calculatedPEGRatio;
+    if (pegRatio != null) {
+      metrics['PEG_Ratio'] = pegRatio;
+      if (pegRatio < 1.0) {
+        metrics['PEG_Status'] = 'Undervalued';
+      } else if (pegRatio < 2.0) {
+        metrics['PEG_Status'] = 'Fair';
+      } else {
+        metrics['PEG_Status'] = 'Overvalued';
+      }
+    }
+
+    final graham = company.calculatedGrahamNumber;
+    if (graham != null && company.currentPrice != null) {
+      metrics['Intrinsic_Value'] = graham;
+      metrics['Current_Price'] = company.currentPrice;
+      metrics['Safety_Margin'] = company.safetyMargin;
+
+      if (company.safetyMargin != null) {
+        if (company.safetyMargin! > 25) {
+          metrics['Value_Status'] = 'Strong Buy';
+        } else if (company.safetyMargin! > 10) {
+          metrics['Value_Status'] = 'Buy';
+        } else if (company.safetyMargin! > -10) {
+          metrics['Value_Status'] = 'Fair';
+        } else {
+          metrics['Value_Status'] = 'Overvalued';
+        }
+      }
+    }
+
+    return metrics;
+  }
+
+  // Additional calculation methods
+  static double? _calculateDebtServiceCoverage(CompanyModel company) {
+    if (company.annualDataHistory.isEmpty) return null;
+    final latest = company.annualDataHistory.first;
+    if (latest.ebitda == null || latest.interestExpense == null) return null;
+    if (latest.interestExpense! <= 0) return null;
+    return latest.ebitda! / latest.interestExpense!;
+  }
+
+  static double? _calculateWorkingCapitalTurnover(CompanyModel company) {
+    if (company.annualDataHistory.isEmpty) return null;
+    final latest = company.annualDataHistory.first;
+    if (latest.sales == null || latest.workingCapital == null) return null;
+    if (latest.workingCapital! <= 0) return null;
+    return latest.sales! / latest.workingCapital!;
+  }
+
+  static double? _calculateReturnOnAssets(CompanyModel company) {
+    if (company.annualDataHistory.isEmpty) return null;
+    final latest = company.annualDataHistory.first;
+    if (latest.netProfit == null || latest.totalAssets == null) return null;
+    if (latest.totalAssets! <= 0) return null;
+    return (latest.netProfit! / latest.totalAssets!) * 100;
+  }
+
+  static double? _calculateReturnOnCapital(CompanyModel company) {
+    if (company.annualDataHistory.isEmpty) return null;
+    final latest = company.annualDataHistory.first;
+    if (latest.ebitda == null ||
+        latest.totalAssets == null ||
+        latest.totalLiabilities == null) return null;
+    final investedCapital = latest.totalAssets! - latest.totalLiabilities!;
+    if (investedCapital <= 0) return null;
+    return (latest.ebitda! / investedCapital) * 100;
+  }
+
+  static double? _calculateEVToEBITDA(CompanyModel company) {
+    if (company.enterpriseValue == null || company.annualDataHistory.isEmpty)
+      return null;
+    final latest = company.annualDataHistory.first;
+    if (latest.ebitda == null || latest.ebitda! <= 0) return null;
+    return company.enterpriseValue! / latest.ebitda!;
+  }
+
+  static double? _calculatePriceToFreeCashFlow(CompanyModel company) {
+    if (company.marketCap == null || company.annualDataHistory.isEmpty)
+      return null;
+    final latest = company.annualDataHistory.first;
+    if (latest.freeCashFlow == null || latest.freeCashFlow! <= 0) return null;
+    return company.marketCap! / latest.freeCashFlow!;
+  }
+
+  static double? _calculateEnterpriseValueToSales(CompanyModel company) {
+    if (company.enterpriseValue == null || company.annualDataHistory.isEmpty)
+      return null;
+    final latest = company.annualDataHistory.first;
+    if (latest.sales == null || latest.sales! <= 0) return null;
+    return company.enterpriseValue! / latest.sales!;
   }
 
   Future<void> refreshCompanies() async {
-    _reset();
-    await loadInitialCompanies();
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() => _fetchCompanies());
   }
 
-  void _reset() {
-    _companies.clear();
-    _lastDocument = null;
-    _hasMore = true;
-    _isLoading = false;
-  }
-
-  Future<void> debugFirestoreData() async {
+  Future<CompanyModel?> getCompanyBySymbol(String symbol) async {
     try {
-      final snapshot = await FirebaseFirestore.instance
+      final doc = await FirebaseFirestore.instance
           .collection('companies')
-          .limit(5)
+          .doc(symbol)
           .get();
 
-      print(
-          '=== Enhanced Debug: Total documents in collection: ${snapshot.size} ===');
-
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        print('Document ${doc.id}:');
-        print(
-            '  Basic: name=${data['name']}, market_cap=${data['market_cap']}');
-        print(
-            '  Enhanced: debt_to_equity=${data['debt_to_equity']}, working_capital_days=${data['working_capital_days']}');
-        print(
-            '  Quality: quality_score=${data['quality_score']}, overall_quality_grade=${data['overall_quality_grade']}');
-        print(
-            '  Key Points: business_overview=${data['business_overview']?.toString().length ?? 0} chars, '
-            'sector=${data['sector']}, milestones=${data['key_milestones']?.length ?? 0}');
+      if (doc.exists) {
+        final company = CompanyModel.fromFirestore(doc);
+        return _enhanceCompanyWithCalculations(company);
       }
+      return null;
     } catch (e) {
-      print('Enhanced debug error: $e');
+      debugPrint('Error fetching company $symbol: $e');
+      return null;
     }
   }
-}
 
-// Enhanced state class
-class CompaniesState {
-  final List<CompanyModel> companies;
-  final bool isLoading;
-  final bool hasMore;
-  final DocumentSnapshot? lastDocument;
+  Future<List<CompanyModel>> searchCompanies(String query) async {
+    final companies = await future;
+    if (query.isEmpty) return companies;
 
-  CompaniesState({
-    required this.companies,
-    required this.isLoading,
-    required this.hasMore,
-    this.lastDocument,
-  });
-}
+    return companies
+        .where((company) => company.matchesSearchQuery(query))
+        .toList();
+  }
 
-final companiesProvider =
-    StateNotifierProvider<CompaniesNotifier, AsyncValue<List<CompanyModel>>>(
-  (ref) => CompaniesNotifier(ref),
-);
+  Future<List<CompanyModel>> filterByFundamentals(
+      List<FundamentalType> filters) async {
+    final companies = await future;
+    if (filters.isEmpty) return companies;
 
-// Enhanced filter settings with new financial ratio filters and key points
-class FilterSettings {
-  final RangeFilter marketCap;
-  final RangeFilter peRatio;
-  final RangeFilter roe;
-  final RangeFilter debtToEquity;
-  final RangeFilter dividendYield;
-  final RangeFilter qualityScore;
-  final RangeFilter currentRatio; // Enhanced liquidity filter
-  final RangeFilter workingCapitalDays; // Enhanced efficiency filter
-  final RangeFilter cashConversionCycle; // Enhanced efficiency filter
-  final RangeFilter interestCoverage; // NEW: Solvency filter
-  final List<String> selectedSectors;
-  final List<String> selectedIndustries; // NEW: Industry-specific filtering
-  final List<String> marketCapCategories;
-  final List<String> qualityGrades; // NEW: A, B, C, D grade filtering
-  final List<String> riskLevels; // NEW: Low, Medium, High risk filtering
-  final bool onlyProfitable;
-  final bool onlyDebtFree;
-  final bool onlyDividendPaying;
-  final bool onlyGrowthStocks;
-  final bool onlyQualityStocks;
-  final bool onlyWorkingCapitalEfficient; // Enhanced efficiency filter
-  final bool onlyWithBusinessInsights; // NEW: Companies with key points
-  final bool onlyWithMilestones; // NEW: Companies with milestones
-  final bool onlyWithInvestmentHighlights; // NEW: Companies with highlights
-  final String sortBy;
-  final bool sortDescending;
-  final int pageSize;
+    return companies.where((company) {
+      return filters
+          .every((filter) => company.matchesFundamentalFilter(filter));
+    }).toList();
+  }
 
-  FilterSettings({
-    required this.marketCap,
-    required this.peRatio,
-    required this.roe,
-    required this.debtToEquity,
-    required this.dividendYield,
-    required this.qualityScore,
-    required this.currentRatio,
-    required this.workingCapitalDays,
-    required this.cashConversionCycle,
-    required this.interestCoverage,
-    this.selectedSectors = const [],
-    this.selectedIndustries = const [],
-    this.marketCapCategories = const [],
-    this.qualityGrades = const [],
-    this.riskLevels = const [],
-    this.onlyProfitable = false,
-    this.onlyDebtFree = false,
-    this.onlyDividendPaying = false,
-    this.onlyGrowthStocks = false,
-    this.onlyQualityStocks = false,
-    this.onlyWorkingCapitalEfficient = false,
-    this.onlyWithBusinessInsights = false,
-    this.onlyWithMilestones = false,
-    this.onlyWithInvestmentHighlights = false,
-    this.sortBy = 'qualityScore',
-    this.sortDescending = true,
-    this.pageSize = 20,
-  });
+  Future<List<CompanyModel>> getTopPerformers({
+    String sortBy = 'comprehensiveScore',
+    int limit = 20,
+  }) async {
+    final companies = await future;
+    final sorted = List<CompanyModel>.from(companies);
 
-  FilterSettings copyWith({
-    RangeFilter? marketCap,
-    RangeFilter? peRatio,
-    RangeFilter? roe,
-    RangeFilter? debtToEquity,
-    RangeFilter? dividendYield,
-    RangeFilter? qualityScore,
-    RangeFilter? currentRatio,
-    RangeFilter? workingCapitalDays,
-    RangeFilter? cashConversionCycle,
-    RangeFilter? interestCoverage,
-    List<String>? selectedSectors,
-    List<String>? selectedIndustries,
-    List<String>? marketCapCategories,
-    List<String>? qualityGrades,
-    List<String>? riskLevels,
-    bool? onlyProfitable,
-    bool? onlyDebtFree,
-    bool? onlyDividendPaying,
-    bool? onlyGrowthStocks,
-    bool? onlyQualityStocks,
-    bool? onlyWorkingCapitalEfficient,
-    bool? onlyWithBusinessInsights,
-    bool? onlyWithMilestones,
-    bool? onlyWithInvestmentHighlights,
-    String? sortBy,
-    bool? sortDescending,
-    int? pageSize,
-  }) {
-    return FilterSettings(
-      marketCap: marketCap ?? this.marketCap,
-      peRatio: peRatio ?? this.peRatio,
-      roe: roe ?? this.roe,
-      debtToEquity: debtToEquity ?? this.debtToEquity,
-      dividendYield: dividendYield ?? this.dividendYield,
-      qualityScore: qualityScore ?? this.qualityScore,
-      currentRatio: currentRatio ?? this.currentRatio,
-      workingCapitalDays: workingCapitalDays ?? this.workingCapitalDays,
-      cashConversionCycle: cashConversionCycle ?? this.cashConversionCycle,
-      interestCoverage: interestCoverage ?? this.interestCoverage,
-      selectedSectors: selectedSectors ?? this.selectedSectors,
-      selectedIndustries: selectedIndustries ?? this.selectedIndustries,
-      marketCapCategories: marketCapCategories ?? this.marketCapCategories,
-      qualityGrades: qualityGrades ?? this.qualityGrades,
-      riskLevels: riskLevels ?? this.riskLevels,
-      onlyProfitable: onlyProfitable ?? this.onlyProfitable,
-      onlyDebtFree: onlyDebtFree ?? this.onlyDebtFree,
-      onlyDividendPaying: onlyDividendPaying ?? this.onlyDividendPaying,
-      onlyGrowthStocks: onlyGrowthStocks ?? this.onlyGrowthStocks,
-      onlyQualityStocks: onlyQualityStocks ?? this.onlyQualityStocks,
-      onlyWorkingCapitalEfficient:
-          onlyWorkingCapitalEfficient ?? this.onlyWorkingCapitalEfficient,
-      onlyWithBusinessInsights:
-          onlyWithBusinessInsights ?? this.onlyWithBusinessInsights,
-      onlyWithMilestones: onlyWithMilestones ?? this.onlyWithMilestones,
-      onlyWithInvestmentHighlights:
-          onlyWithInvestmentHighlights ?? this.onlyWithInvestmentHighlights,
-      sortBy: sortBy ?? this.sortBy,
-      sortDescending: sortDescending ?? this.sortDescending,
-      pageSize: pageSize ?? this.pageSize,
+    switch (sortBy) {
+      case 'comprehensiveScore':
+        sorted.sort((a, b) => b.calculatedComprehensiveScore
+            .compareTo(a.calculatedComprehensiveScore));
+        break;
+      case 'piotroskiScore':
+        sorted.sort((a, b) =>
+            b.calculatedPiotroskiScore.compareTo(a.calculatedPiotroskiScore));
+        break;
+      case 'roe':
+        sorted.sort((a, b) => (b.roe ?? 0).compareTo(a.roe ?? 0));
+        break;
+      case 'marketCap':
+        sorted.sort((a, b) => (b.marketCap ?? 0).compareTo(a.marketCap ?? 0));
+        break;
+      case 'salesGrowth':
+        sorted.sort(
+            (a, b) => (b.salesGrowth3Y ?? 0).compareTo(a.salesGrowth3Y ?? 0));
+        break;
+      case 'profitGrowth':
+        sorted.sort(
+            (a, b) => (b.profitGrowth3Y ?? 0).compareTo(a.profitGrowth3Y ?? 0));
+        break;
+      case 'altmanZScore':
+        sorted.sort((a, b) =>
+            b.calculatedAltmanZScore.compareTo(a.calculatedAltmanZScore));
+        break;
+      case 'grahamValue':
+        sorted.sort((a, b) {
+          final aMargin = a.safetyMargin ?? -100;
+          final bMargin = b.safetyMargin ?? -100;
+          return bMargin.compareTo(aMargin);
+        });
+        break;
+    }
+
+    return sorted.take(limit).toList();
+  }
+
+  Future<Map<String, List<CompanyModel>>> getCompaniesBySector() async {
+    final companies = await future;
+    final bySector = <String, List<CompanyModel>>{};
+
+    for (final company in companies) {
+      final sector = company.sector ?? 'Unknown';
+      bySector.putIfAbsent(sector, () => []).add(company);
+    }
+
+    // Sort companies within each sector by comprehensive score
+    for (final sectorList in bySector.values) {
+      sectorList.sort((a, b) => b.calculatedComprehensiveScore
+          .compareTo(a.calculatedComprehensiveScore));
+    }
+
+    return bySector;
+  }
+
+  Future<List<CompanyModel>> getSimilarCompanies(String symbol,
+      {int limit = 5}) async {
+    final companies = await future;
+    final targetCompany = companies.firstWhere(
+      (c) => c.symbol == symbol,
+      orElse: () => companies.first,
     );
+
+    final sameIndustry = companies
+        .where(
+            (c) => c.symbol != symbol && c.industry == targetCompany.industry)
+        .toList();
+
+    sameIndustry.sort((a, b) {
+      final scoreA = a.calculatedComprehensiveScore;
+      final scoreB = b.calculatedComprehensiveScore;
+      return scoreB.compareTo(scoreA);
+    });
+
+    return sameIndustry.take(limit).toList();
   }
 
-  // NEW: Check if company matches all selected filters including key points
-  bool matchesAllFilters(CompanyModel company) {
-    // Market cap range
-    if (marketCap.isActive) {
-      final cap = company.marketCap ?? 0;
-      if (marketCap.min != null && cap < marketCap.min!) return false;
-      if (marketCap.max != null && cap > marketCap.max!) return false;
-    }
+  // New methods for enhanced functionality
+  Future<List<CompanyModel>> getHighQualityStocks({int limit = 50}) async {
+    final companies = await future;
+    return companies
+        .where((c) =>
+            c.calculatedPiotroskiScore >= 7 &&
+            c.calculatedComprehensiveScore >= 70)
+        .take(limit)
+        .toList();
+  }
 
-    // PE ratio range
-    if (peRatio.isActive && company.stockPe != null) {
-      final pe = company.stockPe!;
-      if (peRatio.min != null && pe < peRatio.min!) return false;
-      if (peRatio.max != null && pe > peRatio.max!) return false;
-    }
+  Future<List<CompanyModel>> getValueOpportunities({int limit = 30}) async {
+    final companies = await future;
+    return companies
+        .where((c) =>
+            c.safetyMargin != null &&
+            c.safetyMargin! > 15 &&
+            c.calculatedComprehensiveScore >= 50)
+        .take(limit)
+        .toList();
+  }
 
-    // ROE range
-    if (roe.isActive && company.roe != null) {
-      final roeValue = company.roe!;
-      if (roe.min != null && roeValue < roe.min!) return false;
-      if (roe.max != null && roeValue > roe.max!) return false;
-    }
+  Future<Map<String, dynamic>> getMarketSummary() async {
+    final companies = await future;
+    if (companies.isEmpty) return {};
 
-    // Debt to equity range
-    if (debtToEquity.isActive && company.debtToEquity != null) {
-      final debt = company.debtToEquity!;
-      if (debtToEquity.min != null && debt < debtToEquity.min!) return false;
-      if (debtToEquity.max != null && debt > debtToEquity.max!) return false;
-    }
+    final totalCompanies = companies.length;
+    final profitableCompanies =
+        companies.where((c) => c.roe != null && c.roe! > 0).length;
+    final highQualityCompanies =
+        companies.where((c) => c.calculatedPiotroskiScore >= 7).length;
+    final undervaluedCompanies = companies
+        .where((c) => c.safetyMargin != null && c.safetyMargin! > 10)
+        .length;
 
-    // Working capital days range
-    if (workingCapitalDays.isActive && company.workingCapitalDays != null) {
-      final wcDays = company.workingCapitalDays!;
-      if (workingCapitalDays.min != null && wcDays < workingCapitalDays.min!)
-        return false;
-      if (workingCapitalDays.max != null && wcDays > workingCapitalDays.max!)
-        return false;
-    }
+    final avgPE = companies
+            .where(
+                (c) => c.stockPe != null && c.stockPe! > 0 && c.stockPe! < 100)
+            .map((c) => c.stockPe!)
+            .fold(0.0, (sum, pe) => sum + pe) /
+        companies
+            .where(
+                (c) => c.stockPe != null && c.stockPe! > 0 && c.stockPe! < 100)
+            .length;
 
-    // Sector filtering
-    if (selectedSectors.isNotEmpty) {
-      if (company.sector == null || !selectedSectors.contains(company.sector))
-        return false;
-    }
+    final avgROE = companies
+            .where((c) => c.roe != null)
+            .map((c) => c.roe!)
+            .fold(0.0, (sum, roe) => sum + roe) /
+        companies.where((c) => c.roe != null).length;
 
-    // Industry filtering
-    if (selectedIndustries.isNotEmpty) {
-      if (company.industry == null ||
-          !selectedIndustries.contains(company.industry)) return false;
-    }
-
-    // Quality grade filtering
-    if (qualityGrades.isNotEmpty) {
-      if (!qualityGrades.contains(company.overallQualityGrade)) return false;
-    }
-
-    // Risk level filtering
-    if (riskLevels.isNotEmpty) {
-      if (!riskLevels.contains(company.riskLevel)) return false;
-    }
-
-    // Boolean filters
-    if (onlyProfitable && !company.isProfitable) return false;
-    if (onlyDebtFree && !company.isDebtFree) return false;
-    if (onlyDividendPaying && !company.paysDividends) return false;
-    if (onlyGrowthStocks && !company.isGrowthStock) return false;
-    if (onlyQualityStocks && !company.isQualityStock) return false;
-    if (onlyWorkingCapitalEfficient &&
-        company.workingCapitalEfficiency == 'Poor') return false;
-
-    // NEW: Key points filters
-    if (onlyWithBusinessInsights && company.businessOverview.isEmpty)
-      return false;
-    if (onlyWithMilestones && company.keyMilestones.isEmpty) return false;
-    if (onlyWithInvestmentHighlights && company.investmentHighlights.isEmpty)
-      return false;
-
-    return true;
+    return {
+      'totalCompanies': totalCompanies,
+      'profitablePercentage':
+          (profitableCompanies / totalCompanies * 100).toStringAsFixed(1),
+      'highQualityPercentage':
+          (highQualityCompanies / totalCompanies * 100).toStringAsFixed(1),
+      'undervaluedPercentage':
+          (undervaluedCompanies / totalCompanies * 100).toStringAsFixed(1),
+      'avgPE': avgPE.toStringAsFixed(1),
+      'avgROE': avgROE.toStringAsFixed(1),
+    };
   }
 }
 
-class RangeFilter {
-  final bool isActive;
-  final double? min;
-  final double? max;
-
-  RangeFilter({
-    this.isActive = false,
-    this.min,
-    this.max,
-  });
-
-  RangeFilter copyWith({
-    bool? isActive,
-    double? min,
-    double? max,
-  }) {
-    return RangeFilter(
-      isActive: isActive ?? this.isActive,
-      min: min ?? this.min,
-      max: max ?? this.max,
-    );
+@riverpod
+class FundamentalAnalysis extends _$FundamentalAnalysis {
+  @override
+  Future<Map<String, dynamic>> build(String symbol) async {
+    return await _analyzeCompany(symbol);
   }
-}
 
-final filterSettingsProvider = StateProvider<FilterSettings>((ref) {
-  return FilterSettings(
-    marketCap: RangeFilter(),
-    peRatio: RangeFilter(),
-    roe: RangeFilter(),
-    debtToEquity: RangeFilter(),
-    dividendYield: RangeFilter(),
-    qualityScore: RangeFilter(),
-    currentRatio: RangeFilter(),
-    workingCapitalDays: RangeFilter(),
-    cashConversionCycle: RangeFilter(),
-    interestCoverage: RangeFilter(),
-  );
-});
+  Future<Map<String, dynamic>> _analyzeCompany(String symbol) async {
+    try {
+      final companyNotifier = ref.read(companyNotifierProvider.notifier);
+      final company = await companyNotifier.getCompanyBySymbol(symbol);
 
-// NEW: Sector and Industry providers for filtering options
-final availableSectorsProvider = FutureProvider<List<String>>((ref) async {
-  try {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('companies')
-        .where('market_cap', isGreaterThan: 500)
-        .limit(500)
-        .get();
+      if (company == null) return {};
 
-    final sectors = <String>{};
-    for (var doc in snapshot.docs) {
-      final data = doc.data();
-      final sector = data['sector'] as String?;
-      if (sector != null && sector.isNotEmpty) {
-        sectors.add(sector);
+      final allCompanies = await ref.read(companyNotifierProvider.future);
+      final sectorPeers = allCompanies
+          .where((c) => c.industry == company.industry && c.symbol != symbol)
+          .toList();
+
+      final analysis = {
+        'company': company,
+        'fundamentalScores': {
+          'piotroskiScore': company.calculatedPiotroskiScore,
+          'altmanZScore': company.calculatedAltmanZScore,
+          'comprehensiveScore': company.calculatedComprehensiveScore,
+          'qualityGrade': company.calculatedInvestmentGrade,
+        },
+        'valuationMetrics': {
+          'intrinsicValue': company.calculatedGrahamNumber,
+          'safetyMargin': company.safetyMargin,
+          'pegRatio': company.calculatedPEGRatio,
+          'priceToBook': company.priceToBook,
+          'priceToEarnings': company.stockPe,
+          'evToEbitda': company.calculatedMetrics?.evToEbitda,
+          'priceToFreeCashFlow': company.calculatedMetrics?.priceToFreeCashFlow,
+        },
+        'riskAnalysis': {
+          'overallRisk': company.calculatedRiskAssessment,
+          'debtLevel': _analyzeDebtLevel(company),
+          'liquidityStatus': _analyzeLiquidity(company),
+          'profitabilityTrend': _analyzeProfitability(company),
+          'bankruptcyRisk': _assessBankruptcyRisk(company),
+        },
+        'benchmarkAnalysis': _generateBenchmarkAnalysis(company, sectorPeers),
+        'investmentRecommendation': {
+          'action': company.calculatedInvestmentRecommendation,
+          'reasoning': _generateRecommendationReasoning(company),
+          'keyStrengths': company.calculatedMetrics?.strengthFactors ?? [],
+          'keyWeaknesses': company.calculatedMetrics?.weaknessFactors ?? [],
+          'targetPrice': _calculateTargetPrice(company),
+          'timeHorizon': _suggestTimeHorizon(company),
+        },
+        'financialHealthScore': _calculateFinancialHealthScore(company),
+        'growthProspects': _analyzeGrowthProspects(company),
+        'dividendAnalysis': _analyzeDividends(company),
+        'managementEfficiency': _analyzeManagementEfficiency(company),
+        'competitivePosition':
+            _analyzeCompetitivePosition(company, sectorPeers),
+        'sectorAnalysis': _analyzeSector(company, sectorPeers),
+      };
+
+      return analysis;
+    } catch (e) {
+      debugPrint('Error analyzing company $symbol: $e');
+      return {};
+    }
+  }
+
+  String _analyzeDebtLevel(CompanyModel company) {
+    if (company.debtToEquity == null) return 'Unknown';
+    if (company.debtToEquity! < 0.1) return 'Debt Free';
+    if (company.debtToEquity! < 0.3) return 'Low Debt';
+    if (company.debtToEquity! < 0.6) return 'Moderate Debt';
+    if (company.debtToEquity! < 1.0) return 'High Debt';
+    return 'Very High Debt';
+  }
+
+  String _analyzeLiquidity(CompanyModel company) {
+    if (company.currentRatio == null) return 'Unknown';
+    if (company.currentRatio! > 2.0) return 'Excellent';
+    if (company.currentRatio! > 1.5) return 'Good';
+    if (company.currentRatio! > 1.0) return 'Adequate';
+    return 'Poor';
+  }
+
+  String _analyzeProfitability(CompanyModel company) {
+    if (company.roe == null) return 'Unknown';
+    if (company.roe! > 20) return 'Excellent';
+    if (company.roe! > 15) return 'Good';
+    if (company.roe! > 10) return 'Average';
+    if (company.roe! > 0) return 'Weak';
+    return 'Loss Making';
+  }
+
+  String _assessBankruptcyRisk(CompanyModel company) {
+    final altman = company.calculatedAltmanZScore;
+    if (altman > 3.0) return 'Very Low Risk';
+    if (altman > 1.8) return 'Low Risk';
+    if (altman > 1.2) return 'Gray Zone';
+    return 'High Risk';
+  }
+
+  Map<String, dynamic> _generateBenchmarkAnalysis(
+      CompanyModel company, List<CompanyModel> peers) {
+    if (peers.isEmpty) return {};
+
+    final avgROE =
+        peers.map((p) => p.roe ?? 0).reduce((a, b) => a + b) / peers.length;
+    final avgPE = peers
+            .map((p) => p.stockPe ?? 0)
+            .where((pe) => pe > 0 && pe < 100)
+            .fold(0.0, (a, b) => a + b) /
+        peers
+            .where(
+                (p) => p.stockPe != null && p.stockPe! > 0 && p.stockPe! < 100)
+            .length;
+    final avgDebtRatio =
+        peers.map((p) => p.debtToEquity ?? 0).reduce((a, b) => a + b) /
+            peers.length;
+    final avgComprehensiveScore = peers
+            .map((p) => p.calculatedComprehensiveScore)
+            .reduce((a, b) => a + b) /
+        peers.length;
+
+    return {
+      'industryAverages': {
+        'roe': avgROE,
+        'pe': avgPE,
+        'debtToEquity': avgDebtRatio,
+        'comprehensiveScore': avgComprehensiveScore,
+      },
+      'companyVsIndustry': {
+        'roeComparison': company.roe != null ? (company.roe! - avgROE) : null,
+        'peComparison': company.stockPe != null && company.stockPe! > 0
+            ? (company.stockPe! - avgPE)
+            : null,
+        'debtComparison': company.debtToEquity != null
+            ? (company.debtToEquity! - avgDebtRatio)
+            : null,
+        'scoreComparison':
+            company.calculatedComprehensiveScore - avgComprehensiveScore,
+      },
+      'industryRanking': _calculateIndustryRanking(company, peers),
+      'percentileRanking': _calculatePercentileRanking(company, peers),
+    };
+  }
+
+  Map<String, int> _calculateIndustryRanking(
+      CompanyModel company, List<CompanyModel> peers) {
+    final allCompanies = [company, ...peers];
+
+    allCompanies.sort((a, b) => (b.roe ?? 0).compareTo(a.roe ?? 0));
+    final roeRank =
+        allCompanies.indexWhere((c) => c.symbol == company.symbol) + 1;
+
+    allCompanies.sort((a, b) => b.calculatedComprehensiveScore
+        .compareTo(a.calculatedComprehensiveScore));
+    final qualityRank =
+        allCompanies.indexWhere((c) => c.symbol == company.symbol) + 1;
+
+    allCompanies.sort((a, b) => (b.marketCap ?? 0).compareTo(a.marketCap ?? 0));
+    final sizeRank =
+        allCompanies.indexWhere((c) => c.symbol == company.symbol) + 1;
+
+    return {
+      'profitabilityRank': roeRank,
+      'qualityRank': qualityRank,
+      'sizeRank': sizeRank,
+      'totalPeers': peers.length + 1,
+    };
+  }
+
+  Map<String, double> _calculatePercentileRanking(
+      CompanyModel company, List<CompanyModel> peers) {
+    final allCompanies = [company, ...peers];
+    final total = allCompanies.length;
+
+    // ROE percentile
+    allCompanies.sort((a, b) => (b.roe ?? 0).compareTo(a.roe ?? 0));
+    final roeRank =
+        allCompanies.indexWhere((c) => c.symbol == company.symbol) + 1;
+    final roePercentile = (1 - (roeRank - 1) / total) * 100;
+
+    // Quality percentile
+    allCompanies.sort((a, b) => b.calculatedComprehensiveScore
+        .compareTo(a.calculatedComprehensiveScore));
+    final qualityRank =
+        allCompanies.indexWhere((c) => c.symbol == company.symbol) + 1;
+    final qualityPercentile = (1 - (qualityRank - 1) / total) * 100;
+
+    return {
+      'roePercentile': roePercentile,
+      'qualityPercentile': qualityPercentile,
+    };
+  }
+
+  List<String> _generateRecommendationReasoning(CompanyModel company) {
+    final reasons = <String>[];
+
+    final score = company.calculatedComprehensiveScore;
+    if (score > 80) {
+      reasons.add(
+          'Excellent overall financial health (Score: ${score.toStringAsFixed(1)})');
+    } else if (score > 60) {
+      reasons.add(
+          'Good financial fundamentals (Score: ${score.toStringAsFixed(1)})');
+    } else if (score < 40) {
+      reasons.add(
+          'Weak financial performance (Score: ${score.toStringAsFixed(1)})');
+    }
+
+    final piotroski = company.calculatedPiotroskiScore;
+    if (piotroski > 7) {
+      reasons.add(
+          'Strong Piotroski score indicates quality (${piotroski.toInt()}/9)');
+    } else if (piotroski < 4) {
+      reasons
+          .add('Low Piotroski score raises concerns (${piotroski.toInt()}/9)');
+    }
+
+    final risk = company.calculatedRiskAssessment;
+    if (risk == 'Very Low' || risk == 'Low') {
+      reasons.add('Low risk profile');
+    } else if (risk == 'High' || risk == 'Very High') {
+      reasons.add('High risk factors present');
+    }
+
+    if (company.debtToEquity != null) {
+      if (company.debtToEquity! < 0.3) {
+        reasons.add('Conservative debt levels');
+      } else if (company.debtToEquity! > 1.0) {
+        reasons.add('High debt burden');
       }
     }
 
-    final sortedSectors = sectors.toList()..sort();
-    return sortedSectors;
-  } catch (e) {
-    print('Error loading sectors: $e');
-    return [];
+    if (company.salesGrowth3Y != null && company.salesGrowth3Y! > 15) {
+      reasons.add(
+          'Strong revenue growth trend (${company.salesGrowth3Y!.toStringAsFixed(1)}%)');
+    }
+
+    if (company.roe != null && company.roe! > 15) {
+      reasons.add(
+          'Efficient capital utilization (ROE: ${company.roe!.toStringAsFixed(1)}%)');
+    }
+
+    if (company.safetyMargin != null && company.safetyMargin! > 20) {
+      reasons.add(
+          'Significant safety margin (${company.safetyMargin!.toStringAsFixed(1)}%)');
+    }
+
+    return reasons;
   }
-});
 
-final availableIndustriesProvider = FutureProvider<List<String>>((ref) async {
-  try {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('companies')
-        .where('market_cap', isGreaterThan: 500)
-        .limit(500)
-        .get();
+  double? _calculateTargetPrice(CompanyModel company) {
+    final graham = company.calculatedGrahamNumber;
+    if (graham != null) return graham;
 
-    final industries = <String>{};
-    for (var doc in snapshot.docs) {
-      final data = doc.data();
-      final industry = data['industry'] as String?;
-      if (industry != null && industry.isNotEmpty) {
-        industries.add(industry);
+    // Alternative: P/E based target
+    if (company.annualDataHistory.isNotEmpty && company.stockPe != null) {
+      final latest = company.annualDataHistory.first;
+      if (latest.eps != null) {
+        final fairPE = min(company.stockPe! * 0.8, 20); // Conservative P/E
+        return latest.eps! * fairPE;
       }
     }
 
-    final sortedIndustries = industries.toList()..sort();
-    return sortedIndustries;
-  } catch (e) {
-    print('Error loading industries: $e');
-    return [];
+    return null;
   }
-});
+
+  String _suggestTimeHorizon(CompanyModel company) {
+    if (company.salesGrowth3Y != null && company.salesGrowth3Y! > 20) {
+      return '3-5 years (Growth play)';
+    }
+    if (company.dividendYield != null && company.dividendYield! > 4) {
+      return '5+ years (Income play)';
+    }
+    if (company.safetyMargin != null && company.safetyMargin! > 20) {
+      return '1-3 years (Value play)';
+    }
+    if (company.calculatedComprehensiveScore > 80) {
+      return '5+ years (Quality play)';
+    }
+    return '3-5 years (Long-term)';
+  }
+
+  double _calculateFinancialHealthScore(CompanyModel company) {
+    double score = 0;
+    int factors = 0;
+
+    if (company.roe != null) {
+      score += min(company.roe! / 20 * 100, 100);
+      factors++;
+    }
+
+    if (company.currentRatio != null) {
+      score += min(company.currentRatio! / 2 * 100, 100);
+      factors++;
+    }
+
+    if (company.debtToEquity != null) {
+      score += max(100 - (company.debtToEquity! * 100), 0);
+      factors++;
+    }
+
+    if (company.interestCoverage != null) {
+      score += min(company.interestCoverage! / 5 * 100, 100);
+      factors++;
+    }
+
+    // Add Altman Z-Score contribution
+    final altman = company.calculatedAltmanZScore;
+    if (altman > 0) {
+      score += min((altman / 3.0) * 100, 100);
+      factors++;
+    }
+
+    return factors > 0 ? score / factors : 0;
+  }
+
+  Map<String, dynamic> _analyzeGrowthProspects(CompanyModel company) {
+    return {
+      'salesGrowthTrend': company.salesGrowth3Y ?? 0,
+      'profitGrowthTrend': company.profitGrowth3Y ?? 0,
+      'growthConsistency': _calculateGrowthConsistency(company),
+      'growthQuality': _assessGrowthQuality(company),
+      'futureGrowthPotential': _assessFutureGrowthPotential(company),
+      'growthSustainability': _assessGrowthSustainability(company),
+    };
+  }
+
+  String _calculateGrowthConsistency(CompanyModel company) {
+    if (company.salesGrowth3Y == null || company.profitGrowth3Y == null) {
+      return 'Unknown';
+    }
+
+    final salesGrowth = company.salesGrowth3Y!;
+    final profitGrowth = company.profitGrowth3Y!;
+
+    if (salesGrowth > 10 && profitGrowth > 10) return 'Consistent';
+    if (salesGrowth > 5 || profitGrowth > 5) return 'Moderate';
+    return 'Inconsistent';
+  }
+
+  String _assessGrowthQuality(CompanyModel company) {
+    if (company.roe == null || company.roce == null) return 'Unknown';
+
+    if (company.roe! > 15 && company.roce! > 15) return 'High Quality';
+    if (company.roe! > 10 || company.roce! > 10) return 'Moderate Quality';
+    return 'Low Quality';
+  }
+
+  String _assessFutureGrowthPotential(CompanyModel company) {
+    int positiveFactors = 0;
+
+    if (company.roe != null && company.roe! > 15) positiveFactors++;
+    if (company.salesGrowth3Y != null && company.salesGrowth3Y! > 15)
+      positiveFactors++;
+    if (company.debtToEquity != null && company.debtToEquity! < 0.5)
+      positiveFactors++;
+    if (company.currentRatio != null && company.currentRatio! > 1.5)
+      positiveFactors++;
+    if (company.workingCapitalDays != null && company.workingCapitalDays! < 90)
+      positiveFactors++;
+
+    if (positiveFactors >= 4) return 'Very High';
+    if (positiveFactors >= 3) return 'High';
+    if (positiveFactors >= 2) return 'Moderate';
+    return 'Low';
+  }
+
+  String _assessGrowthSustainability(CompanyModel company) {
+    // Check if growth is backed by fundamentals
+    if (company.salesGrowth3Y != null && company.salesGrowth3Y! > 20) {
+      if (company.roe != null &&
+          company.roe! > 15 &&
+          company.debtToEquity != null &&
+          company.debtToEquity! < 0.5) {
+        return 'Sustainable';
+      }
+      return 'Questionable';
+    }
+    return 'Stable';
+  }
+
+  Map<String, dynamic> _analyzeDividends(CompanyModel company) {
+    return {
+      'currentYield': company.dividendYield ?? 0,
+      'payoutSustainability': _assessPayoutSustainability(company),
+      'dividendGrowthPotential': _assessDividendGrowthPotential(company),
+      'incomeAttractiveness': _assessIncomeAttractiveness(company),
+      'dividendCoverage': _calculateDividendCoverage(company),
+    };
+  }
+
+  String _assessPayoutSustainability(CompanyModel company) {
+    if (company.dividendYield == null || company.roe == null) return 'Unknown';
+
+    final payoutRatio = (company.dividendYield! / company.roe!) * 100;
+
+    if (payoutRatio < 30) return 'Very Sustainable';
+    if (payoutRatio < 50) return 'Sustainable';
+    if (payoutRatio < 70) return 'Moderate Risk';
+    return 'High Risk';
+  }
+
+  String _assessDividendGrowthPotential(CompanyModel company) {
+    if (company.profitGrowth3Y == null) return 'Unknown';
+
+    if (company.profitGrowth3Y! > 15) return 'High';
+    if (company.profitGrowth3Y! > 5) return 'Moderate';
+    return 'Low';
+  }
+
+  String _assessIncomeAttractiveness(CompanyModel company) {
+    if (company.dividendYield == null) return 'No Dividend';
+
+    if (company.dividendYield! > 4) return 'High Income';
+    if (company.dividendYield! > 2) return 'Moderate Income';
+    if (company.dividendYield! > 0) return 'Low Income';
+    return 'No Income';
+  }
+
+  double? _calculateDividendCoverage(CompanyModel company) {
+    if (company.annualDataHistory.isEmpty || company.dividendYield == null)
+      return null;
+
+    final latest = company.annualDataHistory.first;
+    if (latest.eps == null || company.dividendYield! == 0) return null;
+
+    final dividendPerShare =
+        (company.dividendYield! / 100) * (company.currentPrice ?? 0);
+    if (dividendPerShare <= 0) return null;
+
+    return latest.eps! / dividendPerShare;
+  }
+
+  Map<String, dynamic> _analyzeManagementEfficiency(CompanyModel company) {
+    return {
+      'returnOnEquity': company.roe ?? 0,
+      'returnOnCapital': company.roce ?? 0,
+      'assetUtilization': company.assetTurnover ?? 0,
+      'workingCapitalManagement': _assessWorkingCapitalManagement(company),
+      'overallEfficiency': _calculateManagementEfficiencyScore(company),
+      'capitalAllocation': _assessCapitalAllocation(company),
+    };
+  }
+
+  String _assessWorkingCapitalManagement(CompanyModel company) {
+    if (company.workingCapitalDays == null) return 'Unknown';
+
+    if (company.workingCapitalDays! < 30) return 'Excellent';
+    if (company.workingCapitalDays! < 60) return 'Good';
+    if (company.workingCapitalDays! < 90) return 'Average';
+    return 'Poor';
+  }
+
+  double _calculateManagementEfficiencyScore(CompanyModel company) {
+    double score = 0;
+    int factors = 0;
+
+    if (company.roe != null) {
+      score += min(company.roe! / 20 * 100, 100);
+      factors++;
+    }
+
+    if (company.roce != null) {
+      score += min(company.roce! / 20 * 100, 100);
+      factors++;
+    }
+
+    if (company.assetTurnover != null) {
+      score += min(company.assetTurnover! / 2 * 100, 100);
+      factors++;
+    }
+
+    if (company.workingCapitalDays != null) {
+      score += max(100 - (company.workingCapitalDays! / 150 * 100), 0);
+      factors++;
+    }
+
+    return factors > 0 ? score / factors : 0;
+  }
+
+  String _assessCapitalAllocation(CompanyModel company) {
+    // Simple assessment based on ROE and growth
+    if (company.roe != null && company.salesGrowth3Y != null) {
+      if (company.roe! > 15 && company.salesGrowth3Y! > 15) {
+        return 'Excellent';
+      } else if (company.roe! > 10 && company.salesGrowth3Y! > 10) {
+        return 'Good';
+      }
+    }
+    return 'Average';
+  }
+
+  Map<String, dynamic> _analyzeCompetitivePosition(
+      CompanyModel company, List<CompanyModel> peers) {
+    if (peers.isEmpty) return {};
+
+    final ranking = _calculateIndustryRanking(company, peers);
+
+    return {
+      'marketPosition': _assessMarketPosition(company, peers),
+      'competitiveStrength': _assessCompetitiveStrength(company, peers),
+      'industryRanking': ranking,
+      'marketShare': 'Unknown', // Would need additional data
+      'competitiveAdvantages': company.pros,
+      'competitiveChallenges': company.cons,
+      'moatStrength': _assessMoatStrength(company),
+    };
+  }
+
+  String _assessMarketPosition(CompanyModel company, List<CompanyModel> peers) {
+    final marketCaps = peers.map((p) => p.marketCap ?? 0).toList()
+      ..add(company.marketCap ?? 0);
+    marketCaps.sort((a, b) => b.compareTo(a));
+
+    final position = marketCaps.indexOf(company.marketCap ?? 0) + 1;
+    final percentile = (1 - (position / marketCaps.length)) * 100;
+
+    if (percentile > 75) return 'Market Leader';
+    if (percentile > 50) return 'Strong Player';
+    if (percentile > 25) return 'Mid-Tier Player';
+    return 'Niche Player';
+  }
+
+  String _assessCompetitiveStrength(
+      CompanyModel company, List<CompanyModel> peers) {
+    int strengths = 0;
+    int total = 0;
+
+    final avgROE =
+        peers.map((p) => p.roe ?? 0).reduce((a, b) => a + b) / peers.length;
+    if (company.roe != null) {
+      if (company.roe! > avgROE) strengths++;
+      total++;
+    }
+
+    final avgScore = peers
+            .map((p) => p.calculatedComprehensiveScore)
+            .reduce((a, b) => a + b) /
+        peers.length;
+    if (company.calculatedComprehensiveScore > avgScore) strengths++;
+    total++;
+
+    final avgMarketCap =
+        peers.map((p) => p.marketCap ?? 0).reduce((a, b) => a + b) /
+            peers.length;
+    if (company.marketCap != null && company.marketCap! > avgMarketCap)
+      strengths++;
+    total++;
+
+    if (total == 0) return 'Unknown';
+    final strengthRatio = strengths / total;
+
+    if (strengthRatio > 0.75) return 'Very Strong';
+    if (strengthRatio > 0.5) return 'Strong';
+    if (strengthRatio > 0.3) return 'Average';
+    return 'Weak';
+  }
+
+  String _assessMoatStrength(CompanyModel company) {
+    // Simple assessment based on ROE consistency and margins
+    if (company.roe != null &&
+        company.roe! > 20 &&
+        company.calculatedComprehensiveScore > 80) {
+      return 'Strong';
+    } else if (company.roe != null && company.roe! > 15) {
+      return 'Moderate';
+    }
+    return 'Weak';
+  }
+
+  Map<String, dynamic> _analyzeSector(
+      CompanyModel company, List<CompanyModel> peers) {
+    if (peers.isEmpty || company.sector == null) return {};
+
+    final sectorCompanies = [company, ...peers];
+
+    final avgGrowth = sectorCompanies
+            .where((c) => c.salesGrowth3Y != null)
+            .map((c) => c.salesGrowth3Y!)
+            .fold(0.0, (sum, growth) => sum + growth) /
+        sectorCompanies.where((c) => c.salesGrowth3Y != null).length;
+
+    final avgROE = sectorCompanies
+            .where((c) => c.roe != null)
+            .map((c) => c.roe!)
+            .fold(0.0, (sum, roe) => sum + roe) /
+        sectorCompanies.where((c) => c.roe != null).length;
+
+    final avgPE = sectorCompanies
+            .where(
+                (c) => c.stockPe != null && c.stockPe! > 0 && c.stockPe! < 100)
+            .map((c) => c.stockPe!)
+            .fold(0.0, (sum, pe) => sum + pe) /
+        sectorCompanies
+            .where(
+                (c) => c.stockPe != null && c.stockPe! > 0 && c.stockPe! < 100)
+            .length;
+
+    return {
+      'sectorName': company.sector,
+      'sectorMetrics': {
+        'avgGrowth': avgGrowth,
+        'avgROE': avgROE,
+        'avgPE': avgPE,
+        'companiesAnalyzed': sectorCompanies.length,
+      },
+      'sectorOutlook': _assessSectorOutlook(avgGrowth, avgROE),
+      'companyVsSector': {
+        'growthVsSector': company.salesGrowth3Y != null
+            ? (company.salesGrowth3Y! - avgGrowth)
+            : null,
+        'roeVsSector': company.roe != null ? (company.roe! - avgROE) : null,
+        'peVsSector': company.stockPe != null && company.stockPe! > 0
+            ? (company.stockPe! - avgPE)
+            : null,
+      },
+    };
+  }
+
+  String _assessSectorOutlook(double avgGrowth, double avgROE) {
+    if (avgGrowth > 15 && avgROE > 15) return 'Very Positive';
+    if (avgGrowth > 10 && avgROE > 12) return 'Positive';
+    if (avgGrowth > 5 || avgROE > 10) return 'Neutral';
+    return 'Challenging';
+  }
+}
+
+// Additional provider functions
+@riverpod
+Future<List<CompanyModel>> topCompanies(TopCompaniesRef ref,
+    {String sortBy = 'comprehensiveScore'}) async {
+  final notifier = ref.watch(companyNotifierProvider.notifier);
+  return await notifier.getTopPerformers(sortBy: sortBy, limit: 20);
+}
+
+@riverpod
+Future<Map<String, List<CompanyModel>>> companiesBySector(
+    CompaniesBySectorRef ref) async {
+  final notifier = ref.watch(companyNotifierProvider.notifier);
+  return await notifier.getCompaniesBySector();
+}
+
+@riverpod
+Future<List<CompanyModel>> searchResults(
+    SearchResultsRef ref, String query) async {
+  final notifier = ref.watch(companyNotifierProvider.notifier);
+  return await notifier.searchCompanies(query);
+}
+
+@riverpod
+Future<List<CompanyModel>> filteredCompanies(
+    FilteredCompaniesRef ref, List<FundamentalType> filters) async {
+  final notifier = ref.watch(companyNotifierProvider.notifier);
+  return await notifier.filterByFundamentals(filters);
+}
+
+@riverpod
+Future<List<CompanyModel>> similarCompanies(
+    SimilarCompaniesRef ref, String symbol) async {
+  final notifier = ref.watch(companyNotifierProvider.notifier);
+  return await notifier.getSimilarCompanies(symbol);
+}
+
+@riverpod
+Future<CompanyModel?> companyDetails(
+    CompanyDetailsRef ref, String symbol) async {
+  final notifier = ref.watch(companyNotifierProvider.notifier);
+  return await notifier.getCompanyBySymbol(symbol);
+}
+
+@riverpod
+Future<List<CompanyModel>> highQualityStocks(HighQualityStocksRef ref) async {
+  final notifier = ref.watch(companyNotifierProvider.notifier);
+  return await notifier.getHighQualityStocks();
+}
+
+@riverpod
+Future<List<CompanyModel>> valueOpportunities(ValueOpportunitiesRef ref) async {
+  final notifier = ref.watch(companyNotifierProvider.notifier);
+  return await notifier.getValueOpportunities();
+}
+
+@riverpod
+Future<Map<String, dynamic>> marketSummary(MarketSummaryRef ref) async {
+  final notifier = ref.watch(companyNotifierProvider.notifier);
+  return await notifier.getMarketSummary();
+}

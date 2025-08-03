@@ -3,10 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/company_model.dart';
 import '../providers/company_provider.dart';
-import '../providers/fundamental_provider.dart';
 import '../widgets/company_card.dart';
 import '../widgets/empty_state.dart';
 import '../theme/app_theme.dart';
+import '../models/fundamental_filter.dart';
+
+// Enhanced providers for the list functionality
+final searchQueryProvider = StateProvider<String>((ref) => '');
+final selectedFundamentalProvider =
+    StateProvider<FundamentalFilter?>((ref) => null);
+final sortCriteriaProvider =
+    StateProvider<String>((ref) => 'comprehensiveScore');
+final showOnlyQualityProvider = StateProvider<bool>((ref) => false);
 
 class CompanyList extends ConsumerStatefulWidget {
   const CompanyList({Key? key}) : super(key: key);
@@ -17,6 +25,7 @@ class CompanyList extends ConsumerStatefulWidget {
 
 class _CompanyListState extends ConsumerState<CompanyList> {
   final ScrollController _scrollController = ScrollController();
+  bool _hasScrolledToEnd = false;
 
   @override
   void initState() {
@@ -25,8 +34,7 @@ class _CompanyListState extends ConsumerState<CompanyList> {
 
     // Load initial companies when widget initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final companiesNotifier = ref.read(companiesProvider.notifier);
-      companiesNotifier.loadInitialCompanies();
+      _initializeCompaniesData();
     });
   }
 
@@ -36,328 +44,373 @@ class _CompanyListState extends ConsumerState<CompanyList> {
     super.dispose();
   }
 
+  void _initializeCompaniesData() {
+    final companiesNotifier = ref.read(companyNotifierProvider.notifier);
+    companiesNotifier.refreshCompanies();
+  }
+
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.95) {
-      // Load more companies when reaching 95% of scroll
-      ref.read(companiesProvider.notifier).loadMoreCompanies();
+      if (!_hasScrolledToEnd) {
+        _hasScrolledToEnd = true;
+        // Trigger load more if available
+        _loadMoreCompanies();
+      }
+    } else {
+      _hasScrolledToEnd = false;
     }
+  }
+
+  void _loadMoreCompanies() {
+    // This can be implemented based on your pagination needs
+    // For now, we'll just show a message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All companies loaded'),
+        duration: Duration(seconds: 1),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final selectedFilter = ref.watch(selectedFundamentalProvider);
     final searchQuery = ref.watch(searchQueryProvider);
-    final filterSettings = ref.watch(filterSettingsProvider);
+    final sortCriteria = ref.watch(sortCriteriaProvider);
+    final showOnlyQuality = ref.watch(showOnlyQualityProvider);
 
-    // Enhanced filter display with key points consideration
+    // Enhanced filtering logic
     if (selectedFilter != null) {
-      return ref.watch(filteredCompaniesProvider).when(
+      return ref.watch(filteredCompaniesProvider([selectedFilter.type])).when(
             data: (companies) => _buildEnhancedCompanyList(
-              companies,
+              _applyAdditionalFilters(companies, showOnlyQuality, sortCriteria),
               isFiltered: true,
-              filterType: selectedFilter.toString(),
+              filterName: selectedFilter.name,
             ),
-            loading: () =>
-                _buildEnhancedLoadingState('Applying enhanced filters...'),
+            loading: () => _buildEnhancedLoadingState(
+                'Applying ${selectedFilter.name} filter...'),
             error: (error, stack) => _buildEnhancedErrorState(error, () {
-              ref.invalidate(filteredCompaniesProvider);
+              ref.invalidate(filteredCompaniesProvider([selectedFilter.type]));
             }),
           );
     }
 
-    // Enhanced search with sector/industry support
+    // Enhanced search functionality
     if (searchQuery.isNotEmpty) {
-      return ref.watch(companiesProvider).when(
+      return ref.watch(searchResultsProvider(searchQuery)).when(
             data: (companies) => _buildEnhancedCompanyList(
-              companies,
+              _applyAdditionalFilters(companies, showOnlyQuality, sortCriteria),
               isSearchResult: true,
               searchTerm: searchQuery,
             ),
-            loading: () => _buildEnhancedLoadingState(
-                'Searching with enhanced criteria...'),
+            loading: () =>
+                _buildEnhancedLoadingState('Searching for "$searchQuery"...'),
             error: (error, stack) => _buildEnhancedErrorState(error, () {
-              ref.read(companiesProvider.notifier).searchCompanies(searchQuery);
+              ref.invalidate(searchResultsProvider(searchQuery));
             }),
           );
     }
 
-    // Default: show all companies with enhanced pagination and quality sorting
-    return ref.watch(companiesProvider).when(
+    // Default: show all companies with enhanced sorting and filtering
+    return ref.watch(companyNotifierProvider).when(
           data: (companies) => _buildEnhancedCompanyList(
-            companies,
-            showLoadMore: true,
+            _applyAdditionalFilters(companies, showOnlyQuality, sortCriteria),
+            showLoadMore: false,
           ),
-          loading: () => _buildEnhancedLoadingState(
-              'Loading companies with enhanced data...'),
+          loading: () =>
+              _buildEnhancedLoadingState('Loading enhanced company data...'),
           error: (error, stack) => _buildEnhancedErrorState(error, () {
-            ref.read(companiesProvider.notifier).refreshCompanies();
+            ref.read(companyNotifierProvider.notifier).refreshCompanies();
           }),
         );
   }
 
-  // Enhanced company list with new features
+  List<CompanyModel> _applyAdditionalFilters(
+    List<CompanyModel> companies,
+    bool showOnlyQuality,
+    String sortCriteria,
+  ) {
+    var filteredCompanies = companies;
+
+    // Apply quality filter if enabled
+    if (showOnlyQuality) {
+      filteredCompanies = filteredCompanies
+          .where((company) => company.calculatedComprehensiveScore >= 70)
+          .toList();
+    }
+
+    // Apply sorting
+    switch (sortCriteria) {
+      case 'comprehensiveScore':
+        filteredCompanies.sort((a, b) => b.calculatedComprehensiveScore
+            .compareTo(a.calculatedComprehensiveScore));
+        break;
+      case 'piotroskiScore':
+        filteredCompanies.sort((a, b) =>
+            b.calculatedPiotroskiScore.compareTo(a.calculatedPiotroskiScore));
+        break;
+      case 'marketCap':
+        filteredCompanies
+            .sort((a, b) => (b.marketCap ?? 0).compareTo(a.marketCap ?? 0));
+        break;
+      case 'roe':
+        filteredCompanies.sort((a, b) => (b.roe ?? 0).compareTo(a.roe ?? 0));
+        break;
+      case 'safetyMargin':
+        filteredCompanies.sort((a, b) =>
+            (b.safetyMargin ?? -100).compareTo(a.safetyMargin ?? -100));
+        break;
+      case 'altmanZScore':
+        filteredCompanies.sort((a, b) =>
+            b.calculatedAltmanZScore.compareTo(a.calculatedAltmanZScore));
+        break;
+      case 'alphabetical':
+        filteredCompanies.sort((a, b) => a.name.compareTo(b.name));
+        break;
+      default:
+        // Keep original order
+        break;
+    }
+
+    return filteredCompanies;
+  }
+
   Widget _buildEnhancedCompanyList(
     List<CompanyModel> companies, {
     bool showLoadMore = false,
     bool isFiltered = false,
     bool isSearchResult = false,
-    String? filterType,
+    String? filterName,
     String? searchTerm,
   }) {
     if (companies.isEmpty) {
       return _buildEnhancedEmptyState(
         isFiltered: isFiltered,
         isSearchResult: isSearchResult,
-        filterType: filterType,
+        filterName: filterName,
         searchTerm: searchTerm,
       );
     }
 
     return Column(
       children: [
-        // NEW: Enhanced header with insights
-        _buildListHeader(companies, isFiltered, isSearchResult, searchTerm),
+        // Enhanced header with professional insights
+        _buildProfessionalListHeader(
+            companies, isFiltered, isSearchResult, searchTerm, filterName),
 
-        // Main list
+        // Enhanced controls bar
+        _buildControlsBar(),
+
+        // Main list with enhanced features
         Expanded(
           child: RefreshIndicator(
-            onRefresh: () async {
-              if (isFiltered) {
-                ref.invalidate(filteredCompaniesProvider);
-              } else if (isSearchResult) {
-                final searchQuery = ref.read(searchQueryProvider);
-                if (searchQuery.isNotEmpty) {
-                  await ref
-                      .read(companiesProvider.notifier)
-                      .searchCompanies(searchQuery);
-                }
-              } else {
-                await ref.read(companiesProvider.notifier).refreshCompanies();
-              }
-            },
+            onRefresh: () =>
+                _handleRefresh(isFiltered, isSearchResult, searchTerm),
+            color: AppTheme.primaryGreen,
             child: ListView.builder(
-              controller: showLoadMore ? _scrollController : null,
+              controller: _scrollController,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: showLoadMore ? companies.length + 1 : companies.length,
+              itemCount: companies.length,
               itemBuilder: (context, index) {
-                // Show loading indicator at the end for pagination
-                if (showLoadMore && index == companies.length) {
-                  return _buildEnhancedLoadMoreIndicator();
-                }
-
                 final company = companies[index];
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: CompanyCard(
-                    company: company,
-                    // NEW: Add context for enhanced card display
-                    key: ValueKey('${company.symbol}_enhanced'),
+                  child: Hero(
+                    tag: 'company_${company.symbol}',
+                    child: CompanyCard(
+                      company: company,
+                      key: ValueKey('${company.symbol}_enhanced_${index}'),
+                    ),
                   ),
                 );
               },
             ),
           ),
         ),
+
+        // Enhanced footer with statistics
+        if (companies.isNotEmpty) _buildListFooter(companies),
       ],
     );
   }
 
-  // NEW: Enhanced list header with insights
-  Widget _buildListHeader(
+  Widget _buildProfessionalListHeader(
     List<CompanyModel> companies,
     bool isFiltered,
     bool isSearchResult,
     String? searchTerm,
+    String? filterName,
   ) {
-    final insights = _calculateListInsights(companies);
+    final insights = _calculateProfessionalInsights(companies);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.primaryGreen.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryGreen.withOpacity(0.08),
+            AppTheme.primaryGreen.withOpacity(0.03),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppTheme.primaryGreen.withOpacity(0.1),
+          color: AppTheme.primaryGreen.withOpacity(0.2),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGreen.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                isSearchResult
-                    ? Icons.search
-                    : isFiltered
-                        ? Icons.filter_list
-                        : Icons.business,
-                size: 16,
-                color: AppTheme.primaryGreen,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _getHeaderTitle(
-                      isFiltered, isSearchResult, searchTerm, companies.length),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _getHeaderIcon(isSearchResult, isFiltered),
+                  size: 20,
+                  color: AppTheme.primaryGreen,
                 ),
               ),
-              _buildQualityDistributionChip(insights),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getProfessionalHeaderTitle(isFiltered, isSearchResult,
+                          searchTerm, filterName, companies.length),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _getHeaderSubtitle(insights),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _buildQualityDistributionBadge(insights),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
-          // Enhanced insights row
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildInsightChip(
-                  'Avg Quality',
-                  '${insights['avgQuality']}/5',
-                  Colors.blue,
-                ),
-                const SizedBox(width: 8),
-                _buildInsightChip(
-                  'Debt Free',
-                  '${insights['debtFreeCount']}/${companies.length}',
-                  Colors.green,
-                ),
-                const SizedBox(width: 8),
-                _buildInsightChip(
-                  'Dividend Paying',
-                  '${insights['dividendCount']}/${companies.length}',
-                  Colors.purple,
-                ),
-                const SizedBox(width: 8),
-                _buildInsightChip(
-                  'Quality Stocks',
-                  '${insights['qualityCount']}/${companies.length}',
-                  Colors.teal,
-                ),
-                if (insights['avgWorkingCapital'] > 0) ...[
-                  const SizedBox(width: 8),
-                  _buildInsightChip(
-                    'Avg WC Days',
-                    '${insights['avgWorkingCapital'].toStringAsFixed(0)}',
-                    Colors.orange,
-                  ),
-                ],
-                if (insights['sectorsCount'] > 0) ...[
-                  const SizedBox(width: 8),
-                  _buildInsightChip(
-                    'Sectors',
-                    '${insights['sectorsCount']}',
-                    Colors.indigo,
-                  ),
-                ],
-              ],
-            ),
+          // Professional insights row
+          _buildProfessionalInsightsRow(insights),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfessionalInsightsRow(Map<String, dynamic> insights) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildProfessionalInsightChip(
+            'Avg Score',
+            '${insights['avgComprehensive'].toStringAsFixed(0)}/100',
+            _getScoreColor(insights['avgComprehensive']),
+            Icons.analytics,
+          ),
+          const SizedBox(width: 8),
+          _buildProfessionalInsightChip(
+            'High Quality',
+            '${insights['highQualityCount']}/${insights['totalCount']}',
+            Colors.green,
+            Icons.star,
+          ),
+          const SizedBox(width: 8),
+          _buildProfessionalInsightChip(
+            'Debt Free',
+            '${insights['debtFreeCount']}/${insights['totalCount']}',
+            Colors.blue,
+            Icons.shield,
+          ),
+          const SizedBox(width: 8),
+          _buildProfessionalInsightChip(
+            'Value Opps',
+            '${insights['valueOpportunities']}',
+            Colors.purple,
+            Icons.trending_down,
+          ),
+          const SizedBox(width: 8),
+          _buildProfessionalInsightChip(
+            'Avg P/E',
+            insights['avgPE'].toStringAsFixed(1),
+            _getPEColor(insights['avgPE']),
+            Icons.account_balance,
+          ),
+          const SizedBox(width: 8),
+          _buildProfessionalInsightChip(
+            'Sectors',
+            '${insights['uniqueSectors']}',
+            Colors.orange,
+            Icons.business,
           ),
         ],
       ),
     );
   }
 
-  // Helper method to calculate list insights
-  Map<String, dynamic> _calculateListInsights(List<CompanyModel> companies) {
-    if (companies.isEmpty) {
-      return {
-        'avgQuality': 0.0,
-        'debtFreeCount': 0,
-        'dividendCount': 0,
-        'qualityCount': 0,
-        'avgWorkingCapital': 0.0,
-        'sectorsCount': 0,
-      };
-    }
-
-    double totalQuality = 0;
-    int debtFreeCount = 0;
-    int dividendCount = 0;
-    int qualityCount = 0;
-    double totalWorkingCapital = 0;
-    int workingCapitalCount = 0;
-    Set<String> sectors = {};
-
-    for (final company in companies) {
-      totalQuality += company.qualityScore;
-      if (company.isDebtFree) debtFreeCount++;
-      if (company.paysDividends) dividendCount++;
-      if (company.isQualityStock) qualityCount++;
-
-      if (company.workingCapitalDays != null) {
-        totalWorkingCapital += company.workingCapitalDays!;
-        workingCapitalCount++;
-      }
-
-      if (company.sector != null && company.sector!.isNotEmpty) {
-        sectors.add(company.sector!);
-      }
-    }
-
-    return {
-      'avgQuality': (totalQuality / companies.length),
-      'debtFreeCount': debtFreeCount,
-      'dividendCount': dividendCount,
-      'qualityCount': qualityCount,
-      'avgWorkingCapital': workingCapitalCount > 0
-          ? (totalWorkingCapital / workingCapitalCount)
-          : 0.0,
-      'sectorsCount': sectors.length,
-    };
-  }
-
-  // Helper method for header title
-  String _getHeaderTitle(
-      bool isFiltered, bool isSearchResult, String? searchTerm, int count) {
-    if (isSearchResult && searchTerm != null) {
-      return 'Search Results for "$searchTerm" ($count)';
-    } else if (isFiltered) {
-      return 'Filtered Companies ($count)';
-    } else {
-      return 'All Companies ($count)';
-    }
-  }
-
-  // Helper method for insight chips
-  Widget _buildInsightChip(String label, String value, Color color) {
+  Widget _buildProfessionalInsightChip(
+      String label, String value, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 0.5,
+          color: color.withOpacity(0.2),
+          width: 1,
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color.withOpacity(0.8),
-              fontWeight: FontWeight.w500,
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: color.withOpacity(0.8),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 4),
+          const SizedBox(height: 2),
           Text(
             value,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               color: color,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
@@ -365,46 +418,244 @@ class _CompanyListState extends ConsumerState<CompanyList> {
     );
   }
 
-  // Helper method for quality distribution
-  Widget _buildQualityDistributionChip(Map<String, dynamic> insights) {
-    final avgQuality = insights['avgQuality'] as double;
-    Color qualityColor;
+  Widget _buildControlsBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          // Sort dropdown
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.withOpacity(0.3)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final sortCriteria = ref.watch(sortCriteriaProvider);
+                    return DropdownButton<String>(
+                      value: sortCriteria,
+                      icon: const Icon(Icons.sort, size: 16),
+                      isExpanded: true,
+                      style: const TextStyle(
+                          fontSize: 12, color: AppTheme.textPrimary),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          ref.read(sortCriteriaProvider.notifier).state =
+                              newValue;
+                        }
+                      },
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'comprehensiveScore',
+                            child: Text('Overall Score')),
+                        DropdownMenuItem(
+                            value: 'piotroskiScore',
+                            child: Text('Piotroski Score')),
+                        DropdownMenuItem(
+                            value: 'altmanZScore',
+                            child: Text('Altman Z-Score')),
+                        DropdownMenuItem(
+                            value: 'safetyMargin',
+                            child: Text('Safety Margin')),
+                        DropdownMenuItem(value: 'roe', child: Text('ROE')),
+                        DropdownMenuItem(
+                            value: 'marketCap', child: Text('Market Cap')),
+                        DropdownMenuItem(
+                            value: 'alphabetical', child: Text('Alphabetical')),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
 
-    if (avgQuality >= 4.0) {
-      qualityColor = Colors.green;
-    } else if (avgQuality >= 3.0) {
-      qualityColor = Colors.blue;
-    } else if (avgQuality >= 2.0) {
-      qualityColor = Colors.orange;
-    } else {
-      qualityColor = Colors.red;
+          // Quality toggle
+          Consumer(
+            builder: (context, ref, child) {
+              final showOnlyQuality = ref.watch(showOnlyQualityProvider);
+              return Container(
+                decoration: BoxDecoration(
+                  color: showOnlyQuality
+                      ? AppTheme.primaryGreen.withOpacity(0.1)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: showOnlyQuality
+                        ? AppTheme.primaryGreen
+                        : Colors.grey.withOpacity(0.3),
+                  ),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.star,
+                    color:
+                        showOnlyQuality ? AppTheme.primaryGreen : Colors.grey,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    ref.read(showOnlyQualityProvider.notifier).state =
+                        !showOnlyQuality;
+                  },
+                  tooltip: showOnlyQuality
+                      ? 'Show All Companies'
+                      : 'Show Quality Only',
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+
+          // Refresh button
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.refresh,
+                  color: AppTheme.primaryGreen, size: 20),
+              onPressed: () {
+                ref.read(companyNotifierProvider.notifier).refreshCompanies();
+              },
+              tooltip: 'Refresh Data',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListFooter(List<CompanyModel> companies) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryGreen.withOpacity(0.05),
+        border: Border(
+          top: BorderSide(
+            color: AppTheme.primaryGreen.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Showing ${companies.length} companies',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Row(
+            children: [
+              Icon(
+                Icons.update,
+                size: 12,
+                color: AppTheme.textSecondary.withOpacity(0.7),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Last updated: ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppTheme.textSecondary.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, dynamic> _calculateProfessionalInsights(
+      List<CompanyModel> companies) {
+    if (companies.isEmpty) {
+      return {
+        'totalCount': 0,
+        'avgComprehensive': 0.0,
+        'avgPE': 0.0,
+        'highQualityCount': 0,
+        'debtFreeCount': 0,
+        'valueOpportunities': 0,
+        'uniqueSectors': 0,
+      };
     }
 
+    double totalComprehensive = 0;
+    double totalPE = 0;
+    int peCount = 0;
+    int highQualityCount = 0;
+    int debtFreeCount = 0;
+    int valueOpportunities = 0;
+    Set<String> sectors = {};
+
+    for (final company in companies) {
+      totalComprehensive += company.calculatedComprehensiveScore;
+
+      if (company.stockPe != null &&
+          company.stockPe! > 0 &&
+          company.stockPe! < 100) {
+        totalPE += company.stockPe!;
+        peCount++;
+      }
+
+      if (company.calculatedComprehensiveScore >= 70) highQualityCount++;
+      if (company.isDebtFree) debtFreeCount++;
+      if (company.safetyMargin != null && company.safetyMargin! > 15)
+        valueOpportunities++;
+      if (company.sector != null) sectors.add(company.sector!);
+    }
+
+    return {
+      'totalCount': companies.length,
+      'avgComprehensive': totalComprehensive / companies.length,
+      'avgPE': peCount > 0 ? totalPE / peCount : 0.0,
+      'highQualityCount': highQualityCount,
+      'debtFreeCount': debtFreeCount,
+      'valueOpportunities': valueOpportunities,
+      'uniqueSectors': sectors.length,
+    };
+  }
+
+  Widget _buildQualityDistributionBadge(Map<String, dynamic> insights) {
+    final avgScore = insights['avgComprehensive'] as double;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: qualityColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
+        color: _getScoreColor(avgScore).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: qualityColor.withOpacity(0.3),
-          width: 0.5,
+          color: _getScoreColor(avgScore).withOpacity(0.3),
+          width: 1,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.star,
-            size: 12,
-            color: qualityColor,
+            Icons.analytics,
+            size: 14,
+            color: _getScoreColor(avgScore),
           ),
-          const SizedBox(width: 2),
+          const SizedBox(width: 4),
           Text(
-            avgQuality.toStringAsFixed(1),
+            avgScore.toStringAsFixed(0),
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: qualityColor,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: _getScoreColor(avgScore),
             ),
           ),
         ],
@@ -412,11 +663,64 @@ class _CompanyListState extends ConsumerState<CompanyList> {
     );
   }
 
-  // Enhanced empty state
+  // Helper methods
+  IconData _getHeaderIcon(bool isSearchResult, bool isFiltered) {
+    if (isSearchResult) return Icons.search;
+    if (isFiltered) return Icons.filter_list;
+    return Icons.analytics;
+  }
+
+  String _getProfessionalHeaderTitle(bool isFiltered, bool isSearchResult,
+      String? searchTerm, String? filterName, int count) {
+    if (isSearchResult && searchTerm != null) {
+      return 'Search: "$searchTerm" ($count)';
+    } else if (isFiltered && filterName != null) {
+      return '$filterName ($count)';
+    } else {
+      return 'Professional Analysis ($count)';
+    }
+  }
+
+  String _getHeaderSubtitle(Map<String, dynamic> insights) {
+    final highQuality = insights['highQualityCount'];
+    final debtFree = insights['debtFreeCount'];
+    final valueOpps = insights['valueOpportunities'];
+
+    return '$highQuality quality • $debtFree debt-free • $valueOpps value opportunities';
+  }
+
+  Color _getScoreColor(double score) {
+    if (score >= 80) return Colors.green;
+    if (score >= 60) return Colors.blue;
+    if (score >= 40) return Colors.orange;
+    return Colors.red;
+  }
+
+  Color _getPEColor(double pe) {
+    if (pe < 15) return Colors.green;
+    if (pe < 25) return Colors.blue;
+    if (pe < 35) return Colors.orange;
+    return Colors.red;
+  }
+
+  Future<void> _handleRefresh(
+      bool isFiltered, bool isSearchResult, String? searchTerm) async {
+    if (isFiltered) {
+      final selectedFilter = ref.read(selectedFundamentalProvider);
+      if (selectedFilter != null) {
+        ref.invalidate(filteredCompaniesProvider([selectedFilter.type]));
+      }
+    } else if (isSearchResult && searchTerm != null) {
+      ref.invalidate(searchResultsProvider(searchTerm));
+    } else {
+      await ref.read(companyNotifierProvider.notifier).refreshCompanies();
+    }
+  }
+
   Widget _buildEnhancedEmptyState({
     required bool isFiltered,
     required bool isSearchResult,
-    String? filterType,
+    String? filterName,
     String? searchTerm,
   }) {
     String message;
@@ -425,34 +729,34 @@ class _CompanyListState extends ConsumerState<CompanyList> {
     List<Widget> actionButtons = [];
 
     if (isSearchResult) {
-      message = 'No companies found';
+      message = 'No Results Found';
       subtitle = searchTerm != null
-          ? 'No results for "$searchTerm". Try searching by symbol, name, sector, or industry.'
-          : 'Try different search terms or browse all companies.';
+          ? 'No companies match "$searchTerm". Try different keywords or browse categories.'
+          : 'Try different search terms or explore our quality picks.';
       icon = Icons.search_off;
 
       actionButtons = [
         ElevatedButton.icon(
           onPressed: () {
             ref.read(searchQueryProvider.notifier).state = '';
-            ref.read(companiesProvider.notifier).loadInitialCompanies();
           },
-          icon: const Icon(Icons.clear_all),
+          icon: const Icon(Icons.clear_all, size: 16),
           label: const Text('Clear Search'),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         OutlinedButton.icon(
           onPressed: () {
-            ref.read(companiesProvider.notifier).loadQualityStocks();
+            ref.read(showOnlyQualityProvider.notifier).state = true;
+            ref.read(searchQueryProvider.notifier).state = '';
           },
-          icon: const Icon(Icons.star),
-          label: const Text('Show Quality Stocks'),
+          icon: const Icon(Icons.star, size: 16),
+          label: const Text('Quality Picks'),
         ),
       ];
     } else if (isFiltered) {
-      message = 'No companies match filter';
-      subtitle = filterType != null
-          ? 'No companies found for $filterType filter. Try adjusting filter criteria or browse all companies.'
+      message = 'No Matches Found';
+      subtitle = filterName != null
+          ? 'No companies match the $filterName criteria. Try adjusting filters or explore other categories.'
           : 'Try different filter criteria or browse all companies.';
       icon = Icons.filter_list_off;
 
@@ -460,146 +764,61 @@ class _CompanyListState extends ConsumerState<CompanyList> {
         ElevatedButton.icon(
           onPressed: () {
             ref.read(selectedFundamentalProvider.notifier).state = null;
-            ref.read(companiesProvider.notifier).refreshCompanies();
           },
-          icon: const Icon(Icons.clear_all),
-          label: const Text('Clear Filters'),
+          icon: const Icon(Icons.clear_all, size: 16),
+          label: const Text('Clear Filter'),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         OutlinedButton.icon(
           onPressed: () {
-            ref
-                .read(companiesProvider.notifier)
-                .loadCompaniesWithBusinessInsights();
+            ref.read(selectedFundamentalProvider.notifier).state = null;
+            ref.read(showOnlyQualityProvider.notifier).state = true;
           },
-          icon: const Icon(Icons.business_center),
-          label: const Text('Companies with Insights'),
+          icon: const Icon(Icons.auto_awesome, size: 16),
+          label: const Text('Show Quality'),
         ),
       ];
     } else {
-      message = 'No companies available';
+      message = 'No Data Available';
       subtitle =
-          'Unable to load company data. Please check your connection and try again.';
+          'Unable to load company data. Please check your connection and try refreshing.';
       icon = Icons.business_outlined;
 
       actionButtons = [
         ElevatedButton.icon(
           onPressed: () {
-            ref.read(companiesProvider.notifier).refreshCompanies();
+            ref.read(companyNotifierProvider.notifier).refreshCompanies();
           },
-          icon: const Icon(Icons.refresh),
+          icon: const Icon(Icons.refresh, size: 16),
           label: const Text('Refresh'),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         OutlinedButton.icon(
           onPressed: () {
-            ref.read(companiesProvider.notifier).debugFetchRawCompanies();
+            // Debug action
+            ref.read(companyNotifierProvider.notifier).refreshCompanies();
           },
-          icon: const Icon(Icons.bug_report),
+          icon: const Icon(Icons.bug_report, size: 16),
           label: const Text('Debug'),
         ),
       ];
     }
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryGreen.withOpacity(0.05),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppTheme.primaryGreen.withOpacity(0.1),
-                  width: 2,
-                ),
-              ),
-              child: Icon(
-                icon,
-                size: 64,
-                color: AppTheme.primaryGreen.withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              message,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppTheme.textSecondary,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            Wrap(
-              alignment: WrapAlignment.center,
-              children: actionButtons,
-            ),
-          ],
-        ),
-      ),
+    return EnhancedEmptyState(
+      message: message,
+      subtitle: subtitle,
+      icon: icon,
+      actions: actionButtons,
     );
   }
 
-  // Enhanced load more indicator
-  Widget _buildEnhancedLoadMoreIndicator() {
-    final companiesState = ref.read(companiesProvider.notifier).currentState;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          const SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppTheme.primaryGreen,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Loading more companies...',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textSecondary.withOpacity(0.8),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          if (companiesState.companies.isNotEmpty)
-            Text(
-              '${companiesState.companies.length} companies loaded',
-              style: TextStyle(
-                fontSize: 10,
-                color: AppTheme.textSecondary.withOpacity(0.6),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // Enhanced loading state
   Widget _buildEnhancedLoadingState(String message) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppTheme.primaryGreen.withOpacity(0.05),
               shape: BoxShape.circle,
@@ -609,8 +828,8 @@ class _CompanyListState extends ConsumerState<CompanyList> {
               ),
             ),
             child: const SizedBox(
-              width: 40,
-              height: 40,
+              width: 48,
+              height: 48,
               child: CircularProgressIndicator(
                 color: AppTheme.primaryGreen,
                 strokeWidth: 3,
@@ -622,17 +841,17 @@ class _CompanyListState extends ConsumerState<CompanyList> {
             message,
             style: const TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
               color: AppTheme.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Please wait while we fetch enhanced financial data...',
+          Text(
+            'Analyzing fundamental data with AI insights...',
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondary.withOpacity(0.8),
             ),
             textAlign: TextAlign.center,
           ),
@@ -641,7 +860,6 @@ class _CompanyListState extends ConsumerState<CompanyList> {
     );
   }
 
-  // Enhanced error state
   Widget _buildEnhancedErrorState(Object error, VoidCallback onRetry) {
     return Center(
       child: Padding(
@@ -650,7 +868,7 @@ class _CompanyListState extends ConsumerState<CompanyList> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.red.withOpacity(0.05),
                 shape: BoxShape.circle,
@@ -665,26 +883,25 @@ class _CompanyListState extends ConsumerState<CompanyList> {
                 color: Colors.red,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             const Text(
-              'Unable to Load Companies',
+              'Unable to Load Data',
               style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.bold,
                 color: AppTheme.textPrimary,
               ),
-              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Error: ${error.toString()}',
+              error.toString().length > 100
+                  ? '${error.toString().substring(0, 100)}...'
+                  : error.toString(),
               style: const TextStyle(
                 fontSize: 14,
                 color: AppTheme.textSecondary,
               ),
               textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 24),
             Wrap(
@@ -693,26 +910,17 @@ class _CompanyListState extends ConsumerState<CompanyList> {
               children: [
                 ElevatedButton.icon(
                   onPressed: onRetry,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Try Again'),
                 ),
                 OutlinedButton.icon(
                   onPressed: () {
-                    // Clear all filters and search
                     ref.read(selectedFundamentalProvider.notifier).state = null;
                     ref.read(searchQueryProvider.notifier).state = '';
-                    ref.read(companiesProvider.notifier).loadInitialCompanies();
+                    ref.read(showOnlyQualityProvider.notifier).state = false;
                   },
-                  icon: const Icon(Icons.clear_all),
-                  label: const Text('Clear All'),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    // Try loading quality stocks as fallback
-                    ref.read(companiesProvider.notifier).loadQualityStocks();
-                  },
-                  icon: const Icon(Icons.star),
-                  label: const Text('Load Quality Stocks'),
+                  icon: const Icon(Icons.clear_all, size: 16),
+                  label: const Text('Reset All'),
                 ),
               ],
             ),
@@ -723,7 +931,7 @@ class _CompanyListState extends ConsumerState<CompanyList> {
   }
 }
 
-// NEW: Enhanced empty state widget for better UX
+// Enhanced empty state widget
 class EnhancedEmptyState extends StatelessWidget {
   final String message;
   final String subtitle;
@@ -742,51 +950,58 @@ class EnhancedEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: AppTheme.primaryGreen.withOpacity(0.05),
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.primaryGreen.withOpacity(0.1),
+                    AppTheme.primaryGreen.withOpacity(0.05),
+                  ],
+                ),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppTheme.primaryGreen.withOpacity(0.1),
+                  color: AppTheme.primaryGreen.withOpacity(0.2),
                   width: 2,
                 ),
               ),
               child: Icon(
                 icon,
                 size: 64,
-                color: AppTheme.primaryGreen.withOpacity(0.6),
+                color: AppTheme.primaryGreen.withOpacity(0.7),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             Text(
               message,
               style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
                 color: AppTheme.textPrimary,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               subtitle,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 15,
                 color: AppTheme.textSecondary,
                 height: 1.4,
               ),
               textAlign: TextAlign.center,
+              maxLines: 3,
             ),
             if (actions.isNotEmpty) ...[
               const SizedBox(height: 32),
               Wrap(
                 alignment: WrapAlignment.center,
                 spacing: 12,
+                runSpacing: 8,
                 children: actions,
               ),
             ],
