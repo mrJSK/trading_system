@@ -1,28 +1,118 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+import '../utils/json_parsing_utils.dart';
 
-part 'fundamental_filter.freezed.dart';
-part 'fundamental_filter.g.dart';
+// ============================================================================
+// FUNDAMENTAL FILTER MODEL WITH MANUAL SERIALIZATION
+// ============================================================================
 
-@freezed
-class FundamentalFilter with _$FundamentalFilter {
-  const factory FundamentalFilter({
-    required FundamentalType type,
-    required String name,
-    required String description,
-    required FilterCategory category,
-    @Default([]) List<String> tags,
-    @Default('') String icon,
-    @Default(false) bool isPremium,
-    @Default(0) int minimumQualityScore,
-    @Default({}) Map<String, dynamic> criteria,
-    @Default(0) int difficulty, // 0=Beginner, 1=Intermediate, 2=Advanced
-    @Default('') String explanation,
-    @Default([]) List<String> relatedFilters,
-    @Default(0.0) double successRate, // Historical success rate if available
-  }) = _FundamentalFilter;
+class FundamentalFilter {
+  final FundamentalType type;
+  final String name;
+  final String description;
+  final FilterCategory category;
+  final List<String> tags;
+  final String icon;
+  final bool isPremium;
+  final int minimumQualityScore;
+  final Map<String, dynamic> criteria;
+  final int difficulty; // 0=Beginner, 1=Intermediate, 2=Advanced
+  final String explanation;
+  final List<String> relatedFilters;
+  final double successRate; // Historical success rate if available
 
-  factory FundamentalFilter.fromJson(Map<String, dynamic> json) =>
-      _$FundamentalFilterFromJson(json);
+  const FundamentalFilter({
+    required this.type,
+    required this.name,
+    required this.description,
+    required this.category,
+    this.tags = const [],
+    this.icon = '',
+    this.isPremium = false,
+    this.minimumQualityScore = 0,
+    this.criteria = const {},
+    this.difficulty = 0,
+    this.explanation = '',
+    this.relatedFilters = const [],
+    this.successRate = 0.0,
+  });
+
+  // ============================================================================
+  // MANUAL JSON SERIALIZATION
+  // ============================================================================
+
+  factory FundamentalFilter.fromJson(Map<String, dynamic> json) {
+    return FundamentalFilter(
+      type: _parseFilterType(json['type']),
+      name: JsonParsingUtils.safeString(json['name']) ?? '',
+      description: JsonParsingUtils.safeString(json['description']) ?? '',
+      category: _parseFilterCategory(json['category']),
+      tags: JsonParsingUtils.safeStringList(json['tags']) ?? [],
+      icon: JsonParsingUtils.safeString(json['icon']) ?? '',
+      isPremium: JsonParsingUtils.safeBool(json['isPremium']) ?? false,
+      minimumQualityScore:
+          JsonParsingUtils.safeInt(json['minimumQualityScore']) ?? 0,
+      criteria: JsonParsingUtils.safeMap(json['criteria']),
+      difficulty: JsonParsingUtils.safeInt(json['difficulty']) ?? 0,
+      explanation: JsonParsingUtils.safeString(json['explanation']) ?? '',
+      relatedFilters:
+          JsonParsingUtils.safeStringList(json['relatedFilters']) ?? [],
+      successRate: JsonParsingUtils.safeDouble(json['successRate']) ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type.name,
+      'name': name,
+      'description': description,
+      'category': category.name,
+      'tags': tags,
+      'icon': icon,
+      'isPremium': isPremium,
+      'minimumQualityScore': minimumQualityScore,
+      'criteria': criteria,
+      'difficulty': difficulty,
+      'explanation': explanation,
+      'relatedFilters': relatedFilters,
+      'successRate': successRate,
+    };
+  }
+
+  // Helper methods for parsing enums
+  static FundamentalType _parseFilterType(dynamic value) {
+    if (value == null) return FundamentalType.qualityStocks;
+    if (value is FundamentalType) return value;
+    if (value is String) {
+      try {
+        return FundamentalType.values.firstWhere(
+          (type) => type.name == value,
+          orElse: () => FundamentalType.qualityStocks,
+        );
+      } catch (e) {
+        return FundamentalType.qualityStocks;
+      }
+    }
+    return FundamentalType.qualityStocks;
+  }
+
+  static FilterCategory _parseFilterCategory(dynamic value) {
+    if (value == null) return FilterCategory.quality;
+    if (value is FilterCategory) return value;
+    if (value is String) {
+      try {
+        return FilterCategory.values.firstWhere(
+          (category) => category.name == value,
+          orElse: () => FilterCategory.quality,
+        );
+      } catch (e) {
+        return FilterCategory.quality;
+      }
+    }
+    return FilterCategory.quality;
+  }
+
+  // ============================================================================
+  // STATIC FILTER DATA
+  // ============================================================================
 
   static List<FundamentalFilter> getAllFilters() {
     return [

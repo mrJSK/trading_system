@@ -744,7 +744,7 @@ final marketSummaryProvider =
 );
 
 typedef MarketSummaryRef = AutoDisposeFutureProviderRef<Map<String, dynamic>>;
-String _$companyNotifierHash() => r'27fad0221c5a20bbcefe1080e2d9bac005e622ed';
+String _$companyNotifierHash() => r'f5b8774f5c1f8ef2f96cfa27afac29f881768454';
 
 /// See also [CompanyNotifier].
 @ProviderFor(CompanyNotifier)
@@ -761,7 +761,7 @@ final companyNotifierProvider = AutoDisposeAsyncNotifierProvider<
 
 typedef _$CompanyNotifier = AutoDisposeAsyncNotifier<List<CompanyModel>>;
 String _$fundamentalAnalysisHash() =>
-    r'dfb217ed9610203008c0d290844338e847874eeb';
+    r'387a4fb53e0fcb6fb3318e56c0e6bd07932605a6';
 
 abstract class _$FundamentalAnalysis
     extends BuildlessAutoDisposeAsyncNotifier<Map<String, dynamic>> {

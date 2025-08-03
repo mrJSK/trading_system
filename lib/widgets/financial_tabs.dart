@@ -53,8 +53,7 @@ class FinancialTab extends StatelessWidget {
             if (showProsAndCons &&
                 (company.pros.isNotEmpty || company.cons.isNotEmpty))
               const SizedBox(height: 20),
-            if (type == 'shareholding' && company.shareholdingPattern != null)
-              _buildShareholdingDetails(),
+            if (type == 'shareholding') _buildShareholdingDetails(),
             if (type == 'ratios') _buildEnhancedRatiosInsights(),
             if (type == 'quarterly' && company.quarterlyDataHistory.isNotEmpty)
               _buildQuarterlyTrends(),
@@ -124,7 +123,7 @@ class FinancialTab extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              'Updated: ${company.formattedLastUpdated}',
+              'Updated: ${_formatLastUpdated()}',
               style: TextStyle(
                 fontSize: 10,
                 color: AppTheme.primaryGreen.withOpacity(0.8),
@@ -135,6 +134,28 @@ class FinancialTab extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatLastUpdated() {
+    try {
+      final now = DateTime.now();
+      final lastUpdated = DateTime.parse(company.lastUpdated);
+      final difference = now.difference(lastUpdated);
+
+      if (difference.inDays > 7) {
+        return '${difference.inDays} days ago';
+      } else if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Recently';
+    }
   }
 
   IconData _getTabIcon() {
@@ -391,6 +412,13 @@ class FinancialTab extends StatelessWidget {
               company.currentRatio != null && company.currentRatio! > 1.5
                   ? 'Healthy'
                   : 'Adequate'),
+          // Enhanced quality insights
+          _buildRatioInsightRow('Quality Score',
+              '${company.qualityScore}/5 (${company.overallQualityGrade})'),
+          _buildRatioInsightRow('Piotroski Score',
+              '${company.calculatedPiotroskiScore.toInt()}/9'),
+          _buildRatioInsightRow('Altman Z-Score',
+              company.calculatedAltmanZScore.toStringAsFixed(1)),
         ],
       ),
     );
@@ -411,7 +439,45 @@ class FinancialTab extends StatelessWidget {
         assessmentColor = Colors.orange;
         break;
       default:
-        assessmentColor = AppTheme.textSecondary;
+        // Handle score-based assessments
+        if (assessment.contains('/')) {
+          final parts = assessment.split('/');
+          if (parts.length == 2) {
+            final current = double.tryParse(parts[0]);
+            final max = double.tryParse(parts[1].split(' ')[0]);
+            if (current != null && max != null) {
+              final ratio = current / max;
+              if (ratio >= 0.8) {
+                assessmentColor = AppTheme.profitGreen;
+              } else if (ratio >= 0.6) {
+                assessmentColor = Colors.blue;
+              } else if (ratio >= 0.4) {
+                assessmentColor = Colors.orange;
+              } else {
+                assessmentColor = AppTheme.lossRed;
+              }
+            } else {
+              assessmentColor = AppTheme.textSecondary;
+            }
+          } else {
+            assessmentColor = AppTheme.textSecondary;
+          }
+        } else {
+          // Handle numeric scores like Altman Z-Score
+          final score = double.tryParse(assessment);
+          if (score != null) {
+            if (score > 3.0) {
+              assessmentColor = AppTheme.profitGreen;
+            } else if (score > 1.8) {
+              assessmentColor = Colors.orange;
+            } else {
+              assessmentColor = AppTheme.lossRed;
+            }
+          } else {
+            assessmentColor = AppTheme.textSecondary;
+          }
+        }
+        break;
     }
 
     return Padding(
@@ -483,6 +549,12 @@ class FinancialTab extends StatelessWidget {
           if (recent.ebitda != null && previous.ebitda != null)
             _buildTrendRow('EBITDA Growth',
                 _calculateGrowth(recent.ebitda!, previous.ebitda!)),
+          if (recent.eps != null && previous.eps != null)
+            _buildTrendRow(
+                'EPS Growth', _calculateGrowth(recent.eps!, previous.eps!)),
+          if (recent.profitMargin != null && previous.profitMargin != null)
+            _buildTrendRow('Margin Change',
+                _calculateGrowth(recent.profitMargin!, previous.profitMargin!)),
         ],
       ),
     );
@@ -571,6 +643,17 @@ class FinancialTab extends StatelessWidget {
                   : 'N/A'),
           _buildAnalysisItem('Quality Score',
               '${company.qualityScore}/5 (${company.overallQualityGrade})'),
+          _buildAnalysisItem('Comprehensive Score',
+              '${company.calculatedComprehensiveScore.toInt()}/100'),
+          _buildAnalysisItem(
+              'Investment Grade', company.calculatedInvestmentGrade),
+          _buildAnalysisItem('Risk Level', company.calculatedRiskAssessment),
+          if (company.calculatedGrahamNumber != null)
+            _buildAnalysisItem('Graham Value',
+                '₹${company.calculatedGrahamNumber!.toStringAsFixed(0)}'),
+          if (company.safetyMargin != null)
+            _buildAnalysisItem('Safety Margin',
+                '${company.safetyMargin!.toStringAsFixed(1)}%'),
         ],
       ),
     );
@@ -621,11 +704,7 @@ class FinancialTab extends StatelessWidget {
         }
         return years;
       case 'shareholding':
-        final shareholding = company.shareholdingPattern?.quarterly;
-        if (shareholding?.isNotEmpty == true) {
-          return shareholding!.keys.take(4).toList();
-        }
-        return ['Q1', 'Q2', 'Q3', 'Q4'];
+        return ['Latest', 'Q-1', 'Q-2', 'Q-3'];
       default:
         return ['Current', 'Previous', '-2', '-3'];
     }
@@ -672,6 +751,21 @@ class FinancialTab extends StatelessWidget {
         .map((q) => q.ebitda != null ? _formatCrores(q.ebitda!) : 'N/A')
         .toList();
 
+    data['Operating Profit (₹Cr)'] = quarters
+        .map((q) => q.operatingProfit != null
+            ? _formatCrores(q.operatingProfit!)
+            : 'N/A')
+        .toList();
+
+    data['Total Income (₹Cr)'] = quarters
+        .map((q) =>
+            q.totalIncome != null ? _formatCrores(q.totalIncome!) : 'N/A')
+        .toList();
+
+    data['Profit Margin (%)'] = quarters
+        .map((q) => q.profitMargin?.toStringAsFixed(1) ?? 'N/A')
+        .toList();
+
     return data;
   }
 
@@ -693,6 +787,31 @@ class FinancialTab extends StatelessWidget {
     data['EPS (₹)'] =
         years.map((y) => y.eps?.toStringAsFixed(2) ?? 'N/A').toList();
 
+    data['Operating Profit (₹Cr)'] = years
+        .map((y) => y.operatingProfit != null
+            ? _formatCrores(y.operatingProfit!)
+            : 'N/A')
+        .toList();
+
+    data['EBITDA (₹Cr)'] = years
+        .map((y) => y.ebitda != null ? _formatCrores(y.ebitda!) : 'N/A')
+        .toList();
+
+    data['Gross Profit (₹Cr)'] = years
+        .map((y) =>
+            y.grossProfit != null ? _formatCrores(y.grossProfit!) : 'N/A')
+        .toList();
+
+    data['Interest Expense (₹Cr)'] = years
+        .map((y) => y.interestExpense != null
+            ? _formatCrores(y.interestExpense!)
+            : 'N/A')
+        .toList();
+
+    data['Tax Expense (₹Cr)'] = years
+        .map((y) => y.taxExpense != null ? _formatCrores(y.taxExpense!) : 'N/A')
+        .toList();
+
     return data;
   }
 
@@ -703,6 +822,32 @@ class FinancialTab extends StatelessWidget {
     final data = <String, List<String>>{};
     final years = annualData.take(4).toList();
 
+    data['Total Assets (₹Cr)'] = years
+        .map((y) =>
+            y.totalAssets != null ? _formatCrores(y.totalAssets!) : 'N/A')
+        .toList();
+
+    data['Total Liabilities (₹Cr)'] = years
+        .map((y) => y.totalLiabilities != null
+            ? _formatCrores(y.totalLiabilities!)
+            : 'N/A')
+        .toList();
+
+    data['Shareholders Equity (₹Cr)'] = years
+        .map((y) => y.shareholdersEquity != null
+            ? _formatCrores(y.shareholdersEquity!)
+            : 'N/A')
+        .toList();
+
+    data['Total Debt (₹Cr)'] = years
+        .map((y) => y.totalDebt != null ? _formatCrores(y.totalDebt!) : 'N/A')
+        .toList();
+
+    data['Working Capital (₹Cr)'] = years
+        .map((y) =>
+            y.workingCapital != null ? _formatCrores(y.workingCapital!) : 'N/A')
+        .toList();
+
     data['Book Value (₹)'] =
         years.map((y) => y.bookValue?.toStringAsFixed(2) ?? 'N/A').toList();
 
@@ -710,7 +855,42 @@ class FinancialTab extends StatelessWidget {
   }
 
   Map<String, List<String>> _getCashFlowData() {
-    return {};
+    final annualData = company.annualDataHistory;
+    if (annualData.isEmpty) return {};
+
+    final data = <String, List<String>>{};
+    final years = annualData.take(4).toList();
+
+    data['Operating Cash Flow (₹Cr)'] = years
+        .map((y) => y.operatingCashFlow != null
+            ? _formatCrores(y.operatingCashFlow!)
+            : 'N/A')
+        .toList();
+
+    data['Investing Cash Flow (₹Cr)'] = years
+        .map((y) => y.investingCashFlow != null
+            ? _formatCrores(y.investingCashFlow!)
+            : 'N/A')
+        .toList();
+
+    data['Financing Cash Flow (₹Cr)'] = years
+        .map((y) => y.financingCashFlow != null
+            ? _formatCrores(y.financingCashFlow!)
+            : 'N/A')
+        .toList();
+
+    data['Free Cash Flow (₹Cr)'] = years
+        .map((y) =>
+            y.freeCashFlow != null ? _formatCrores(y.freeCashFlow!) : 'N/A')
+        .toList();
+
+    data['Capital Expenditures (₹Cr)'] = years
+        .map((y) => y.capitalExpenditures != null
+            ? _formatCrores(y.capitalExpenditures!)
+            : 'N/A')
+        .toList();
+
+    return data;
   }
 
   Map<String, List<String>> _getRatiosData() {
@@ -738,7 +918,7 @@ class FinancialTab extends StatelessWidget {
 
     data['Debt/Equity'] = [
       currentRatios[2],
-      ...List.filled(years.length, 'N/A'),
+      ...years.map((y) => y.debtToEquity?.toStringAsFixed(2) ?? 'N/A'),
     ];
 
     data['ROCE (%)'] = [
@@ -749,7 +929,7 @@ class FinancialTab extends StatelessWidget {
     if (company.currentRatio != null) {
       data['Current Ratio'] = [
         company.currentRatio!.toStringAsFixed(2),
-        ...List.filled(3, 'N/A'),
+        ...years.map((y) => y.currentRatio?.toStringAsFixed(2) ?? 'N/A'),
       ];
     }
 
@@ -760,34 +940,73 @@ class FinancialTab extends StatelessWidget {
       ];
     }
 
+    if (company.quickRatio != null) {
+      data['Quick Ratio'] = [
+        company.quickRatio!.toStringAsFixed(2),
+        ...years.map((y) => y.quickRatio?.toStringAsFixed(2) ?? 'N/A'),
+      ];
+    }
+
+    // Add advanced ratios
+    if (company.calculatedROIC != null) {
+      data['ROIC (%)'] = [
+        company.calculatedROIC!.toStringAsFixed(1),
+        ...List.filled(3, 'N/A'),
+      ];
+    }
+
+    if (company.calculatedFCFYield != null) {
+      data['FCF Yield (%)'] = [
+        company.calculatedFCFYield!.toStringAsFixed(1),
+        ...List.filled(3, 'N/A'),
+      ];
+    }
+
+    if (company.dividendYield != null) {
+      data['Dividend Yield (%)'] = [
+        company.dividendYield!.toStringAsFixed(1),
+        ...List.filled(3, 'N/A'),
+      ];
+    }
+
     return data;
   }
 
   Map<String, List<String>> _getShareholdingData() {
-    final shareholding = company.shareholdingPattern;
-    if (shareholding == null) return {};
-
     final data = <String, List<String>>{};
-    final quarterlyData = shareholding.quarterly;
 
-    if (quarterlyData.isNotEmpty) {
-      final quarters = quarterlyData.keys.take(4).toList();
+    // Use the company shareholding data from the model
+    if (company.promoterHolding != null) {
+      data['Promoter (%)'] = [
+        company.promoterHolding!.toStringAsFixed(2),
+        'N/A',
+        'N/A',
+        'N/A',
+      ];
+    }
 
-      data['Promoter (%)'] =
-          quarters.map((q) => quarterlyData[q]?['promoter'] ?? 'N/A').toList();
-      data['Public (%)'] =
-          quarters.map((q) => quarterlyData[q]?['public'] ?? 'N/A').toList();
-      data['Institutional (%)'] = quarters
-          .map((q) => quarterlyData[q]?['institutional'] ?? 'N/A')
-          .toList();
+    if (company.publicHolding != null) {
+      data['Public (%)'] = [
+        company.publicHolding!.toStringAsFixed(2),
+        'N/A',
+        'N/A',
+        'N/A',
+      ];
+    }
+
+    if (company.institutionalHolding != null) {
+      data['Institutional (%)'] = [
+        company.institutionalHolding!.toStringAsFixed(2),
+        'N/A',
+        'N/A',
+        'N/A',
+      ];
     }
 
     return data;
   }
 
   Widget _buildShareholdingDetails() {
-    final shareholding = company.shareholdingPattern!;
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -807,36 +1026,15 @@ class FinancialTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          if (shareholding.promoterHolding != null)
+          if (company.promoterHolding != null)
             _buildShareholdingRow('Promoter Holding',
-                '${shareholding.promoterHolding!.toStringAsFixed(2)}%'),
-          if (shareholding.publicHolding != null)
+                '${company.promoterHolding!.toStringAsFixed(2)}%'),
+          if (company.publicHolding != null)
             _buildShareholdingRow('Public Holding',
-                '${shareholding.publicHolding!.toStringAsFixed(2)}%'),
-          if (shareholding.institutionalHolding != null)
+                '${company.publicHolding!.toStringAsFixed(2)}%'),
+          if (company.institutionalHolding != null)
             _buildShareholdingRow('Institutional Holding',
-                '${shareholding.institutionalHolding!.toStringAsFixed(2)}%'),
-          if (shareholding.foreignInstitutional != null)
-            _buildShareholdingRow('FII Holding',
-                '${shareholding.foreignInstitutional!.toStringAsFixed(2)}%'),
-          if (shareholding.majorShareholders.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            const Text(
-              'Major Shareholders',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...shareholding.majorShareholders
-                .take(5)
-                .map((shareholder) => _buildShareholdingRow(
-                      shareholder.name,
-                      '${shareholder.percentage.toStringAsFixed(2)}%',
-                    )),
-          ],
+                '${company.institutionalHolding!.toStringAsFixed(2)}%'),
         ],
       ),
     );
@@ -974,9 +1172,58 @@ class FinancialTab extends StatelessWidget {
               ),
             ),
           ],
+          // Add investment highlights section
+          if (company.investmentHighlights.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Investment Highlights',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...company.investmentHighlights.take(3).map(
+                  (highlight) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.lightbulb,
+                            color: _getHighlightColor(highlight.impact),
+                            size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            highlight.description,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ],
         ],
       ),
     );
+  }
+
+  Color _getHighlightColor(String impact) {
+    switch (impact.toLowerCase()) {
+      case 'positive':
+        return Colors.green;
+      case 'negative':
+        return Colors.red;
+      case 'neutral':
+        return Colors.blue;
+      default:
+        return Colors.orange;
+    }
   }
 
   String _formatCrores(double value) {

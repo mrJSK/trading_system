@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/company_model.dart';
 import '../models/fundamental_filter.dart';
-import '../services/fundamental_analysis_service.dart';
+import '../utils/json_parsing_utils.dart';
 import 'dart:math';
 
 part 'company_provider.g.dart';
@@ -49,6 +49,7 @@ class CompanyNotifier extends _$CompanyNotifier {
   }
 
   static CompanyModel _enhanceCompanyWithCalculations(CompanyModel company) {
+    // Create enhanced calculated metrics
     final calculatedMetrics = CalculatedMetrics(
       piotroskiScore: company.calculatedPiotroskiScore,
       altmanZScore: company.calculatedAltmanZScore,
@@ -72,9 +73,129 @@ class CompanyNotifier extends _$CompanyNotifier {
       evToEbitda: _calculateEVToEBITDA(company),
       priceToFreeCashFlow: _calculatePriceToFreeCashFlow(company),
       enterpriseValueToSales: _calculateEnterpriseValueToSales(company),
+      sectorComparison: _calculateSectorComparison(company),
     );
 
-    return company.copyWith(calculatedMetrics: calculatedMetrics);
+    // Create enhanced company with calculated metrics
+    return CompanyModel(
+      symbol: company.symbol,
+      name: company.name,
+      displayName: company.displayName,
+      about: company.about,
+      website: company.website,
+      bseCode: company.bseCode,
+      nseCode: company.nseCode,
+      marketCap: company.marketCap,
+      currentPrice: company.currentPrice,
+      highLow: company.highLow,
+      stockPe: company.stockPe,
+      bookValue: company.bookValue,
+      dividendYield: company.dividendYield,
+      roce: company.roce,
+      roe: company.roe,
+      faceValue: company.faceValue,
+      pros: company.pros,
+      cons: company.cons,
+      createdAt: company.createdAt,
+      updatedAt: company.updatedAt,
+      lastUpdated: company.lastUpdated,
+      changePercent: company.changePercent,
+      changeAmount: company.changeAmount,
+      previousClose: company.previousClose,
+      quarterlyResults: company.quarterlyResults,
+      profitLossStatement: company.profitLossStatement,
+      balanceSheet: company.balanceSheet,
+      cashFlowStatement: company.cashFlowStatement,
+      ratios: company.ratios,
+      debtToEquity: company.debtToEquity,
+      currentRatio: company.currentRatio,
+      quickRatio: company.quickRatio,
+      workingCapitalDays: company.workingCapitalDays,
+      debtorDays: company.debtorDays,
+      inventoryDays: company.inventoryDays,
+      cashConversionCycle: company.cashConversionCycle,
+      interestCoverage: company.interestCoverage,
+      assetTurnover: company.assetTurnover,
+      inventoryTurnover: company.inventoryTurnover,
+      receivablesTurnover: company.receivablesTurnover,
+      payablesTurnover: company.payablesTurnover,
+      workingCapital: company.workingCapital,
+      enterpriseValue: company.enterpriseValue,
+      evEbitda: company.evEbitda,
+      priceToBook: company.priceToBook,
+      priceToSales: company.priceToSales,
+      pegRatio: company.pegRatio,
+      betaValue: company.betaValue,
+      salesGrowth1Y: company.salesGrowth1Y,
+      salesGrowth3Y: company.salesGrowth3Y,
+      salesGrowth5Y: company.salesGrowth5Y,
+      profitGrowth1Y: company.profitGrowth1Y,
+      profitGrowth3Y: company.profitGrowth3Y,
+      profitGrowth5Y: company.profitGrowth5Y,
+      salesCAGR3Y: company.salesCAGR3Y,
+      salesCAGR5Y: company.salesCAGR5Y,
+      profitCAGR3Y: company.profitCAGR3Y,
+      profitCAGR5Y: company.profitCAGR5Y,
+      businessOverview: company.businessOverview,
+      sector: company.sector,
+      industry: company.industry,
+      industryClassification: company.industryClassification,
+      recentPerformance: company.recentPerformance,
+      keyMilestones: company.keyMilestones,
+      investmentHighlights: company.investmentHighlights,
+      financialSummary: company.financialSummary,
+      qualityScore: company.qualityScore,
+      overallQualityGrade: company.overallQualityGrade,
+      workingCapitalEfficiency: company.workingCapitalEfficiency,
+      cashCycleEfficiency: company.cashCycleEfficiency,
+      liquidityStatus: company.liquidityStatus,
+      debtStatus: company.debtStatus,
+      riskLevel: company.riskLevel,
+      piotroskiScore: calculatedMetrics.piotroskiScore,
+      altmanZScore: calculatedMetrics.altmanZScore,
+      qualityGrade: calculatedMetrics.investmentGrade,
+      creditRating: company.creditRating,
+      grahamNumber: calculatedMetrics.grahamNumber,
+      roic: calculatedMetrics.roic,
+      fcfYield: calculatedMetrics.fcfYield,
+      debtServiceCoverage: calculatedMetrics.debtServiceCoverage,
+      comprehensiveScore: calculatedMetrics.comprehensiveScore,
+      investmentRecommendation: calculatedMetrics.investmentRecommendation,
+      ratiosData: company.ratiosData,
+      growthTables: company.growthTables,
+      quarterlyDataHistory: company.quarterlyDataHistory,
+      annualDataHistory: company.annualDataHistory,
+      peerCompanies: company.peerCompanies,
+      sectorPE: company.sectorPE,
+      sectorROE: company.sectorROE,
+      sectorDebtToEquity: company.sectorDebtToEquity,
+      dividendPerShare: company.dividendPerShare,
+      dividendFrequency: company.dividendFrequency,
+      dividendHistory: company.dividendHistory,
+      keyManagement: company.keyManagement,
+      promoterHolding: company.promoterHolding,
+      institutionalHolding: company.institutionalHolding,
+      publicHolding: company.publicHolding,
+      volatility30D: company.volatility30D,
+      volatility1Y: company.volatility1Y,
+      maxDrawdown: company.maxDrawdown,
+      sharpeRatio: company.sharpeRatio,
+      marketCapCategory: company.marketCapCategory,
+      isIndexConstituent: company.isIndexConstituent,
+      indices: company.indices,
+      rsi: company.rsi,
+      sma50: company.sma50,
+      sma200: company.sma200,
+      ema12: company.ema12,
+      ema26: company.ema26,
+      isDebtFree: company.isDebtFree,
+      isProfitable: company.isProfitable,
+      hasConsistentProfits: company.hasConsistentProfits,
+      paysDividends: company.paysDividends,
+      isGrowthStock: company.isGrowthStock,
+      isValueStock: company.isValueStock,
+      isQualityStock: company.isQualityStock,
+    );
   }
 
   static List<String> _calculateStrengthFactors(CompanyModel company) {
@@ -319,6 +440,12 @@ class CompanyNotifier extends _$CompanyNotifier {
     return company.enterpriseValue! / latest.sales!;
   }
 
+  static Map<String, double>? _calculateSectorComparison(CompanyModel company) {
+    // This would need sector averages data
+    // For now, return empty map
+    return <String, double>{};
+  }
+
   Future<void> refreshCompanies() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() => _fetchCompanies());
@@ -513,6 +640,156 @@ class CompanyNotifier extends _$CompanyNotifier {
   }
 }
 
+// ============================================================================
+// CALCULATED METRICS CLASS (Manual Implementation)
+// ============================================================================
+
+class CalculatedMetrics {
+  final double? piotroskiScore;
+  final double? altmanZScore;
+  final double? grahamNumber;
+  final double? pegRatio;
+  final double? roic;
+  final double? fcfYield;
+  final double? comprehensiveScore;
+  final String? riskAssessment;
+  final String? investmentGrade;
+  final String? investmentRecommendation;
+  final double? safetyMargin;
+  final double? debtServiceCoverage;
+  final double? workingCapitalTurnover;
+  final double? returnOnAssets;
+  final double? returnOnCapital;
+  final double? evToEbitda;
+  final double? priceToFreeCashFlow;
+  final double? enterpriseValueToSales;
+  final Map<String, double>? sectorComparison;
+  final Map<String, String>? qualityMetrics;
+  final List<String>? strengthFactors;
+  final List<String>? weaknessFactors;
+  final Map<String, dynamic>? valuationMetrics;
+
+  const CalculatedMetrics({
+    this.piotroskiScore,
+    this.altmanZScore,
+    this.grahamNumber,
+    this.pegRatio,
+    this.roic,
+    this.fcfYield,
+    this.comprehensiveScore,
+    this.riskAssessment,
+    this.investmentGrade,
+    this.investmentRecommendation,
+    this.safetyMargin,
+    this.debtServiceCoverage,
+    this.workingCapitalTurnover,
+    this.returnOnAssets,
+    this.returnOnCapital,
+    this.evToEbitda,
+    this.priceToFreeCashFlow,
+    this.enterpriseValueToSales,
+    this.sectorComparison,
+    this.qualityMetrics,
+    this.strengthFactors,
+    this.weaknessFactors,
+    this.valuationMetrics,
+  });
+
+  factory CalculatedMetrics.fromJson(Map<String, dynamic> json) {
+    return CalculatedMetrics(
+      piotroskiScore: JsonParsingUtils.safeDouble(json['piotroski_score']),
+      altmanZScore: JsonParsingUtils.safeDouble(json['altman_z_score']),
+      grahamNumber: JsonParsingUtils.safeDouble(json['graham_number']),
+      pegRatio: JsonParsingUtils.safeDouble(json['peg_ratio']),
+      roic: JsonParsingUtils.safeDouble(json['roic']),
+      fcfYield: JsonParsingUtils.safeDouble(json['fcf_yield']),
+      comprehensiveScore:
+          JsonParsingUtils.safeDouble(json['comprehensive_score']),
+      riskAssessment: JsonParsingUtils.safeString(json['risk_assessment']),
+      investmentGrade: JsonParsingUtils.safeString(json['investment_grade']),
+      investmentRecommendation:
+          JsonParsingUtils.safeString(json['investment_recommendation']),
+      safetyMargin: JsonParsingUtils.safeDouble(json['safety_margin']),
+      debtServiceCoverage:
+          JsonParsingUtils.safeDouble(json['debt_service_coverage']),
+      workingCapitalTurnover:
+          JsonParsingUtils.safeDouble(json['working_capital_turnover']),
+      returnOnAssets: JsonParsingUtils.safeDouble(json['return_on_assets']),
+      returnOnCapital: JsonParsingUtils.safeDouble(json['return_on_capital']),
+      evToEbitda: JsonParsingUtils.safeDouble(json['ev_to_ebitda']),
+      priceToFreeCashFlow:
+          JsonParsingUtils.safeDouble(json['price_to_free_cash_flow']),
+      enterpriseValueToSales:
+          JsonParsingUtils.safeDouble(json['enterprise_value_to_sales']),
+      sectorComparison: _parseSectorComparison(json['sector_comparison']),
+      qualityMetrics: _parseQualityMetrics(json['quality_metrics']),
+      strengthFactors:
+          JsonParsingUtils.safeStringList(json['strength_factors']),
+      weaknessFactors:
+          JsonParsingUtils.safeStringList(json['weakness_factors']),
+      valuationMetrics: JsonParsingUtils.safeMap(json['valuation_metrics']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'piotroski_score': piotroskiScore,
+      'altman_z_score': altmanZScore,
+      'graham_number': grahamNumber,
+      'peg_ratio': pegRatio,
+      'roic': roic,
+      'fcf_yield': fcfYield,
+      'comprehensive_score': comprehensiveScore,
+      'risk_assessment': riskAssessment,
+      'investment_grade': investmentGrade,
+      'investment_recommendation': investmentRecommendation,
+      'safety_margin': safetyMargin,
+      'debt_service_coverage': debtServiceCoverage,
+      'working_capital_turnover': workingCapitalTurnover,
+      'return_on_assets': returnOnAssets,
+      'return_on_capital': returnOnCapital,
+      'ev_to_ebitda': evToEbitda,
+      'price_to_free_cash_flow': priceToFreeCashFlow,
+      'enterprise_value_to_sales': enterpriseValueToSales,
+      'sector_comparison': sectorComparison,
+      'quality_metrics': qualityMetrics,
+      'strength_factors': strengthFactors,
+      'weakness_factors': weaknessFactors,
+      'valuation_metrics': valuationMetrics,
+    };
+  }
+
+  static Map<String, double>? _parseSectorComparison(dynamic data) {
+    if (data == null) return null;
+    if (data is Map<String, double>) return data;
+    if (data is Map) {
+      final result = <String, double>{};
+      data.forEach((k, v) {
+        final doubleValue = JsonParsingUtils.safeDouble(v);
+        if (doubleValue != null) {
+          result[k.toString()] = doubleValue;
+        }
+      });
+      return result;
+    }
+    return null;
+  }
+
+  static Map<String, String>? _parseQualityMetrics(dynamic data) {
+    if (data == null) return null;
+    if (data is Map<String, String>) return data;
+    if (data is Map) {
+      return Map<String, String>.from(
+          data.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')));
+    }
+    return null;
+  }
+}
+
+// ============================================================================
+// FUNDAMENTAL ANALYSIS PROVIDER
+// ============================================================================
+
 @riverpod
 class FundamentalAnalysis extends _$FundamentalAnalysis {
   @override
@@ -533,7 +810,7 @@ class FundamentalAnalysis extends _$FundamentalAnalysis {
           .toList();
 
       final analysis = {
-        'company': company,
+        'company': company.toJson(), // Convert to JSON for provider
         'fundamentalScores': {
           'piotroskiScore': company.calculatedPiotroskiScore,
           'altmanZScore': company.calculatedAltmanZScore,
@@ -546,8 +823,8 @@ class FundamentalAnalysis extends _$FundamentalAnalysis {
           'pegRatio': company.calculatedPEGRatio,
           'priceToBook': company.priceToBook,
           'priceToEarnings': company.stockPe,
-          'evToEbitda': company.calculatedMetrics?.evToEbitda,
-          'priceToFreeCashFlow': company.calculatedMetrics?.priceToFreeCashFlow,
+          'evToEbitda': company.calculatedROIC, // Use calculated ROIC as proxy
+          'priceToFreeCashFlow': company.calculatedFCFYield,
         },
         'riskAnalysis': {
           'overallRisk': company.calculatedRiskAssessment,
@@ -560,8 +837,8 @@ class FundamentalAnalysis extends _$FundamentalAnalysis {
         'investmentRecommendation': {
           'action': company.calculatedInvestmentRecommendation,
           'reasoning': _generateRecommendationReasoning(company),
-          'keyStrengths': company.calculatedMetrics?.strengthFactors ?? [],
-          'keyWeaknesses': company.calculatedMetrics?.weaknessFactors ?? [],
+          'keyStrengths': CompanyNotifier._calculateStrengthFactors(company),
+          'keyWeaknesses': CompanyNotifier._calculateWeaknessFactors(company),
           'targetPrice': _calculateTargetPrice(company),
           'timeHorizon': _suggestTimeHorizon(company),
         },
@@ -1143,7 +1420,10 @@ class FundamentalAnalysis extends _$FundamentalAnalysis {
   }
 }
 
-// Additional provider functions
+// ============================================================================
+// ADDITIONAL PROVIDER FUNCTIONS
+// ============================================================================
+
 @riverpod
 Future<List<CompanyModel>> topCompanies(TopCompaniesRef ref,
     {String sortBy = 'comprehensiveScore'}) async {

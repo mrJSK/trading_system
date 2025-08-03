@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/company_model.dart';
 import '../screens/company_details_screen.dart';
 import '../theme/app_theme.dart';
+import '../providers/fundamental_providers.dart'; // Import shared providers
 
 class CompanyCard extends ConsumerWidget {
   final CompanyModel company;
@@ -199,7 +200,7 @@ class CompanyCard extends ConsumerWidget {
         if (company.calculatedGrahamNumber != null) _buildTargetPriceChip(),
         const SizedBox(height: 2),
         Text(
-          company.formattedLastUpdated,
+          _getFormattedLastUpdated(),
           style: const TextStyle(
             fontSize: 10,
             color: AppTheme.textSecondary,
@@ -207,6 +208,26 @@ class CompanyCard extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  String _getFormattedLastUpdated() {
+    try {
+      final lastUpdated = DateTime.parse(company.lastUpdated);
+      final now = DateTime.now();
+      final difference = now.difference(lastUpdated);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Recently';
+    }
   }
 
   Widget _buildPriceChangeChip() {
@@ -338,6 +359,11 @@ class CompanyCard extends ConsumerWidget {
   }
 
   Widget _buildBusinessOverviewSection() {
+    // Safe access to business overview with fallback
+    final overview = company.businessOverview;
+    final displayText =
+        overview.length > 140 ? '${overview.substring(0, 140)}...' : overview;
+
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -359,9 +385,7 @@ class CompanyCard extends ConsumerWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              company.businessOverview.length > 140
-                  ? '${company.businessOverview.substring(0, 140)}...'
-                  : company.businessOverview,
+              displayText,
               style: const TextStyle(
                 fontSize: 12,
                 color: AppTheme.textPrimary,
@@ -411,6 +435,15 @@ class CompanyCard extends ConsumerWidget {
 
     if (company.isGrowthStock) {
       indicators.add(_buildIndicatorChip('Growth', Colors.orange));
+    }
+
+    // Add additional quality indicators
+    if (company.qualityScore >= 4) {
+      indicators.add(_buildIndicatorChip('High Quality', Colors.green));
+    }
+
+    if (company.calculatedAltmanZScore > 3.0) {
+      indicators.add(_buildIndicatorChip('Safe', Colors.blue));
     }
 
     if (indicators.isEmpty) return const SizedBox.shrink();
@@ -468,7 +501,7 @@ class CompanyCard extends ConsumerWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            recommendation,
+            _getShortRecommendation(recommendation),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
@@ -624,6 +657,22 @@ class CompanyCard extends ConsumerWidget {
                     _getInterestCoverageColor(company.interestCoverage!),
                   ),
                 ),
+              // If no metrics available, show placeholder
+              if (company.debtToEquity == null &&
+                  company.currentRatio == null &&
+                  company.workingCapitalDays == null &&
+                  company.interestCoverage == null)
+                const Expanded(
+                  child: Text(
+                    'Metrics updating...',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
             ],
           ),
         ],
@@ -725,7 +774,8 @@ class CompanyCard extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        company.calculatedInvestmentRecommendation,
+                        _getShortRecommendation(
+                            company.calculatedInvestmentRecommendation),
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
@@ -771,15 +821,28 @@ class CompanyCard extends ConsumerWidget {
                           ),
                         )),
               ],
-              // Add financial strength summary
-              if (company.calculatedMetrics?.strengthFactors?.isNotEmpty ==
-                  true) ...[
+              // Add financial strength summary from pros/cons
+              if (company.pros.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Strengths: ${company.calculatedMetrics!.strengthFactors!.take(2).join(", ")}',
+                  'Strengths: ${company.pros.take(2).join(", ")}',
                   style: const TextStyle(
                     fontSize: 10,
                     color: Colors.green,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              // Add additional calculated insights
+              if (company.calculatedGrahamNumber != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Graham Value: ₹${company.calculatedGrahamNumber!.toStringAsFixed(0)} • Safety: ${(company.safetyMargin ?? 0).toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.blue,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -892,6 +955,17 @@ class CompanyCard extends ConsumerWidget {
     );
   }
 
+  // Helper method to get short recommendation text
+  String _getShortRecommendation(String recommendation) {
+    if (recommendation.contains(' - ')) {
+      return recommendation.split(' - ')[0];
+    }
+    if (recommendation.length > 12) {
+      return recommendation.substring(0, 12) + '...';
+    }
+    return recommendation;
+  }
+
   // Enhanced color helper methods
   Color _getGradeColor(String grade) {
     switch (grade.toUpperCase()) {
@@ -904,8 +978,12 @@ class CompanyCard extends ConsumerWidget {
       case 'BB':
       case 'B':
         return Colors.orange;
-      default:
+      case 'CCC':
+      case 'CC':
+      case 'C':
         return Colors.red;
+      default:
+        return AppTheme.textSecondary;
     }
   }
 
@@ -1067,33 +1145,21 @@ class CompanyCard extends ConsumerWidget {
   }
 
   Color _getRecommendationColor(String recommendation) {
-    switch (recommendation.toLowerCase()) {
-      case 'strong buy':
-        return Colors.green[700]!;
-      case 'buy':
-        return Colors.green;
-      case 'hold':
-        return Colors.orange;
-      case 'sell':
-        return Colors.red;
-      default:
-        return AppTheme.textSecondary;
-    }
+    final rec = recommendation.toLowerCase();
+    if (rec.contains('strong buy')) return Colors.green[700]!;
+    if (rec.contains('buy')) return Colors.green;
+    if (rec.contains('hold')) return Colors.orange;
+    if (rec.contains('sell')) return Colors.red;
+    return AppTheme.textSecondary;
   }
 
   IconData _getRecommendationIcon(String recommendation) {
-    switch (recommendation.toLowerCase()) {
-      case 'strong buy':
-        return Icons.trending_up;
-      case 'buy':
-        return Icons.thumb_up;
-      case 'hold':
-        return Icons.pause;
-      case 'sell':
-        return Icons.trending_down;
-      default:
-        return Icons.help_outline;
-    }
+    final rec = recommendation.toLowerCase();
+    if (rec.contains('strong buy')) return Icons.trending_up;
+    if (rec.contains('buy')) return Icons.thumb_up;
+    if (rec.contains('hold')) return Icons.pause;
+    if (rec.contains('sell')) return Icons.trending_down;
+    return Icons.help_outline;
   }
 
   Color _getHighlightColor(String impact) {

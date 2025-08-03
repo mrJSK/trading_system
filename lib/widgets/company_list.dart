@@ -3,15 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/company_model.dart';
 import '../providers/company_provider.dart';
+import '../providers/fundamental_providers.dart'; // Import shared providers
 import '../widgets/company_card.dart';
 import '../widgets/empty_state.dart';
 import '../theme/app_theme.dart';
 import '../models/fundamental_filter.dart';
 
-// Enhanced providers for the list functionality
+// Enhanced providers for the list functionality (keeping non-conflicting ones local)
 final searchQueryProvider = StateProvider<String>((ref) => '');
-final selectedFundamentalProvider =
-    StateProvider<FundamentalFilter?>((ref) => null);
 final sortCriteriaProvider =
     StateProvider<String>((ref) => 'comprehensiveScore');
 final showOnlyQualityProvider = StateProvider<bool>((ref) => false);
@@ -80,50 +79,157 @@ class _CompanyListState extends ConsumerState<CompanyList> {
     final sortCriteria = ref.watch(sortCriteriaProvider);
     final showOnlyQuality = ref.watch(showOnlyQualityProvider);
 
-    // Enhanced filtering logic
-    if (selectedFilter != null) {
-      return ref.watch(filteredCompaniesProvider([selectedFilter.type])).when(
-            data: (companies) => _buildEnhancedCompanyList(
-              _applyAdditionalFilters(companies, showOnlyQuality, sortCriteria),
-              isFiltered: true,
-              filterName: selectedFilter.name,
-            ),
-            loading: () => _buildEnhancedLoadingState(
-                'Applying ${selectedFilter.name} filter...'),
-            error: (error, stack) => _buildEnhancedErrorState(error, () {
-              ref.invalidate(filteredCompaniesProvider([selectedFilter.type]));
-            }),
-          );
-    }
-
-    // Enhanced search functionality
-    if (searchQuery.isNotEmpty) {
-      return ref.watch(searchResultsProvider(searchQuery)).when(
-            data: (companies) => _buildEnhancedCompanyList(
-              _applyAdditionalFilters(companies, showOnlyQuality, sortCriteria),
-              isSearchResult: true,
-              searchTerm: searchQuery,
-            ),
-            loading: () =>
-                _buildEnhancedLoadingState('Searching for "$searchQuery"...'),
-            error: (error, stack) => _buildEnhancedErrorState(error, () {
-              ref.invalidate(searchResultsProvider(searchQuery));
-            }),
-          );
-    }
-
-    // Default: show all companies with enhanced sorting and filtering
     return ref.watch(companyNotifierProvider).when(
-          data: (companies) => _buildEnhancedCompanyList(
-            _applyAdditionalFilters(companies, showOnlyQuality, sortCriteria),
-            showLoadMore: false,
-          ),
+          data: (companies) {
+            var filteredCompanies = companies;
+
+            // Apply search filter
+            if (searchQuery.isNotEmpty) {
+              filteredCompanies =
+                  _applySearchFilter(filteredCompanies, searchQuery);
+            }
+
+            // Apply fundamental filter
+            if (selectedFilter != null) {
+              filteredCompanies =
+                  _applyFundamentalFilter(filteredCompanies, selectedFilter);
+            }
+
+            // Apply additional filters and sorting
+            filteredCompanies = _applyAdditionalFilters(
+                filteredCompanies, showOnlyQuality, sortCriteria);
+
+            return _buildEnhancedCompanyList(
+              filteredCompanies,
+              isFiltered: selectedFilter != null,
+              isSearchResult: searchQuery.isNotEmpty,
+              filterName: selectedFilter?.name,
+              searchTerm: searchQuery.isNotEmpty ? searchQuery : null,
+            );
+          },
           loading: () =>
               _buildEnhancedLoadingState('Loading enhanced company data...'),
           error: (error, stack) => _buildEnhancedErrorState(error, () {
             ref.read(companyNotifierProvider.notifier).refreshCompanies();
           }),
         );
+  }
+
+  List<CompanyModel> _applySearchFilter(
+      List<CompanyModel> companies, String query) {
+    final lowerQuery = query.toLowerCase();
+    return companies.where((company) {
+      return company.name.toLowerCase().contains(lowerQuery) ||
+          company.symbol.toLowerCase().contains(lowerQuery) ||
+          (company.sector?.toLowerCase().contains(lowerQuery) ?? false) ||
+          (company.industry?.toLowerCase().contains(lowerQuery) ?? false);
+    }).toList();
+  }
+
+  List<CompanyModel> _applyFundamentalFilter(
+      List<CompanyModel> companies, FundamentalFilter filter) {
+    switch (filter.type) {
+      case FundamentalType.qualityStocks:
+        return companies
+            .where(
+                (c) => c.qualityScore >= 3 && c.calculatedPiotroskiScore >= 6)
+            .toList();
+
+      case FundamentalType.piotroskiHigh:
+        return companies.where((c) => c.calculatedPiotroskiScore >= 7).toList();
+
+      case FundamentalType.altmanSafe:
+        return companies.where((c) => c.calculatedAltmanZScore > 3.0).toList();
+
+      case FundamentalType.valueStocks:
+        return companies
+            .where((c) =>
+                c.safetyMargin != null &&
+                c.safetyMargin! > 10 &&
+                c.qualityScore >= 2)
+            .toList();
+
+      case FundamentalType.growthStocks:
+        return companies
+            .where((c) => c.salesGrowth3Y != null && c.salesGrowth3Y! > 15)
+            .toList();
+
+      case FundamentalType.dividendStocks:
+        return companies
+            .where((c) => c.dividendYield != null && c.dividendYield! > 1.0)
+            .toList();
+
+      case FundamentalType.debtFree:
+        return companies
+            .where((c) => c.debtToEquity != null && c.debtToEquity! < 0.1)
+            .toList();
+
+      case FundamentalType.profitableStocks:
+        return companies
+            .where((c) =>
+                c.roe != null &&
+                c.roe! > 0 &&
+                c.currentRatio != null &&
+                c.currentRatio! >= 1.0)
+            .toList();
+
+      case FundamentalType.freeCashFlowRich:
+        return companies
+            .where((c) =>
+                c.calculatedFCFYield != null && c.calculatedFCFYield! > 5.0)
+            .toList();
+
+      case FundamentalType.highROIC:
+        return companies
+            .where((c) => c.calculatedROIC != null && c.calculatedROIC! > 20)
+            .toList();
+
+      case FundamentalType.workingCapitalEfficient:
+        return companies
+            .where((c) =>
+                c.workingCapitalDays != null && c.workingCapitalDays! < 60)
+            .toList();
+
+      case FundamentalType.lowPE:
+        return companies
+            .where((c) =>
+                c.stockPe != null &&
+                c.stockPe! < 15 &&
+                c.roe != null &&
+                c.roe! > 10)
+            .toList();
+
+      case FundamentalType.compoundingMachines:
+        return companies
+            .where((c) =>
+                c.roe != null &&
+                c.roe! >= 18 &&
+                c.roce != null &&
+                c.roce! >= 18 &&
+                c.salesGrowth3Y != null &&
+                c.salesGrowth3Y! >= 12 &&
+                c.debtToEquity != null &&
+                c.debtToEquity! < 0.5)
+            .toList();
+
+      case FundamentalType.grahamValue:
+        return companies
+            .where((c) => c.safetyMargin != null && c.safetyMargin! > 20)
+            .toList();
+
+      case FundamentalType.consistentProfits:
+        return companies
+            .where((c) => c.roe != null && c.roe! >= 12 && c.qualityScore >= 2)
+            .toList();
+
+      case FundamentalType.strongBalance:
+        return companies
+            .where((c) => c.currentRatio != null && c.currentRatio! >= 1.5)
+            .toList();
+
+      default:
+        return companies;
+    }
   }
 
   List<CompanyModel> _applyAdditionalFilters(
@@ -705,16 +811,7 @@ class _CompanyListState extends ConsumerState<CompanyList> {
 
   Future<void> _handleRefresh(
       bool isFiltered, bool isSearchResult, String? searchTerm) async {
-    if (isFiltered) {
-      final selectedFilter = ref.read(selectedFundamentalProvider);
-      if (selectedFilter != null) {
-        ref.invalidate(filteredCompaniesProvider([selectedFilter.type]));
-      }
-    } else if (isSearchResult && searchTerm != null) {
-      ref.invalidate(searchResultsProvider(searchTerm));
-    } else {
-      await ref.read(companyNotifierProvider.notifier).refreshCompanies();
-    }
+    await ref.read(companyNotifierProvider.notifier).refreshCompanies();
   }
 
   Widget _buildEnhancedEmptyState({
@@ -742,6 +839,10 @@ class _CompanyListState extends ConsumerState<CompanyList> {
           },
           icon: const Icon(Icons.clear_all, size: 16),
           label: const Text('Clear Search'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryGreen,
+            foregroundColor: Colors.white,
+          ),
         ),
         const SizedBox(width: 8),
         OutlinedButton.icon(
@@ -767,6 +868,10 @@ class _CompanyListState extends ConsumerState<CompanyList> {
           },
           icon: const Icon(Icons.clear_all, size: 16),
           label: const Text('Clear Filter'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryGreen,
+            foregroundColor: Colors.white,
+          ),
         ),
         const SizedBox(width: 8),
         OutlinedButton.icon(
@@ -791,6 +896,10 @@ class _CompanyListState extends ConsumerState<CompanyList> {
           },
           icon: const Icon(Icons.refresh, size: 16),
           label: const Text('Refresh'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryGreen,
+            foregroundColor: Colors.white,
+          ),
         ),
         const SizedBox(width: 8),
         OutlinedButton.icon(
@@ -912,6 +1021,10 @@ class _CompanyListState extends ConsumerState<CompanyList> {
                   onPressed: onRetry,
                   icon: const Icon(Icons.refresh, size: 16),
                   label: const Text('Try Again'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryGreen,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
                 OutlinedButton.icon(
                   onPressed: () {

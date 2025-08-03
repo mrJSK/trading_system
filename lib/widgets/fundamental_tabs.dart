@@ -3,13 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/fundamental_filter.dart';
 import '../providers/company_provider.dart';
+import '../providers/fundamental_providers.dart'; // Import shared providers
 import '../theme/app_theme.dart';
-
-// Enhanced providers for the fundamental tabs
-final selectedFundamentalProvider =
-    StateProvider<FundamentalFilter?>((ref) => null);
-final tabAnimationController =
-    StateProvider<AnimationController?>((ref) => null);
 
 class FundamentalTabs extends ConsumerStatefulWidget {
   const FundamentalTabs({Key? key}) : super(key: key);
@@ -287,6 +282,26 @@ class _FundamentalTabsState extends ConsumerState<FundamentalTabs>
                   ),
                 ),
               ),
+            if (filter.isPremium && !isSelected)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(
+                    color: Colors.amber.withOpacity(0.3),
+                    width: 0.5,
+                  ),
+                ),
+                child: const Text(
+                  'PRO',
+                  style: TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.amber,
+                  ),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 8),
@@ -314,7 +329,14 @@ class _FundamentalTabsState extends ConsumerState<FundamentalTabs>
           overflow: TextOverflow.ellipsis,
         ),
         const Spacer(),
-        _buildFilterMetric(filter, isSelected),
+        Row(
+          children: [
+            _buildFilterMetric(filter, isSelected),
+            const Spacer(),
+            if (filter.successRate > 0)
+              _buildSuccessRateBadge(filter.successRate, isSelected),
+          ],
+        ),
       ],
     );
   }
@@ -362,6 +384,32 @@ class _FundamentalTabsState extends ConsumerState<FundamentalTabs>
     );
   }
 
+  Widget _buildSuccessRateBadge(double successRate, bool isSelected) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? Colors.white.withOpacity(0.15)
+            : Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(
+          color: isSelected
+              ? Colors.white.withOpacity(0.3)
+              : Colors.green.withOpacity(0.2),
+          width: 0.5,
+        ),
+      ),
+      child: Text(
+        '${successRate.toStringAsFixed(0)}%',
+        style: TextStyle(
+          fontSize: 8,
+          fontWeight: FontWeight.w600,
+          color: isSelected ? Colors.white : Colors.green,
+        ),
+      ),
+    );
+  }
+
   void _handleFilterTap(FundamentalFilter filter, bool isSelected) {
     if (isSelected) {
       ref.read(selectedFundamentalProvider.notifier).state = null;
@@ -382,12 +430,37 @@ class _FundamentalTabsState extends ConsumerState<FundamentalTabs>
             Expanded(
               child: Text('Applied ${filter.name} filter'),
             ),
+            if (filter.successRate > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${filter.successRate.toStringAsFixed(0)}% success',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
         backgroundColor: AppTheme.primaryGreen,
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        action: SnackBarAction(
+          label: 'VIEW',
+          textColor: Colors.white,
+          onPressed: () {
+            // Navigate to filtered results
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
       ),
     );
   }
@@ -411,98 +484,63 @@ class _FundamentalTabsState extends ConsumerState<FundamentalTabs>
   }
 
   List<FundamentalFilter> _getEnhancedFilters() {
+    try {
+      // Use the static method from the updated fundamental filter model
+      final allFilters = FundamentalFilter.getAllFilters();
+
+      // Return the most popular and useful filters for the tabs
+      return [
+        allFilters.firstWhere((f) => f.type == FundamentalType.qualityStocks),
+        allFilters.firstWhere((f) => f.type == FundamentalType.piotroskiHigh),
+        allFilters.firstWhere((f) => f.type == FundamentalType.altmanSafe),
+        allFilters.firstWhere((f) => f.type == FundamentalType.valueStocks),
+        allFilters.firstWhere((f) => f.type == FundamentalType.growthStocks),
+        allFilters.firstWhere((f) => f.type == FundamentalType.dividendStocks),
+        allFilters.firstWhere((f) => f.type == FundamentalType.debtFree),
+        allFilters
+            .firstWhere((f) => f.type == FundamentalType.profitableStocks),
+        allFilters
+            .firstWhere((f) => f.type == FundamentalType.freeCashFlowRich),
+        allFilters.firstWhere((f) => f.type == FundamentalType.highROIC),
+        allFilters.firstWhere(
+            (f) => f.type == FundamentalType.workingCapitalEfficient),
+        allFilters.firstWhere((f) => f.type == FundamentalType.lowPE),
+      ];
+    } catch (e) {
+      // Fallback to basic filters if getAllFilters() fails
+      return _getFallbackFilters();
+    }
+  }
+
+  List<FundamentalFilter> _getFallbackFilters() {
     return [
-      // Quality & Score Based Filters
       FundamentalFilter(
         type: FundamentalType.qualityStocks,
         name: 'Quality Leaders',
-        description:
-            'Companies with high Piotroski scores and strong fundamentals',
+        description: 'High quality fundamentals',
         category: FilterCategory.quality,
         icon: '⭐',
       ),
       FundamentalFilter(
-        type: FundamentalType.piotroskiHigh,
-        name: 'Top Performers',
-        description: 'Highest overall comprehensive analysis scores',
-        category: FilterCategory.quality,
-        icon: '🏆',
-      ),
-      FundamentalFilter(
-        type: FundamentalType.altmanSafe,
-        name: 'Financial Stability',
-        description: 'Companies with strong bankruptcy prediction scores',
-        category: FilterCategory.quality,
-        icon: '🛡️',
-      ),
-
-      // Value & Growth Filters
-      FundamentalFilter(
         type: FundamentalType.valueStocks,
         name: 'Value Opportunities',
-        description: 'Undervalued stocks with safety margin',
+        description: 'Undervalued opportunities',
         category: FilterCategory.value,
         icon: '💎',
       ),
       FundamentalFilter(
         type: FundamentalType.growthStocks,
         name: 'Growth Champions',
-        description: 'High revenue and profit growth companies',
+        description: 'High growth potential',
         category: FilterCategory.growth,
         icon: '🚀',
       ),
       FundamentalFilter(
         type: FundamentalType.dividendStocks,
         name: 'Income Generators',
-        description: 'Reliable dividend paying companies',
+        description: 'Regular income',
         category: FilterCategory.income,
         icon: '💰',
-      ),
-
-      // Financial Health Filters
-      FundamentalFilter(
-        type: FundamentalType.debtFree,
-        name: 'Debt Free',
-        description: 'Companies with minimal or no debt',
-        category: FilterCategory.quality,
-        icon: '🆓',
-      ),
-      FundamentalFilter(
-        type: FundamentalType.profitableStocks,
-        name: 'Consistently Profitable',
-        description: 'Strong ROE and profit margins',
-        category: FilterCategory.profitability,
-        icon: '📈',
-      ),
-      FundamentalFilter(
-        type: FundamentalType.freeCashFlowRich,
-        name: 'Cash Rich',
-        description: 'Strong cash position and liquidity',
-        category: FilterCategory.profitability,
-        icon: '💵',
-      ),
-
-      // Advanced Analysis Filters
-      FundamentalFilter(
-        type: FundamentalType.highROIC,
-        name: 'ROIC Leaders',
-        description: 'Exceptional return on invested capital',
-        category: FilterCategory.profitability,
-        icon: '🎯',
-      ),
-      FundamentalFilter(
-        type: FundamentalType.workingCapitalEfficient,
-        name: 'Efficient Management',
-        description: 'Superior working capital management',
-        category: FilterCategory.efficiency,
-        icon: '⚡',
-      ),
-      FundamentalFilter(
-        type: FundamentalType.lowPE,
-        name: 'Attractive Valuation',
-        description: 'Low P/E and P/B ratios',
-        category: FilterCategory.value,
-        icon: '🔻',
       ),
     ];
   }
@@ -533,6 +571,14 @@ class _FundamentalTabsState extends ConsumerState<FundamentalTabs>
         return Colors.pink;
       case FundamentalType.lowPE:
         return Colors.brown;
+      case FundamentalType.compoundingMachines:
+        return Colors.deepOrange;
+      case FundamentalType.grahamValue:
+        return Colors.blueGrey;
+      case FundamentalType.consistentProfits:
+        return Colors.lime;
+      case FundamentalType.strongBalance:
+        return Colors.red;
       default:
         return AppTheme.primaryGreen;
     }
@@ -541,50 +587,85 @@ class _FundamentalTabsState extends ConsumerState<FundamentalTabs>
   String _getFilterDescription(FundamentalType type) {
     switch (type) {
       case FundamentalType.qualityStocks:
-        return 'Piotroski ≥ 7, Quality grade A-B';
+        return 'Quality Score ≥ 3, Strong fundamentals';
       case FundamentalType.piotroskiHigh:
-        return 'Overall score ≥ 80/100';
+        return 'Piotroski F-Score ≥ 7/9';
       case FundamentalType.altmanSafe:
-        return 'Z-Score > 3.0, low bankruptcy risk';
+        return 'Z-Score > 3.0, Bankruptcy safe';
       case FundamentalType.valueStocks:
-        return 'Safety margin > 15%';
+        return 'P/E < 12, Quality ≥ 2';
       case FundamentalType.growthStocks:
-        return 'Sales & profit growth > 15%';
+        return 'Sales growth ≥ 15%';
       case FundamentalType.dividendStocks:
-        return 'Dividend yield > 2%';
+        return 'Dividend yield ≥ 1%';
       case FundamentalType.debtFree:
         return 'Debt-to-equity < 0.1';
       case FundamentalType.profitableStocks:
-        return 'ROE > 15%, consistent profits';
+        return 'ROE > 0, Current ratio ≥ 1';
       case FundamentalType.freeCashFlowRich:
-        return 'Strong current ratio > 2.0';
+        return 'FCF yield ≥ 5%';
       case FundamentalType.highROIC:
-        return 'ROIC > 20%, capital efficient';
+        return 'ROIC > 20%';
       case FundamentalType.workingCapitalEfficient:
-        return 'WC days < 60, efficient ops';
+        return 'WC days < 45, Efficient ops';
       case FundamentalType.lowPE:
-        return 'P/E < 15, P/B < 2.0';
+        return 'P/E < 15, ROE ≥ 10%';
+      case FundamentalType.compoundingMachines:
+        return 'ROE ≥ 18%, ROCE ≥ 18%';
+      case FundamentalType.grahamValue:
+        return 'Below Graham value';
+      case FundamentalType.consistentProfits:
+        return 'ROE ≥ 12%, Quality ≥ 2';
+      case FundamentalType.strongBalance:
+        return 'Current ratio ≥ 1.5';
       default:
         return 'Professional analysis criteria';
     }
   }
 
   String _getFilterMetric(FundamentalType type, Map<String, dynamic> summary) {
-    switch (type) {
-      case FundamentalType.qualityStocks:
-        return '${summary['highQualityPercentage']}% qualify';
-      case FundamentalType.piotroskiHigh:
-        return 'Top ${(summary['totalCompanies'] * 0.1).toInt()}';
-      case FundamentalType.valueStocks:
-        return '${summary['undervaluedPercentage'] ?? '12'}% undervalued';
-      case FundamentalType.debtFree:
-        return '${(summary['totalCompanies'] * 0.15).toInt()} companies';
-      case FundamentalType.dividendStocks:
-        return '${(summary['totalCompanies'] * 0.25).toInt()} paying';
-      case FundamentalType.growthStocks:
-        return '${(summary['totalCompanies'] * 0.08).toInt()} growing';
-      default:
-        return '${(summary['totalCompanies'] * 0.1).toInt()} match';
+    try {
+      final totalCompanies =
+          int.tryParse(summary['totalCompanies']?.toString() ?? '0') ?? 0;
+
+      switch (type) {
+        case FundamentalType.qualityStocks:
+          return '${summary['highQualityPercentage'] ?? '15'}% qualify';
+        case FundamentalType.piotroskiHigh:
+          return 'Top ${(totalCompanies * 0.1).toInt()}';
+        case FundamentalType.altmanSafe:
+          return '${(totalCompanies * 0.12).toInt()} safe';
+        case FundamentalType.valueStocks:
+          return '${summary['undervaluedPercentage'] ?? '12'}% undervalued';
+        case FundamentalType.growthStocks:
+          return '${(totalCompanies * 0.08).toInt()} growing';
+        case FundamentalType.dividendStocks:
+          return '${(totalCompanies * 0.25).toInt()} paying';
+        case FundamentalType.debtFree:
+          return '${(totalCompanies * 0.15).toInt()} debt-free';
+        case FundamentalType.profitableStocks:
+          return '${summary['profitablePercentage'] ?? '68'}% profitable';
+        case FundamentalType.freeCashFlowRich:
+          return '${(totalCompanies * 0.18).toInt()} cash rich';
+        case FundamentalType.highROIC:
+          return '${(totalCompanies * 0.05).toInt()} efficient';
+        case FundamentalType.workingCapitalEfficient:
+          return '${(totalCompanies * 0.12).toInt()} efficient';
+        case FundamentalType.lowPE:
+          return '${(totalCompanies * 0.20).toInt()} attractive';
+        case FundamentalType.compoundingMachines:
+          return '${(totalCompanies * 0.03).toInt()} machines';
+        case FundamentalType.grahamValue:
+          return '${(totalCompanies * 0.08).toInt()} undervalued';
+        case FundamentalType.consistentProfits:
+          return '${(totalCompanies * 0.22).toInt()} consistent';
+        case FundamentalType.strongBalance:
+          return '${(totalCompanies * 0.28).toInt()} strong';
+        default:
+          return '${(totalCompanies * 0.1).toInt()} match';
+      }
+    } catch (e) {
+      return 'Available';
     }
   }
 }
@@ -617,6 +698,14 @@ extension FundamentalFilterExtensions on FundamentalFilter {
         return Icons.speed;
       case FundamentalType.lowPE:
         return Icons.price_check;
+      case FundamentalType.compoundingMachines:
+        return Icons.autorenew;
+      case FundamentalType.grahamValue:
+        return Icons.calculate;
+      case FundamentalType.consistentProfits:
+        return Icons.timeline;
+      case FundamentalType.strongBalance:
+        return Icons.account_balance;
       default:
         return Icons.filter_list;
     }
@@ -632,8 +721,64 @@ extension FundamentalFilterExtensions on FundamentalFilter {
         return Colors.orange;
       case FundamentalType.dividendStocks:
         return Colors.teal;
+      case FundamentalType.piotroskiHigh:
+        return Colors.purple;
+      case FundamentalType.altmanSafe:
+        return Colors.blue;
+      case FundamentalType.compoundingMachines:
+        return Colors.deepOrange;
       default:
         return AppTheme.primaryGreen;
+    }
+  }
+
+  String get shortDescription {
+    switch (type) {
+      case FundamentalType.qualityStocks:
+        return 'High quality fundamentals';
+      case FundamentalType.piotroskiHigh:
+        return 'Top Piotroski scores';
+      case FundamentalType.altmanSafe:
+        return 'Bankruptcy safe';
+      case FundamentalType.valueStocks:
+        return 'Undervalued opportunities';
+      case FundamentalType.growthStocks:
+        return 'High growth potential';
+      case FundamentalType.dividendStocks:
+        return 'Regular income';
+      case FundamentalType.debtFree:
+        return 'Minimal debt';
+      case FundamentalType.profitableStocks:
+        return 'Consistent profits';
+      case FundamentalType.freeCashFlowRich:
+        return 'Strong cash flow';
+      case FundamentalType.highROIC:
+        return 'Capital efficient';
+      case FundamentalType.workingCapitalEfficient:
+        return 'Efficient operations';
+      case FundamentalType.lowPE:
+        return 'Attractive valuation';
+      default:
+        return description;
+    }
+  }
+
+  String get detailedExplanation {
+    switch (type) {
+      case FundamentalType.qualityStocks:
+        return 'Companies with strong financial health, good management, and sustainable business models. These stocks typically have high Piotroski scores and quality grades.';
+      case FundamentalType.piotroskiHigh:
+        return 'Companies scoring 7+ on the Piotroski F-Score, indicating excellent financial strength across profitability, leverage, and operating efficiency metrics.';
+      case FundamentalType.altmanSafe:
+        return 'Companies with Altman Z-Score > 3.0, indicating very low probability of bankruptcy within the next 2 years. These are financially stable businesses.';
+      case FundamentalType.valueStocks:
+        return 'Undervalued companies trading below their intrinsic value with strong fundamentals. These offer potential for capital appreciation with lower risk.';
+      case FundamentalType.growthStocks:
+        return 'Companies showing strong revenue and profit growth trends. These stocks offer potential for above-average returns but may come with higher volatility.';
+      case FundamentalType.dividendStocks:
+        return 'Companies that regularly pay dividends, providing steady income stream. Suitable for income-focused investors and retirees.';
+      default:
+        return explanation;
     }
   }
 }
