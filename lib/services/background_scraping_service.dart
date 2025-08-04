@@ -1,41 +1,57 @@
 // lib/services/background_scraping_service.dart
 //
-// Keeps one source of truth for background-scraping state and
-// guarantees that the UI always receives the final “completed”
-// status when a WorkManager task finishes.
+// Single source of truth for background-scraping state.
+// Keeps SharedPreferences in sync with WorkManager progress and
+// guarantees that the UI always receives a final “completed” status.
 
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
-import 'scraping_service.dart';
 import 'database_service.dart';
+import 'scraping_service.dart';
 
 class BackgroundScrapingService {
-  /* ────────────────────────────── keys ────────────────────────────── */
+/* ───────────────────────────── keys ───────────────────────────── */
   static const _scrapingStatusKey = 'scraping_status';
   static const _scrapingProgressKey = 'scraping_progress';
 
-  /* ─────────────────────────── task names ─────────────────────────── */
+/* ─────────────────────────── task names ───────────────────────── */
   static const scrapingTaskName = 'scraping_task';
   static const dataScrapingTaskName = 'data_scraping_task';
 
-  /* ───────────────────────── singleton glue ───────────────────────── */
+/* ───────────────────────── singleton glue ─────────────────────── */
   BackgroundScrapingService._internal();
   static final BackgroundScrapingService _instance =
       BackgroundScrapingService._internal();
   factory BackgroundScrapingService() => _instance;
 
-  /* ────────────────────────── initialise ──────────────────────────── */
-  Future<void> initialize() async {
-    await Workmanager().initialize(
-      callbackDispatcher,
-      isInDebugMode: kDebugMode,
-    );
+/* ───────────────────────── initialise (UI) ────────────────────── */
+  ///
+  /// Call this **once** from `main.dart` **before** `runApp()`.
+  ///
+  Future<void> initialise() async {}
+
+/* ──────────────────────── public controls ────────────────────── */
+
+// Add this method to handle background tasks
+  @pragma('vm:entry-point')
+  static Future<bool> executeBackgroundTask(
+      String task, dynamic inputData) async {
+    final service = BackgroundScrapingService();
+    switch (task) {
+      case scrapingTaskName:
+        return await BackgroundScrapingService._performListScraping(
+            inputData ?? {});
+      case dataScrapingTaskName:
+        return await BackgroundScrapingService._performDataScraping();
+      default:
+        return false;
+    }
   }
 
-  /* ──────────────────────── public controls ──────────────────────── */
   Future<void> startListScraping(int totalPages) async {
     await _updateScrapingStatus('list_scraping', {
       'totalPages': totalPages,
@@ -49,12 +65,9 @@ class BackgroundScrapingService {
       'scraping_${DateTime.now().millisecondsSinceEpoch}',
       scrapingTaskName,
       inputData: {
-        'type': 'list_scraping',
         'totalPages': totalPages,
       },
-      constraints: Constraints(
-        networkType: NetworkType.notRequired,
-      ),
+      constraints: Constraints(networkType: NetworkType.connected),
     );
   }
 
@@ -67,10 +80,7 @@ class BackgroundScrapingService {
     await Workmanager().registerOneOffTask(
       'data_scraping_${DateTime.now().millisecondsSinceEpoch}',
       dataScrapingTaskName,
-      inputData: const {'type': 'data_scraping'},
-      constraints: Constraints(
-        networkType: NetworkType.notRequired,
-      ),
+      constraints: Constraints(networkType: NetworkType.connected),
     );
   }
 
@@ -82,7 +92,7 @@ class BackgroundScrapingService {
     await Workmanager().cancelAll();
   }
 
-  /* ────────────────────── status / progress ──────────────────────── */
+/* ────────────────────── status / progress ────────────────────── */
   Future<String> getScrapingStatus() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_scrapingStatusKey) ?? 'idle';
@@ -103,7 +113,7 @@ class BackgroundScrapingService {
     }
   }
 
-  /* ─────────────────── private helper (shared) ───────────────────── */
+/* ─────────────────── private helper (shared) ─────────────────── */
   static Future<void> _updateScrapingStatus(
     String status,
     Map<String, dynamic> progress,
@@ -119,7 +129,10 @@ class BackgroundScrapingService {
     return raw == null ? {} : jsonDecode(raw) as Map<String, dynamic>;
   }
 
-  /* ───────────────────── work-manager entrypoint ─────────────────── */
+/* ──────────────── WorkManager TOP-LEVEL entry-point ───────────── */
+  ///
+  /// MUST stay **top-level** – do **not** move inside the class.
+  ///
   @pragma('vm:entry-point')
   static void callbackDispatcher() {
     Workmanager().executeTask((taskName, inputData) async {
@@ -128,7 +141,7 @@ class BackgroundScrapingService {
           case scrapingTaskName:
             return await _performListScraping(inputData ?? {});
           case dataScrapingTaskName:
-            return await _performDataScraping(inputData ?? {});
+            return await _performDataScraping();
           default:
             return false;
         }
@@ -142,11 +155,10 @@ class BackgroundScrapingService {
     });
   }
 
-  /* ──────────────────  LIST-SCRAPING implementation ─────────────── */
+/* ──────────────── LIST-SCRAPING implementation ──────────────── */
   static Future<bool> _performListScraping(Map<String, dynamic> input) async {
-    final int totalPages = input['totalPages'] as int? ?? 5;
+    final totalPages = input['totalPages'] as int? ?? 5;
     final scrapingService = ScrapingService();
-
     int totalCompanies = 0;
 
     for (int page = 1; page <= totalPages; page++) {
@@ -165,12 +177,9 @@ class BackgroundScrapingService {
       try {
         final list = await scrapingService.scrapeCompanyList(page);
         totalCompanies += list.length;
-      } catch (_) {
-        // skip errors, continue
-      }
+      } catch (_) {/* ignore page failures */}
     }
 
-    // final status
     await _updateScrapingStatus('completed', {
       'type': 'list_scraping',
       'totalCompanies': totalCompanies,
@@ -180,8 +189,8 @@ class BackgroundScrapingService {
     return true;
   }
 
-  /* ──────────────────  DATA-SCRAPING implementation ─────────────── */
-  static Future<bool> _performDataScraping(Map<String, dynamic> _) async {
+/* ──────────────── DATA-SCRAPING implementation ──────────────── */
+  static Future<bool> _performDataScraping() async {
     final db = DatabaseService();
     final svc = ScrapingService();
 
@@ -194,7 +203,6 @@ class BackgroundScrapingService {
       final progress = await _getCurrentProgress();
       if (progress['isActive'] != true) return false;
 
-      // update step progress
       await _updateScrapingStatus('data_scraping', {
         'current': processed,
         'total': companies.length,

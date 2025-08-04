@@ -187,7 +187,7 @@ class ScrapingService {
 
       if (response.statusCode == 200) {
         final document = parser.parse(response.body);
-        final companyData = HtmlParser.parseCompanyData(document as String);
+        final companyData = HtmlParser.parseCompanyData(response.body);
 
         if (companyData != null) {
           // Set the company ID

@@ -39,7 +39,7 @@ class _ScrapingScreenState extends State<ScrapingScreen>
   }
 
   Future<void> _initializeServices() async {
-    await _backgroundService.initialize();
+    await _backgroundService.initialise();
     final status = await _backgroundService.getScrapingStatus();
     final progress = await _backgroundService.getScrapingProgress();
 

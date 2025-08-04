@@ -1,17 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:workmanager/workmanager.dart';
+
 import 'services/theme_service.dart';
 import 'services/database_service.dart';
+import 'services/background_scraping_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/scraping_screen.dart';
 import 'screens/filter_screen.dart';
 import 'screens/watchlist_screen.dart';
 import 'screens/profile_screen.dart';
 
-void main() async {
+// This must be a top-level function
+@pragma('vm:entry-point')
+void callbackDispatcher() {
+  Workmanager().executeTask((task, inputData) {
+    return BackgroundScrapingService.executeBackgroundTask(task, inputData);
+  });
+}
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize database
+  // Initialize WorkManager first
+  await Workmanager().initialize(
+    callbackDispatcher,
+    isInDebugMode: true, // Set to false in production
+  );
+
+  // Initialize the local database
   await DatabaseService().isar;
 
   runApp(MyApp());
@@ -21,7 +38,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => ThemeService(),
+      create: (_) => ThemeService(),
       child: Consumer<ThemeService>(
         builder: (context, themeService, child) {
           return MaterialApp(
@@ -62,11 +79,7 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
