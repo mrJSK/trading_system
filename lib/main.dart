@@ -14,9 +14,7 @@ import 'screens/profile_screen.dart';
 // This must be a top-level function
 @pragma('vm:entry-point')
 void callbackDispatcher() {
-  Workmanager().executeTask((task, inputData) {
-    return BackgroundScrapingService.executeBackgroundTask(task, inputData);
-  });
+  BackgroundScrapingService.callbackDispatcher();
 }
 
 Future<void> main() async {
