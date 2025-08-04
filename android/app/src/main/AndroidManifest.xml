@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -18,7 +19,7 @@
             </intent-filter>
         </service>
         
-        <!-- Firebase Notification metadata - KEEP ONLY ONE SET -->
+        <!-- Firebase Notification metadata -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="job_notifications" />
@@ -57,6 +58,11 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
         </intent>
     </queries>
 </manifest>

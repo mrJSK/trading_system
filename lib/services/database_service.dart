@@ -1,258 +1,663 @@
-// lib/services/database_service.dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/company_model.dart';
-
-final databaseServiceProvider = Provider((ref) => DatabaseService());
-final companyRepositoryProvider = Provider((ref) {
-  final databaseService = ref.watch(databaseServiceProvider);
-  return CompanyRepository(databaseService);
-});
+import 'package:isar/isar.dart';
+import 'package:path_provider/path_provider.dart';
+import '../models/company.dart';
+import '../models/company_data.dart';
+import '../models/watchlist.dart';
+import '../models/watchlist_company.dart';
+import '../models/saved_filter.dart';
 
 class DatabaseService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final String _companiesCollection = 'companies';
+  static Isar? _isar;
+  static final DatabaseService _instance = DatabaseService._internal();
+  factory DatabaseService() => _instance;
+  DatabaseService._internal();
 
-  FirebaseFirestore get firestore => _firestore;
-}
+  Future<Isar> get isar async {
+    _isar ??= await _initDatabase();
+    return _isar!;
+  }
 
-class CompanyRepository {
-  final DatabaseService _db;
-  CompanyRepository(this._db);
+  Future<Isar> _initDatabase() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return await Isar.open(
+      [
+        CompanySchema,
+        CompanyDataSchema,
+        WatchlistSchema,
+        WatchlistCompanySchema,
+        SavedFilterSchema,
+      ],
+      directory: dir.path,
+    );
+  }
 
-  // Get all companies with pagination (ordered by updatedAt for freshness)
-  Future<List<CompanyModel>> getAllCompanies({
-    int limit = 20,
-    DocumentSnapshot? lastDoc,
-  }) async {
-    try {
-      Query query = _db.firestore
-          .collection(_db._companiesCollection)
-          .orderBy('updatedAt',
-              descending: true) // Changed to updatedAt for data freshness
-          .limit(limit);
+  // Company operations
+  Future<int> insertCompany(Company company) async {
+    final isar = await this.isar;
+    return await isar.writeTxn(() async {
+      return await isar.companys.put(company);
+    });
+  }
 
-      if (lastDoc != null) {
-        query = query.startAfterDocument(lastDoc);
+  Future<List<Company>> getAllCompanies() async {
+    final isar = await this.isar;
+    return await isar.companys.where().findAll();
+  }
+
+  Future<Company?> getCompanyByUrl(String url) async {
+    final isar = await this.isar;
+    return await isar.companys.filter().urlEqualTo(url).findFirst();
+  }
+
+  Future<Company?> getCompanyById(int companyId) async {
+    final isar = await this.isar;
+    return await isar.companys.get(companyId);
+  }
+
+  Future<List<Company>> searchCompanies(String query) async {
+    final isar = await this.isar;
+    return await isar.companys
+        .filter()
+        .nameContains(query, caseSensitive: false)
+        .or()
+        .symbolContains(query, caseSensitive: false)
+        .findAll();
+  }
+
+  // Company data operations
+  Future<int> insertCompanyData(CompanyData data) async {
+    final isar = await this.isar;
+    return await isar.writeTxn(() async {
+      return await isar.companyDatas.put(data);
+    });
+  }
+
+  Future<CompanyData?> getCompanyData(int companyId) async {
+    final isar = await this.isar;
+    return await isar.companyDatas
+        .filter()
+        .companyIdEqualTo(companyId)
+        .findFirst();
+  }
+
+  // Updated method to work with the new CompanyData model
+  Future<void> updateCompanyWithData(Company company, CompanyData data) async {
+    final isar = await this.isar;
+    await isar.writeTxn(() async {
+      // Save company first
+      final savedCompanyId = await isar.companys.put(company);
+
+      // Set company ID in data
+      data.companyId = savedCompanyId;
+
+      // Save company data
+      await isar.companyDatas.put(data);
+    });
+  }
+
+  // New method to get company with its data
+  Future<Map<String, dynamic>?> getCompanyWithData(int companyId) async {
+    final isar = await this.isar;
+
+    final company = await isar.companys.get(companyId);
+    if (company == null) return null;
+
+    final data = await isar.companyDatas
+        .filter()
+        .companyIdEqualTo(companyId)
+        .findFirst();
+
+    return {
+      'company': company,
+      'data': data,
+    };
+  }
+
+  // New method to get all companies with their data
+  Future<List<Map<String, dynamic>>> getAllCompaniesWithData() async {
+    final isar = await this.isar;
+    final companies = await isar.companys.where().findAll();
+    final companiesWithData = <Map<String, dynamic>>[];
+
+    for (final company in companies) {
+      final data = await isar.companyDatas
+          .filter()
+          .companyIdEqualTo(company.id)
+          .findFirst();
+
+      companiesWithData.add({
+        'company': company,
+        'data': data,
+      });
+    }
+
+    return companiesWithData;
+  }
+
+  // Watchlist operations
+  Future<int> createWatchlist(Watchlist watchlist) async {
+    final isar = await this.isar;
+    return await isar.writeTxn(() async {
+      return await isar.watchlists.put(watchlist);
+    });
+  }
+
+  Future<List<Watchlist>> getAllWatchlists() async {
+    final isar = await this.isar;
+    return await isar.watchlists.where().findAll();
+  }
+
+  Future<void> addCompanyToWatchlist(int watchlistId, int companyId) async {
+    final isar = await this.isar;
+    await isar.writeTxn(() async {
+      // Check if already exists
+      final existing = await isar.watchlistCompanys
+          .filter()
+          .watchlistIdEqualTo(watchlistId)
+          .and()
+          .companyIdEqualTo(companyId)
+          .findFirst();
+
+      if (existing == null) {
+        final watchlistCompany = WatchlistCompany.fromData(
+          watchlistId: watchlistId,
+          companyId: companyId,
+          addedAt: DateTime.now(),
+        );
+        await isar.watchlistCompanys.put(watchlistCompany);
+      }
+    });
+  }
+
+  Future<void> removeCompanyFromWatchlist(
+      int watchlistId, int companyId) async {
+    final isar = await this.isar;
+    await isar.writeTxn(() async {
+      final watchlistCompany = await isar.watchlistCompanys
+          .filter()
+          .watchlistIdEqualTo(watchlistId)
+          .and()
+          .companyIdEqualTo(companyId)
+          .findFirst();
+
+      if (watchlistCompany != null) {
+        await isar.watchlistCompanys.delete(watchlistCompany.id);
+      }
+    });
+  }
+
+  Future<List<Company>> getWatchlistCompanies(int watchlistId) async {
+    final isar = await this.isar;
+
+    // Get all watchlist-company relationships for this watchlist
+    final watchlistCompanies = await isar.watchlistCompanys
+        .filter()
+        .watchlistIdEqualTo(watchlistId)
+        .findAll();
+
+    // Get company IDs
+    final companyIds = watchlistCompanies.map((wc) => wc.companyId).toList();
+
+    // Get companies
+    final companies = <Company>[];
+    for (final companyId in companyIds) {
+      final company = await isar.companys.get(companyId);
+      if (company != null) {
+        companies.add(company);
+      }
+    }
+
+    return companies;
+  }
+
+  // New method to get watchlist companies with their data
+  Future<List<Map<String, dynamic>>> getWatchlistCompaniesWithData(
+      int watchlistId) async {
+    final isar = await this.isar;
+
+    final watchlistCompanies = await isar.watchlistCompanys
+        .filter()
+        .watchlistIdEqualTo(watchlistId)
+        .findAll();
+
+    final companiesWithData = <Map<String, dynamic>>[];
+
+    for (final wc in watchlistCompanies) {
+      final company = await isar.companys.get(wc.companyId);
+      if (company != null) {
+        final data = await isar.companyDatas
+            .filter()
+            .companyIdEqualTo(company.id)
+            .findFirst();
+
+        companiesWithData.add({
+          'company': company,
+          'data': data,
+          'addedAt': wc.addedAt,
+        });
+      }
+    }
+
+    return companiesWithData;
+  }
+
+  Future<void> deleteWatchlist(int watchlistId) async {
+    final isar = await this.isar;
+    await isar.writeTxn(() async {
+      // Delete all watchlist-company relationships
+      final watchlistCompanies = await isar.watchlistCompanys
+          .filter()
+          .watchlistIdEqualTo(watchlistId)
+          .findAll();
+
+      for (final wc in watchlistCompanies) {
+        await isar.watchlistCompanys.delete(wc.id);
       }
 
-      final querySnapshot = await query.get();
-      return querySnapshot.docs
-          .map((doc) => CompanyModel.fromFirestore(doc))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to fetch companies: $e');
-    }
+      // Delete the watchlist
+      await isar.watchlists.delete(watchlistId);
+    });
   }
 
-  // Get companies ordered by market cap
-  Future<List<CompanyModel>> getCompaniesByMarketCap({
-    int limit = 20,
-    DocumentSnapshot? lastDoc,
-    bool descending = true,
-  }) async {
-    try {
-      Query query = _db.firestore
-          .collection(_db._companiesCollection)
-          .orderBy('marketCap', descending: descending)
-          .limit(limit);
-
-      if (lastDoc != null) {
-        query = query.startAfterDocument(lastDoc);
-      }
-
-      final querySnapshot = await query.get();
-      return querySnapshot.docs
-          .map((doc) => CompanyModel.fromFirestore(doc))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to fetch companies by market cap: $e');
-    }
-  }
-
-  // Enhanced search - symbol and name
-  Future<List<CompanyModel>> searchCompanies(String query) async {
-    if (query.isEmpty) return [];
-
-    try {
-      final upperQuery = query.toUpperCase();
-
-      // Search by symbol first (most accurate)
-      final symbolQuery = await _db.firestore
-          .collection(_db._companiesCollection)
-          .where('symbol', isGreaterThanOrEqualTo: upperQuery)
-          .where('symbol', isLessThanOrEqualTo: '${upperQuery}\uf8ff')
-          .limit(20)
-          .get();
-
-      List<CompanyModel> results = symbolQuery.docs
-          .map((doc) => CompanyModel.fromFirestore(doc))
-          .toList();
-
-      // If not enough results, search by display name
-      if (results.length < 10) {
-        final nameQuery = await _db.firestore
-            .collection(_db._companiesCollection)
-            .where('displayName', isGreaterThanOrEqualTo: query)
-            .where('displayName', isLessThanOrEqualTo: '${query}\uf8ff')
-            .limit(20 - results.length)
-            .get();
-
-        final nameResults = nameQuery.docs
-            .map((doc) => CompanyModel.fromFirestore(doc))
-            .where((company) =>
-                !results.any((existing) => existing.symbol == company.symbol))
-            .toList();
-
-        results.addAll(nameResults);
-      }
-
-      return results;
-    } catch (e) {
-      throw Exception('Failed to search companies: $e');
-    }
-  }
-
-  // Get single company by symbol
-  Future<CompanyModel?> getCompanyBySymbol(String symbol) async {
-    try {
-      final doc = await _db.firestore
-          .collection(_db._companiesCollection)
-          .doc(symbol.toUpperCase())
-          .get();
-
-      if (doc.exists) {
-        return CompanyModel.fromFirestore(doc);
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  // Watch companies for real-time updates
-  Stream<List<CompanyModel>> watchCompanies({int limit = 20}) {
-    return _db.firestore
-        .collection(_db._companiesCollection)
-        .orderBy('updatedAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => CompanyModel.fromFirestore(doc))
-            .toList());
-  }
-
-  // Watch single company
-  Stream<CompanyModel?> watchCompany(String symbol) {
-    return _db.firestore
-        .collection(_db._companiesCollection)
-        .doc(symbol.toUpperCase())
-        .snapshots()
-        .map((doc) => doc.exists ? CompanyModel.fromFirestore(doc) : null);
-  }
-
-  // Get companies by industry classification
-  Future<List<CompanyModel>> getCompaniesByIndustry(String industry,
-      {int limit = 20}) async {
-    try {
-      final querySnapshot = await _db.firestore
-          .collection(_db._companiesCollection)
-          .where('industryClassification', arrayContains: industry)
-          .orderBy('marketCap', descending: true)
-          .limit(limit)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => CompanyModel.fromFirestore(doc))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to fetch companies by industry: $e');
-    }
-  }
-
-  // Get companies with filters (P/E, ROE, etc.)
-  Future<List<CompanyModel>> getFilteredCompanies({
-    int limit = 20,
-    double? minPE,
-    double? maxPE,
-    double? minROE,
-    double? maxROE,
+  // Enhanced filter operations with new CompanyData fields
+  Future<List<Company>> getFilteredCompanies({
     double? minMarketCap,
     double? maxMarketCap,
+    double? minPE,
+    double? maxPE,
+    double? minROCE,
+    double? maxROCE,
+    double? minROE,
+    double? maxROE,
+    double? minDividendYield,
+    double? maxDividendYield,
+    double? minCurrentPrice,
+    double? maxCurrentPrice,
+    String? sector,
+    String? industry,
   }) async {
-    try {
-      Query query = _db.firestore.collection(_db._companiesCollection);
+    final isar = await this.isar;
 
-      // Apply filters
-      if (minPE != null) {
-        query = query.where('stockPe', isGreaterThanOrEqualTo: minPE);
-      }
-      if (maxPE != null) {
-        query = query.where('stockPe', isLessThanOrEqualTo: maxPE);
-      }
-      if (minROE != null) {
-        query = query.where('roe', isGreaterThanOrEqualTo: minROE);
-      }
-      if (maxROE != null) {
-        query = query.where('roe', isLessThanOrEqualTo: maxROE);
-      }
-      if (minMarketCap != null) {
-        query = query.where('marketCap', isGreaterThanOrEqualTo: minMarketCap);
-      }
-      if (maxMarketCap != null) {
-        query = query.where('marketCap', isLessThanOrEqualTo: maxMarketCap);
-      }
+    // Get all companies
+    final companies = await isar.companys.where().findAll();
+    final filteredCompanies = <Company>[];
 
-      query = query.orderBy('marketCap', descending: true).limit(limit);
+    for (final company in companies) {
+      // Get company data using companyId
+      final data = await isar.companyDatas
+          .filter()
+          .companyIdEqualTo(company.id)
+          .findFirst();
 
-      final querySnapshot = await query.get();
-      return querySnapshot.docs
-          .map((doc) => CompanyModel.fromFirestore(doc))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to fetch filtered companies: $e');
+      if (data != null) {
+        bool passesFilter = true;
+
+        // Financial filters
+        if (minMarketCap != null &&
+            (data.marketCap == null || data.marketCap! < minMarketCap)) {
+          passesFilter = false;
+        }
+        if (maxMarketCap != null &&
+            (data.marketCap == null || data.marketCap! > maxMarketCap)) {
+          passesFilter = false;
+        }
+        if (minPE != null && (data.pe == null || data.pe! < minPE)) {
+          passesFilter = false;
+        }
+        if (maxPE != null && (data.pe == null || data.pe! > maxPE)) {
+          passesFilter = false;
+        }
+        if (minROCE != null && (data.roce == null || data.roce! < minROCE)) {
+          passesFilter = false;
+        }
+        if (maxROCE != null && (data.roce == null || data.roce! > maxROCE)) {
+          passesFilter = false;
+        }
+        if (minROE != null && (data.roe == null || data.roe! < minROE)) {
+          passesFilter = false;
+        }
+        if (maxROE != null && (data.roe == null || data.roe! > maxROE)) {
+          passesFilter = false;
+        }
+        if (minDividendYield != null &&
+            (data.dividendYield == null ||
+                data.dividendYield! < minDividendYield)) {
+          passesFilter = false;
+        }
+        if (maxDividendYield != null &&
+            (data.dividendYield == null ||
+                data.dividendYield! > maxDividendYield)) {
+          passesFilter = false;
+        }
+        if (minCurrentPrice != null &&
+            (data.currentPrice == null ||
+                data.currentPrice! < minCurrentPrice)) {
+          passesFilter = false;
+        }
+        if (maxCurrentPrice != null &&
+            (data.currentPrice == null ||
+                data.currentPrice! > maxCurrentPrice)) {
+          passesFilter = false;
+        }
+
+        // Sector and Industry filters
+        if (sector != null &&
+            (data.sector == null ||
+                !data.sector!.toLowerCase().contains(sector.toLowerCase()))) {
+          passesFilter = false;
+        }
+        if (industry != null &&
+            (data.industry == null ||
+                !data.industry!
+                    .toLowerCase()
+                    .contains(industry.toLowerCase()))) {
+          passesFilter = false;
+        }
+
+        if (passesFilter) {
+          filteredCompanies.add(company);
+        }
+      }
     }
+
+    return filteredCompanies;
   }
 
-  // Check data freshness - get companies that need updates
-  Future<List<CompanyModel>> getStaleCompanies(
-      {int hoursThreshold = 24}) async {
-    try {
-      final cutoffTime =
-          DateTime.now().subtract(Duration(hours: hoursThreshold));
+  // New method to get filtered companies with their data
+  Future<List<Map<String, dynamic>>> getFilteredCompaniesWithData({
+    double? minMarketCap,
+    double? maxMarketCap,
+    double? minPE,
+    double? maxPE,
+    double? minROCE,
+    double? maxROCE,
+    double? minROE,
+    double? maxROE,
+    double? minDividendYield,
+    double? maxDividendYield,
+    double? minCurrentPrice,
+    double? maxCurrentPrice,
+    String? sector,
+    String? industry,
+  }) async {
+    final companies = await getFilteredCompanies(
+      minMarketCap: minMarketCap,
+      maxMarketCap: maxMarketCap,
+      minPE: minPE,
+      maxPE: maxPE,
+      minROCE: minROCE,
+      maxROCE: maxROCE,
+      minROE: minROE,
+      maxROE: maxROE,
+      minDividendYield: minDividendYield,
+      maxDividendYield: maxDividendYield,
+      minCurrentPrice: minCurrentPrice,
+      maxCurrentPrice: maxCurrentPrice,
+      sector: sector,
+      industry: industry,
+    );
 
-      final querySnapshot = await _db.firestore
-          .collection(_db._companiesCollection)
-          .where('updatedAt', isLessThan: Timestamp.fromDate(cutoffTime))
-          .orderBy('updatedAt')
-          .limit(50)
-          .get();
+    final companiesWithData = <Map<String, dynamic>>[];
+    final isar = await this.isar;
 
-      return querySnapshot.docs
-          .map((doc) => CompanyModel.fromFirestore(doc))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to fetch stale companies: $e');
+    for (final company in companies) {
+      final data = await isar.companyDatas
+          .filter()
+          .companyIdEqualTo(company.id)
+          .findFirst();
+
+      companiesWithData.add({
+        'company': company,
+        'data': data,
+      });
     }
+
+    return companiesWithData;
   }
 
-  // Get system status for scraping notifications
-  Future<Map<String, dynamic>> getSystemStatus() async {
-    try {
-      final doc =
-          await _db.firestore.collection('system_status').doc('scraping').get();
-      return doc.exists ? doc.data() as Map<String, dynamic> : {};
-    } catch (e) {
-      return {};
-    }
+  // Saved filter operations
+  Future<int> saveFilter(SavedFilter filter) async {
+    final isar = await this.isar;
+    return await isar.writeTxn(() async {
+      return await isar.savedFilters.put(filter);
+    });
   }
 
-  // Watch system status for real-time updates
-  Stream<Map<String, dynamic>> watchSystemStatus() {
-    return _db.firestore
-        .collection('system_status')
-        .doc('scraping')
-        .snapshots()
-        .map((doc) => doc.exists ? doc.data() as Map<String, dynamic> : {});
+  Future<List<SavedFilter>> getAllSavedFilters() async {
+    final isar = await this.isar;
+    return await isar.savedFilters.where().findAll();
+  }
+
+  Future<void> deleteSavedFilter(int filterId) async {
+    final isar = await this.isar;
+    await isar.writeTxn(() async {
+      await isar.savedFilters.delete(filterId);
+    });
+  }
+
+  // Enhanced analytics and statistics
+  Future<Map<String, int>> getCompanyStats() async {
+    final isar = await this.isar;
+    final totalCompanies = await isar.companys.count();
+    final companiesWithData = await isar.companyDatas.count();
+    final totalWatchlists = await isar.watchlists.count();
+
+    return {
+      'totalCompanies': totalCompanies,
+      'companiesWithData': companiesWithData,
+      'totalWatchlists': totalWatchlists,
+    };
+  }
+
+  // New method to get detailed statistics
+  Future<Map<String, dynamic>> getDetailedStats() async {
+    final isar = await this.isar;
+
+    final totalCompanies = await isar.companys.count();
+    final companiesWithData = await isar.companyDatas.count();
+    final totalWatchlists = await isar.watchlists.count();
+    final totalWatchlistEntries = await isar.watchlistCompanys.count();
+
+    // Get sector distribution
+    final allData = await isar.companyDatas.where().findAll();
+    final sectorCounts = <String, int>{};
+
+    for (final data in allData) {
+      if (data.sector != null && data.sector!.isNotEmpty) {
+        sectorCounts[data.sector!] = (sectorCounts[data.sector!] ?? 0) + 1;
+      }
+    }
+
+    return {
+      'totalCompanies': totalCompanies,
+      'companiesWithData': companiesWithData,
+      'totalWatchlists': totalWatchlists,
+      'totalWatchlistEntries': totalWatchlistEntries,
+      'dataCompleteness':
+          totalCompanies > 0 ? (companiesWithData / totalCompanies * 100) : 0.0,
+      'sectorDistribution': sectorCounts,
+      'lastUpdated': DateTime.now().toIso8601String(),
+    };
+  }
+
+  Future<void> clearAllData() async {
+    final isar = await this.isar;
+    await isar.writeTxn(() async {
+      await isar.clear();
+    });
+  }
+
+  // Additional helper methods
+  Future<bool> isCompanyInWatchlist(int companyId, int watchlistId) async {
+    final isar = await this.isar;
+    final relationship = await isar.watchlistCompanys
+        .filter()
+        .companyIdEqualTo(companyId)
+        .and()
+        .watchlistIdEqualTo(watchlistId)
+        .findFirst();
+
+    return relationship != null;
+  }
+
+  Future<List<Watchlist>> getWatchlistsForCompany(int companyId) async {
+    final isar = await this.isar;
+
+    // Get all watchlist-company relationships for this company
+    final watchlistCompanies = await isar.watchlistCompanys
+        .filter()
+        .companyIdEqualTo(companyId)
+        .findAll();
+
+    // Get watchlist IDs
+    final watchlistIds =
+        watchlistCompanies.map((wc) => wc.watchlistId).toList();
+
+    // Get watchlists
+    final watchlists = <Watchlist>[];
+    for (final watchlistId in watchlistIds) {
+      final watchlist = await isar.watchlists.get(watchlistId);
+      if (watchlist != null) {
+        watchlists.add(watchlist);
+      }
+    }
+
+    return watchlists;
+  }
+
+  Future<int> getWatchlistCompanyCount(int watchlistId) async {
+    final isar = await this.isar;
+    return await isar.watchlistCompanys
+        .filter()
+        .watchlistIdEqualTo(watchlistId)
+        .count();
+  }
+
+  Future<List<Company>> getCompaniesWithData() async {
+    final isar = await this.isar;
+
+    // Get all companies that have associated data
+    final companiesWithData = <Company>[];
+    final allCompanies = await isar.companys.where().findAll();
+
+    for (final company in allCompanies) {
+      final data = await isar.companyDatas
+          .filter()
+          .companyIdEqualTo(company.id)
+          .findFirst();
+
+      if (data != null) {
+        companiesWithData.add(company);
+      }
+    }
+
+    return companiesWithData;
+  }
+
+  Future<List<Company>> getCompaniesWithoutData() async {
+    final isar = await this.isar;
+
+    // Get all companies that don't have associated data
+    final companiesWithoutData = <Company>[];
+    final allCompanies = await isar.companys.where().findAll();
+
+    for (final company in allCompanies) {
+      final data = await isar.companyDatas
+          .filter()
+          .companyIdEqualTo(company.id)
+          .findFirst();
+
+      if (data == null) {
+        companiesWithoutData.add(company);
+      }
+    }
+
+    return companiesWithoutData;
+  }
+
+  Future<Map<String, dynamic>> getDatabaseInfo() async {
+    final isar = await this.isar;
+
+    final totalCompanies = await isar.companys.count();
+    final totalCompanyData = await isar.companyDatas.count();
+    final totalWatchlists = await isar.watchlists.count();
+    final totalWatchlistCompanies = await isar.watchlistCompanys.count();
+    final totalSavedFilters = await isar.savedFilters.count();
+
+    return {
+      'totalCompanies': totalCompanies,
+      'totalCompanyData': totalCompanyData,
+      'totalWatchlists': totalWatchlists,
+      'totalWatchlistCompanies': totalWatchlistCompanies,
+      'totalSavedFilters': totalSavedFilters,
+      'dataCompleteness': totalCompanies > 0
+          ? (totalCompanyData / totalCompanies * 100).toStringAsFixed(1)
+          : '0.0',
+    };
+  }
+
+  // New methods for advanced operations
+  Future<List<String>> getAllSectors() async {
+    final isar = await this.isar;
+    final allData = await isar.companyDatas.where().findAll();
+    final sectors = <String>{};
+
+    for (final data in allData) {
+      if (data.sector != null && data.sector!.isNotEmpty) {
+        sectors.add(data.sector!);
+      }
+    }
+
+    return sectors.toList()..sort();
+  }
+
+  Future<List<String>> getAllIndustries() async {
+    final isar = await this.isar;
+    final allData = await isar.companyDatas.where().findAll();
+    final industries = <String>{};
+
+    for (final data in allData) {
+      if (data.industry != null && data.industry!.isNotEmpty) {
+        industries.add(data.industry!);
+      }
+    }
+
+    return industries.toList()..sort();
+  }
+
+  Future<void> bulkUpdateCompanyData(List<CompanyData> dataList) async {
+    final isar = await this.isar;
+    await isar.writeTxn(() async {
+      await isar.companyDatas.putAll(dataList);
+    });
+  }
+
+  Future<void> bulkInsertCompanies(List<Company> companies) async {
+    final isar = await this.isar;
+    await isar.writeTxn(() async {
+      await isar.companys.putAll(companies);
+    });
+  }
+
+  // Search methods
+  Future<List<Map<String, dynamic>>> searchCompaniesWithData(
+      String query) async {
+    final companies = await searchCompanies(query);
+    final isar = await this.isar;
+    final results = <Map<String, dynamic>>[];
+
+    for (final company in companies) {
+      final data = await isar.companyDatas
+          .filter()
+          .companyIdEqualTo(company.id)
+          .findFirst();
+
+      results.add({
+        'company': company,
+        'data': data,
+      });
+    }
+
+    return results;
   }
 }
